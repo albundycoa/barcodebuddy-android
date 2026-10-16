@@ -14,6 +14,7 @@ public class MainActivity extends Activity implements State.Listener {
 	private TextView textShopping;
 	private TextView textScans;
 	private TextView textHint;
+	private TextView textBattery;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -22,6 +23,7 @@ public class MainActivity extends Activity implements State.Listener {
 		textShopping = findViewById(R.id.text_shopping);
 		textScans = findViewById(R.id.text_scans);
 		textHint = findViewById(R.id.text_hint);
+		textBattery = findViewById(R.id.text_battery);
 		findViewById(R.id.button_shopping).setOnClickListener(v -> startActivity(new Intent(this, ShoppingActivity.class)));
 		findViewById(R.id.button_scans).setOnClickListener(v -> startActivity(new Intent(this, ScansActivity.class)));
 	}
@@ -47,6 +49,7 @@ public class MainActivity extends Activity implements State.Listener {
 			textShopping.setText("");
 			textScans.setText("");
 			textHint.setText(R.string.no_data);
+			textBattery.setText("");
 			return;
 		}
 		textHint.setText("");
@@ -59,6 +62,13 @@ public class MainActivity extends Activity implements State.Listener {
 		}
 		textShopping.setText(getString(R.string.open_count, open)
 				+ (state.has("stotal") ? " · " + state.get("stotal").getAsString() : ""));
+		if (state.has("bat")) {
+			int bat = state.get("bat").getAsInt();
+			textBattery.setText(getString(bat <= 20 ? R.string.scanner_battery_low : R.string.scanner_battery, bat));
+			textBattery.setTextColor(bat <= 20 ? 0xFFFF8A80 : 0xFF80CBC4);
+		} else {
+			textBattery.setText("");
+		}
 		JsonArray scans = State.array(state, "scans");
 		String total = state.has("total") ? state.get("total").getAsString() : "";
 		textScans.setText(getString(R.string.scan_count, scans.size()) + (scans.size() > 0 ? " · " + total : ""));

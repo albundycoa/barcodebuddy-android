@@ -39,6 +39,7 @@ import de.bulling.barcodebuddyscanner.Data.ShoppingRepository;
 import de.bulling.barcodebuddyscanner.Helper.PermissionHelper;
 import de.bulling.barcodebuddyscanner.Helper.ScanFeedback;
 import de.bulling.barcodebuddyscanner.Helper.ScanNotifier;
+import de.bulling.barcodebuddyscanner.Wear.WearSync;
 import de.bulling.barcodebuddyscanner.Helper.SharedPrefHelper;
 
 /**
@@ -158,7 +159,57 @@ public class ScannerService extends Service {
 	}
 
 	private volatile String  deviceName = "";
-	private volatile int     batteryLevel = -1;
+	private static final int LOW_BATTERY = 20;
+	private static final int BATTERY_NOTIFICATION_ID = 4;
+	private static final String BATTERY_CHANNEL_ID = "scanner_battery_alert";
+
+	/** Zuletzt gemeldeter Akkustand des Scanners in Prozent, -1 = unbekannt. */
+	private static volatile int batteryLevel = -1;
+
+	/** Akkustand für die Anzeige: nur solange der Scanner verbunden ist. */
+	public static int getBatteryLevel() {
+		return connected ? batteryLevel : -1;
+	}
+
+	/** Meldet einmal, wenn der Akku unter die Schwelle fällt, und nimmt die Meldung beim Laden wieder weg. */
+	private void checkLowBattery(int level) {
+		NotificationManagerCompat manager = NotificationManagerCompat.from(this);
+		if (level > LOW_BATTERY) {
+			manager.cancel(BATTERY_NOTIFICATION_ID);
+			lowBatteryNotified = false;
+			return;
+		}
+		if (lowBatteryNotified || !manager.areNotificationsEnabled()) {
+			return;
+		}
+		lowBatteryNotified = true;
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+			NotificationChannel channel = new NotificationChannel(BATTERY_CHANNEL_ID,
+					getString(R.string.scanner_battery_channel), NotificationManager.IMPORTANCE_HIGH);
+			// Mit Vibration, damit die Meldung auch auf der Smartwatch als Alarm ankommt
+			channel.enableVibration(true);
+			channel.setVibrationPattern(new long[]{0, 250, 150, 250});
+			notifications.createNotificationChannel(channel);
+		}
+		PendingIntent open = PendingIntent.getActivity(this, 0, new Intent(this, MainActivity.class)
+				.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP),
+				PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
+		NotificationCompat.Builder builder = new NotificationCompat.Builder(this, BATTERY_CHANNEL_ID)
+				.setSmallIcon(R.drawable.ic_scanner)
+				.setContentTitle(getString(R.string.scanner_battery_low_title))
+				.setContentText(getString(R.string.scanner_battery_low_text, level))
+				.setContentIntent(open)
+				.setAutoCancel(true)
+				.setCategory(NotificationCompat.CATEGORY_STATUS)
+				.setPriority(NotificationCompat.PRIORITY_HIGH);
+		try {
+			manager.notify(BATTERY_NOTIFICATION_ID, builder.build());
+		} catch (SecurityException ignored) {
+			// Benachrichtigungen nicht erlaubt
+		}
+	}
+
+	private boolean lowBatteryNotified;
 	private volatile java.io.OutputStream out;
 
 	/** Befehl, auf den der Scanner mit seinem Akkustand antwortet (Inhalt des Codes "Verbleibender Akku" im Handbuch). */
@@ -359,7 +410,7 @@ public class ScannerService extends Service {
 				out = s.getOutputStream();
 				main.removeCallbacks(batteryPoll);
 				if (SharedPrefHelper.getBatteryIntervalMs(this) > 0) {
-					main.postDelayed(batteryPoll, 1500);
+					main.postDelayed(batteryPoll, 3000);
 				}
 				readLoop(s.getInputStream());
 			} catch (IOException | IllegalArgumentException e) {
@@ -452,9 +503,16 @@ public class ScannerService extends Service {
 			return;
 		}
 		final Integer battery = parseBattery(code);
+		if (battery != null && battery == 0) {
+			// Direkt nach dem Verbinden meldet der Scanner oft 0 %, bevor der Akkumesser bereit ist: später noch einmal fragen
+			main.postDelayed(this::sendBatteryQuery, 5000);
+			return;
+		}
 		if (battery != null) {
 			// Antwort auf den Akku-Code: kein Artikel, sondern Anzeige in der Statuszeile
 			batteryLevel = battery;
+			checkLowBattery(battery);
+			WearSync.push(this);
 			if (connected) {
 				publish(getString(battery <= 20 ? R.string.scanner_status_connected_battery_low
 						: R.string.scanner_status_connected_battery, deviceName, battery), true);
@@ -500,6 +558,7 @@ public class ScannerService extends Service {
 	private void publish(final String text, final boolean isConnected) {
 		statusText = text;
 		connected = isConnected;
+		WearSync.push(this);
 		main.post(() -> {
 			for (StatusListener l : listeners) {
 				l.onStatus(text, isConnected);

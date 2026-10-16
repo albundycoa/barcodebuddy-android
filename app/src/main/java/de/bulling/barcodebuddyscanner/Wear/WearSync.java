@@ -98,6 +98,10 @@ public final class WearSync {
 		}
 		root.add("scans", scans);
 		root.addProperty("total", Money.format(ReceiptPdf.totals(list.items).sum));
+		int battery = de.bulling.barcodebuddyscanner.ScannerService.getBatteryLevel();
+		if (battery >= 0) {
+			root.addProperty("bat", battery);
+		}
 
 		PutDataMapRequest request = PutDataMapRequest.create(PATH_STATE);
 		request.getDataMap().putString("json", root.toString());

@@ -25,6 +25,7 @@ public class ScansActivity extends Activity implements State.Listener {
 
 	private final List<JsonObject> scans = new ArrayList<>();
 	private String total = "";
+	private int battery = -1;
 	private RecyclerView.Adapter<RecyclerView.ViewHolder> adapter;
 	private TextView empty;
 
@@ -54,7 +55,11 @@ public class ScansActivity extends Activity implements State.Listener {
 			@Override
 			public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
 				if (position == 0) {
-					((TextView) holder.itemView).setText(getString(R.string.total, total));
+					TextView header = (TextView) holder.itemView;
+					header.setText(getString(R.string.total, total));
+					if (battery >= 0) {
+						header.append(" · " + getString(battery <= 20 ? R.string.scanner_battery_low : R.string.scanner_battery, battery));
+					}
 					return;
 				}
 				bindScan(holder.itemView, scans.get(position - 1));
@@ -136,9 +141,13 @@ public class ScansActivity extends Activity implements State.Listener {
 			scans.add(array.get(i).getAsJsonObject());
 		}
 		total = state != null && state.has("total") ? state.get("total").getAsString() : "";
+		battery = state != null && state.has("bat") ? state.get("bat").getAsInt() : -1;
 		adapter.notifyDataSetChanged();
 		if (scans.isEmpty()) {
 			empty.setText(state == null ? R.string.no_data : R.string.scans_empty);
+			if (battery >= 0) {
+				empty.append("\n" + getString(battery <= 20 ? R.string.scanner_battery_low : R.string.scanner_battery, battery));
+			}
 			empty.setVisibility(View.VISIBLE);
 		} else {
 			empty.setVisibility(View.GONE);
