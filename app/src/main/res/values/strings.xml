@@ -224,6 +224,14 @@
     <string name="grocy_syncing">Synchronisiere …</string>
     <string name="grocy_connecting">Prüfe Verbindung …</string>
     <string name="grocy_invalid_qr">Das ist kein QR-Code von Grocy.</string>
+    <string name="shopping_grouping">Einkaufsliste gliedern</string>
+    <string name="shopping_grouping_shop_group">Nach Geschäft, darin nach Produktgruppe</string>
+    <string name="shopping_grouping_group">Nur nach Produktgruppe</string>
+    <string name="group_order_title">Produktgruppen-Reihenfolge</string>
+    <string name="group_order_pref_summary">Reihenfolge der Gruppen in der Einkaufsliste, z. B. nach deinem Weg durch den Laden</string>
+    <string name="group_order_hint">Zum Sortieren den Griff halten und ziehen. Die Gruppen stammen aus Grocy, neue erscheinen nach der nächsten Synchronisierung am Ende.</string>
+    <string name="group_order_empty">Noch keine Produktgruppen. Verbinde Grocy und synchronisiere.</string>
+    <string name="section_no_group">Ohne Gruppe</string>
     <string name="shop_order_title">Geschäfte-Reihenfolge</string>
     <string name="shop_order_pref_summary">Reihenfolge der Abschnitte in der Einkaufsliste</string>
     <string name="shop_order_hint">Zum Sortieren den Griff halten und ziehen. Neue Produkte stehen immer oben, Produkte ohne Geschäft unten.</string>

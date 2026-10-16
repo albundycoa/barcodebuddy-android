@@ -77,6 +77,23 @@
                 android:targetPackage="de.bulling.barcodebuddyscanner" />
         </Preference>
 
+        <ListPreference
+            android:defaultValue="shop_group"
+            android:entries="@array/shopping_grouping"
+            android:entryValues="@array/shopping_grouping_val"
+            android:summary="%s"
+            app:key="shopping_grouping"
+            app:title="@string/shopping_grouping" />
+
+        <Preference
+            app:key="group_order"
+            app:summary="@string/group_order_pref_summary"
+            app:title="@string/group_order_title">
+            <intent
+                android:targetClass="de.bulling.barcodebuddyscanner.GroupOrderActivity"
+                android:targetPackage="de.bulling.barcodebuddyscanner" />
+        </Preference>
+
         <Preference
             app:key="shop_order"
             app:summary="@string/shop_order_pref_summary"

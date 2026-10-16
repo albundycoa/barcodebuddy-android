@@ -14,12 +14,12 @@ import com.google.gson.JsonObject;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 import de.bulling.barcodebuddyscanner.Data.ShoppingItem;
 import de.bulling.barcodebuddyscanner.Data.ShoppingRepository;
 import de.bulling.barcodebuddyscanner.Helper.Money;
 import de.bulling.barcodebuddyscanner.Helper.ReceiptPdf;
+import de.bulling.barcodebuddyscanner.Helper.SharedPrefHelper;
 
 /**
  * Schickt den aktuellen Stand (Einkaufsliste aus Grocy und gescannte Artikel) an die Wear-OS-Uhr.
@@ -59,20 +59,16 @@ public final class WearSync {
 	private static void send(Context app, ShoppingRepository.OpenList list, ShoppingRepository.ShoppingData shopping) {
 		JsonObject root = new JsonObject();
 
-		// Einkaufsliste: offene Einträge nach Geschäften in der gewählten Reihenfolge, erledigte unten
-		List<ShoppingRepository.ShoppingEntry> entries = new ArrayList<>(shopping.entries);
-		final Map<Long, Integer> position = shopping.shopPosition;
-		Collections.sort(entries, (a, b) -> {
-			if (a.isDone() != b.isDone()) {
-				return a.isDone() ? 1 : -1;
-			}
-			int pa = a.shopId != null && position.containsKey(a.shopId) ? position.get(a.shopId) : Integer.MAX_VALUE;
-			int pb = b.shopId != null && position.containsKey(b.shopId) ? position.get(b.shopId) : Integer.MAX_VALUE;
-			if (pa != pb) {
-				return Integer.compare(pa, pb);
-			}
-			return a.name.compareToIgnoreCase(b.name);
-		});
+		// Einkaufsliste wie auf dem Handy: offene Einträge nach Geschäft/Produktgruppe, erledigte unten
+		final boolean byShop = SharedPrefHelper.isShoppingGroupedByShop(app);
+		List<ShoppingRepository.ShoppingEntry> entries = new ArrayList<>();
+		List<ShoppingRepository.ShoppingEntry> doneEntries = new ArrayList<>();
+		for (ShoppingRepository.ShoppingEntry e : shopping.entries) {
+			(e.isDone() ? doneEntries : entries).add(e);
+		}
+		Collections.sort(entries, shopping.openOrder(byShop));
+		Collections.sort(doneEntries, (a, b) -> a.name.compareToIgnoreCase(b.name));
+		entries.addAll(doneEntries);
 		JsonArray shop = new JsonArray();
 		for (ShoppingRepository.ShoppingEntry e : entries) {
 			JsonObject o = new JsonObject();
@@ -81,8 +77,11 @@ public final class WearSync {
 			o.addProperty("a", amountText(e));
 			o.addProperty("d", e.isDone());
 			o.addProperty("c", e.isCoveredByScans());
-			if (e.shopName != null) {
+			if (byShop && e.shopName != null && !e.isNote) {
 				o.addProperty("s", e.shopName);
+			}
+			if (e.group != null && !e.isNote) {
+				o.addProperty("g", e.group);
 			}
 			shop.add(o);
 		}

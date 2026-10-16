@@ -418,6 +418,10 @@ public final class ShoppingRepository {
 				db.delete(ShoppingDb.T_LASTPRICE, null, null);
 				db.delete(ShoppingDb.T_STOCK, null, null);
 				db.delete(ShoppingDb.T_UNITS, null, null);
+				db.delete(ShoppingDb.T_GROUPS, null, null);
+				for (ContentValues v : data.groups) {
+					db.insertWithOnConflict(ShoppingDb.T_GROUPS, null, v, SQLiteDatabase.CONFLICT_REPLACE);
+				}
 				for (ContentValues v : data.units) {
 					db.insertWithOnConflict(ShoppingDb.T_UNITS, null, v, SQLiteDatabase.CONFLICT_REPLACE);
 				}
@@ -456,7 +460,7 @@ public final class ShoppingRepository {
 			db.beginTransaction();
 			try {
 				for (String table : new String[]{ShoppingDb.T_SHOPS, ShoppingDb.T_PRODUCTS, ShoppingDb.T_BARCODES,
-						ShoppingDb.T_LASTPRICE, ShoppingDb.T_STOCK, ShoppingDb.T_SHOPPING, ShoppingDb.T_UNITS}) {
+						ShoppingDb.T_LASTPRICE, ShoppingDb.T_STOCK, ShoppingDb.T_SHOPPING, ShoppingDb.T_UNITS, ShoppingDb.T_GROUPS}) {
 					db.delete(table, null, null);
 				}
 				db.setTransactionSuccessful();
@@ -490,6 +494,58 @@ public final class ShoppingRepository {
 			});
 			return shops;
 		}, callback);
+	}
+
+	/** Alle Produktgruppen aus Grocy in der vom Nutzer gewählten Reihenfolge; neue stehen hinten, nach Name. */
+	public void getGroups(Callback<List<String>> callback) {
+		read(() -> {
+			SQLiteDatabase db = dbHelper.getReadableDatabase();
+			final Map<String, Integer> pos = readGroupPositions(db);
+			List<String> groups = new ArrayList<>();
+			try (Cursor c = db.query(ShoppingDb.T_GROUPS, new String[]{"name"}, null, null, null, null,
+					"name COLLATE NOCASE")) {
+				while (c.moveToNext()) {
+					groups.add(c.getString(0));
+				}
+			}
+			java.util.Collections.sort(groups, (a, b) -> {
+				int pa = pos.containsKey(a) ? pos.get(a) : Integer.MAX_VALUE;
+				int pb = pos.containsKey(b) ? pos.get(b) : Integer.MAX_VALUE;
+				return pa != pb ? Integer.compare(pa, pb) : a.compareToIgnoreCase(b);
+			});
+			return groups;
+		}, callback);
+	}
+
+	public void saveGroupOrder(final List<String> names) {
+		write(() -> {
+			SQLiteDatabase db = dbHelper.getWritableDatabase();
+			db.beginTransaction();
+			try {
+				db.delete(ShoppingDb.T_GROUP_ORDER, null, null);
+				for (int i = 0; i < names.size(); i++) {
+					ContentValues v = new ContentValues();
+					v.put("group_name", names.get(i));
+					v.put("position", i);
+					db.insert(ShoppingDb.T_GROUP_ORDER, null, v);
+				}
+				db.setTransactionSuccessful();
+				return null;
+			} finally {
+				db.endTransaction();
+			}
+		}, null);
+	}
+
+	private static Map<String, Integer> readGroupPositions(SQLiteDatabase db) {
+		Map<String, Integer> positions = new HashMap<>();
+		try (Cursor c = db.query(ShoppingDb.T_GROUP_ORDER, new String[]{"group_name", "position"},
+				null, null, null, null, null)) {
+			while (c.moveToNext()) {
+				positions.put(c.getString(0), c.getInt(1));
+			}
+		}
+		return positions;
 	}
 
 	public void saveShopOrder(final List<Long> shopIds) {
@@ -560,10 +616,53 @@ public final class ShoppingRepository {
 	public static final class ShoppingData {
 		public final List<ShoppingEntry> entries;
 		public final Map<Long, Integer>  shopPosition;
+		public final Map<String, Integer> groupPosition;
 
-		ShoppingData(List<ShoppingEntry> entries, Map<Long, Integer> shopPosition) {
-			this.entries      = entries;
-			this.shopPosition = shopPosition;
+		ShoppingData(List<ShoppingEntry> entries, Map<Long, Integer> shopPosition, Map<String, Integer> groupPosition) {
+			this.entries       = entries;
+			this.shopPosition  = shopPosition;
+			this.groupPosition = groupPosition;
+		}
+
+		private int shopRank(ShoppingEntry e) {
+			if (e.isNote || e.shopId == null) {
+				return Integer.MAX_VALUE;
+			}
+			Integer p = shopPosition.get(e.shopId);
+			return p != null ? p : Integer.MAX_VALUE - 1;
+		}
+
+		private int groupRank(ShoppingEntry e) {
+			if (e.isNote || e.group == null) {
+				return Integer.MAX_VALUE;
+			}
+			Integer p = groupPosition.get(e.group);
+			return p != null ? p : Integer.MAX_VALUE - 1;
+		}
+
+		/**
+		 * Reihenfolge der offenen Einträge: nach Geschäft (in der gewählten Reihenfolge, falls gewünscht),
+		 * darin nach Produktgruppe (in der gewählten Reihenfolge) und zuletzt nach Name.
+		 */
+		public java.util.Comparator<ShoppingEntry> openOrder(final boolean byShop) {
+			return (a, b) -> {
+				if (byShop) {
+					int c = Integer.compare(shopRank(a), shopRank(b));
+					if (c != 0) {
+						return c;
+					}
+					c = String.valueOf(a.shopName).compareToIgnoreCase(String.valueOf(b.shopName));
+					if (c != 0) {
+						return c;
+					}
+				}
+				int c = Integer.compare(groupRank(a), groupRank(b));
+				if (c != 0) {
+					return c;
+				}
+				c = String.valueOf(a.group).compareToIgnoreCase(String.valueOf(b.group));
+				return c != 0 ? c : a.name.compareToIgnoreCase(b.name);
+			};
 		}
 	}
 
@@ -638,7 +737,7 @@ public final class ShoppingRepository {
 					entries.add(e);
 				}
 			}
-			return new ShoppingData(entries, readShopPositions(db));
+			return new ShoppingData(entries, readShopPositions(db), readGroupPositions(db));
 		}, callback);
 	}
 

@@ -27,7 +27,15 @@ public class ShoppingActivity extends Activity implements State.Listener {
 	/** Zeile der Liste: entweder eine Überschrift (Geschäft) oder ein Eintrag. */
 	private static final class Row {
 		String     header;
+		boolean    sub;
 		JsonObject entry;
+	}
+
+	private static Row header(String text, boolean sub) {
+		Row h = new Row();
+		h.header = text;
+		h.sub = sub;
+		return h;
 	}
 
 	private final List<Row> rows = new ArrayList<>();
@@ -62,7 +70,10 @@ public class ShoppingActivity extends Activity implements State.Listener {
 			public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
 				Row row = rows.get(position);
 				if (row.header != null) {
-					((TextView) holder.itemView).setText(row.header);
+					TextView t = (TextView) holder.itemView;
+					t.setText(row.header);
+					t.setTextSize(row.sub ? 11 : 13);
+					t.setTextColor(row.sub ? 0xFFA0A0A0 : 0xFF80CBC4);
 					return;
 				}
 				bindEntry(holder.itemView, row.entry);
@@ -132,23 +143,27 @@ public class ShoppingActivity extends Activity implements State.Listener {
 		rows.clear();
 		JsonArray shop = State.array(state, "shop");
 		String lastShop = null;
+		String lastGroup = null;
 		boolean inDone = false;
 		for (int i = 0; i < shop.size(); i++) {
 			JsonObject e = shop.get(i).getAsJsonObject();
-			boolean done = e.get("d").getAsBoolean();
-			String s = done ? null : (e.has("s") ? e.get("s").getAsString() : "");
-			if (done && !inDone) {
-				inDone = true;
-				Row h = new Row();
-				h.header = "Erledigt";
-				rows.add(h);
-			} else if (!done && !s.equals(lastShop) && !s.isEmpty()) {
-				Row h = new Row();
-				h.header = s;
-				rows.add(h);
-			}
-			if (!done) {
+			if (e.get("d").getAsBoolean()) {
+				if (!inDone) {
+					inDone = true;
+					rows.add(header("Erledigt", false));
+				}
+			} else {
+				String s = e.has("s") ? e.get("s").getAsString() : "";
+				String g = e.has("g") ? e.get("g").getAsString() : "";
+				boolean newShop = !s.equals(lastShop);
+				if (newShop && !s.isEmpty()) {
+					rows.add(header(s, false));
+				}
+				if ((newShop || !g.equals(lastGroup)) && !g.isEmpty()) {
+					rows.add(header(g, true));
+				}
 				lastShop = s;
+				lastGroup = g;
 			}
 			Row r = new Row();
 			r.entry = e;
