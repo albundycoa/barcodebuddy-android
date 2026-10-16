@@ -36,7 +36,7 @@ public final class GrocySync {
 	private static final long FRESH_MS = 10 * 60 * 1000L;
 
 	/** Version der gespeicherten Datenfelder; bei einer Änderung wird einmal neu synchronisiert. */
-	private static final int CACHE_VERSION = 4;
+	private static final int CACHE_VERSION = 5;
 
 	public interface Callback {
 		/** ok = false: Verbindung oder Daten fehlerhaft, die bisherige Kopie bleibt erhalten */
@@ -45,6 +45,8 @@ public final class GrocySync {
 
 	private static final ExecutorService executor = Executors.newSingleThreadExecutor();
 	private static final AtomicBoolean   running  = new AtomicBoolean(false);
+	private static final AtomicBoolean   pushing  = new AtomicBoolean(false);
+	private static final AtomicBoolean   pushAgain = new AtomicBoolean(false);
 	private static final Handler         main     = new Handler(Looper.getMainLooper());
 
 	private GrocySync() {
@@ -127,6 +129,8 @@ public final class GrocySync {
 					if (callback != null) {
 						callback.onDone(true, summary);
 					}
+					// Verbindung steht: liegengebliebene Änderungen nachholen
+					pushShoppingDone(appContext);
 				});
 			} catch (IOException e) {
 				Log.w(TAG, "Synchronisierung fehlgeschlagen: " + e.getMessage());
@@ -158,6 +162,51 @@ public final class GrocySync {
 			return "Grocy antwortet mit Fehler " + code + ".";
 		}
 		return "Grocy nicht erreichbar.";
+	}
+
+	/**
+	 * Überträgt abgehakte oder wieder geöffnete Einträge der Einkaufsliste sofort an Grocy. Klappt das nicht
+	 * (kein Netz, Server nicht erreichbar), bleibt der Wunsch gespeichert und wird beim nächsten Aufruf
+	 * erneut versucht.
+	 */
+	public static void pushShoppingDone(Context context) {
+		final Context appContext = context.getApplicationContext();
+		final GrocyClient client = new SharedPrefHelper(appContext).initGrocyClient();
+		if (client == null) {
+			return;
+		}
+		final ShoppingRepository repo = ShoppingRepository.get(appContext);
+		repo.getShoppingList(data -> {
+			final java.util.List<ShoppingRepository.ShoppingEntry> todo = new java.util.ArrayList<>();
+			for (ShoppingRepository.ShoppingEntry e : data.entries) {
+				if (e.needsUpload()) {
+					todo.add(e);
+				}
+			}
+			if (todo.isEmpty()) {
+				return;
+			}
+			if (!pushing.compareAndSet(false, true)) {
+				pushAgain.set(true);
+				return;
+			}
+			executor.execute(() -> {
+				try {
+					for (ShoppingRepository.ShoppingEntry e : todo) {
+						boolean done = e.isDone();
+						client.put("objects/shopping_list/" + e.id, done ? "{\"done\":1}" : "{\"done\":0}");
+						repo.setServerDone(e.id, done);
+					}
+				} catch (IOException ex) {
+					Log.i(TAG, "Abhaken noch nicht übertragen: " + ex.getMessage());
+				} finally {
+					pushing.set(false);
+					if (pushAgain.getAndSet(false)) {
+						main.post(() -> pushShoppingDone(appContext));
+					}
+				}
+			});
+		});
 	}
 
 	/** Prüft Adresse und Schlüssel, ohne etwas zu speichern. */

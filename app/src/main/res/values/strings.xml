@@ -141,6 +141,7 @@
     <string name="tab_scanned_count">Gescannt (%1$d)</string>
     <string name="shopping_empty">Keine Einträge auf der Einkaufsliste in Grocy.</string>
     <string name="shopping_progress">%1$d von %2$d erledigt</string>
+    <string name="shopping_unsynced">%1$d noch nicht übertragen</string>
     <string name="shopping_updated">Einkaufsliste aktualisiert.</string>
     <string name="action_sync_list">Einkaufsliste aktualisieren</string>
     <string name="section_done">Erledigt</string>

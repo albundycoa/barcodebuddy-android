@@ -168,8 +168,8 @@ public class PurchaseSender {
 			}
 			repo.getShoppingList(shopping -> {
 				for (ShoppingEntry e : shopping.entries) {
-					// Nur, was von Hand abgehakt wurde: Eintrag aus Grocy oder durch Scans erledigte laufen anders
-					if (e.pending && e.doneInGrocy && !e.isCoveredByScans()) {
+					// Nur, was von Hand abgehakt wurde: Einträge, die Grocy schon erledigt hatte, und durch Scans erledigte laufen anders
+					if (e.needsBooking()) {
 						manualJobs.add(e);
 						result.unitsTotal++;
 					}
@@ -336,6 +336,7 @@ public class PurchaseSender {
 
 	private void onManualResult(ShoppingEntry entry, IOException error) {
 		if (error == null) {
+			repo.clearShoppingManual(entry.id);
 			done++;
 			result.unitsSent++;
 			result.manualUnits++;

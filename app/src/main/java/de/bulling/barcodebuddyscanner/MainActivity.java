@@ -3,6 +3,8 @@ package de.bulling.barcodebuddyscanner;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.InputType;
 import android.view.KeyEvent;
 import android.view.Menu;
@@ -88,6 +90,20 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
     private List<ShoppingItem> currentItems = new ArrayList<>();
     private boolean sending = false;
 
+    /** Solange die App offen ist, wird die Einkaufsliste in diesem Abstand neu aus Grocy geholt. */
+    private static final long POLL_MS = 120_000;
+    private final Handler pollHandler = new Handler(Looper.getMainLooper());
+    private final Runnable poll = new Runnable() {
+        @Override
+        public void run() {
+            if (SharedPrefHelper.hasGrocy(MainActivity.this) && SharedPrefHelper.isSyncOnOpenEnabled(MainActivity.this)
+                    && !sending) {
+                GrocySync.start(MainActivity.this, null);
+            }
+            pollHandler.postDelayed(this, POLL_MS);
+        }
+    };
+
     private boolean bluetoothPermissionAsked = false;
     private boolean useBarcodeScanner = false;
     private String receivedBarcode = "";
@@ -118,6 +134,7 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
         // Geschäfte, Namen und Preise aus Grocy auffrischen (ohne Verbindung bleibt die letzte Kopie)
         GrocySync.startIfStale(this);
         SyncScheduler.apply(this);
+        pollHandler.postDelayed(poll, POLL_MS);
         if (activeSender != null) {
             activeSender.attach(senderListener);
         }
@@ -131,6 +148,7 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
     protected void onStop() {
         super.onStop();
         repo.removeListener(this);
+        pollHandler.removeCallbacks(poll);
         ScannerService.removeStatusListener(sppStatusListener);
         if (activeSender != null) {
             activeSender.detach();
@@ -336,6 +354,10 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
             entryAdapter.submit(data);
             updateTabs();
             updateListState();
+            // Abgehakte Einträge (von Hand oder durch Scan) sofort an Grocy melden
+            if (!sending && SharedPrefHelper.hasGrocy(this)) {
+                GrocySync.pushShoppingDone(this);
+            }
         });
     }
 
@@ -403,7 +425,7 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
             Toast.makeText(this, R.string.entry_done_by_scan, Toast.LENGTH_SHORT).show();
             return;
         }
-        repo.setShoppingDone(entry.id, !entry.doneInGrocy);
+        repo.setShoppingDone(entry.id, !entry.isDone());
     }
 
     /** Einträge, die von Hand abgehakt wurden und beim Senden an Grocy übertragen werden. */
@@ -411,7 +433,7 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
         int count = 0;
         if (shoppingData != null) {
             for (ShoppingEntry e : shoppingData.entries) {
-                if (e.pending && e.doneInGrocy && !e.isCoveredByScans()) {
+                if (e.needsBooking()) {
                     count++;
                 }
             }
@@ -434,8 +456,18 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
         if (grocyTab) {
             emptyView.setText(R.string.shopping_empty);
             if (!empty) {
-                totalBar.setText(getString(R.string.shopping_progress, entryAdapter.getDoneCount(),
-                        entryAdapter.getTotalCount()));
+                int unsynced = 0;
+                for (ShoppingEntry e : shoppingData.entries) {
+                    if (e.needsUpload()) {
+                        unsynced++;
+                    }
+                }
+                String text = getString(R.string.shopping_progress, entryAdapter.getDoneCount(),
+                        entryAdapter.getTotalCount());
+                if (unsynced > 0) {
+                    text += "  ·  " + getString(R.string.shopping_unsynced, unsynced);
+                }
+                totalBar.setText(text);
                 totalBar.setVisibility(View.VISIBLE);
             } else {
                 totalBar.setVisibility(View.GONE);

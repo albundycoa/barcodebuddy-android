@@ -518,8 +518,8 @@ public final class ShoppingRepository {
 		public String  unit;
 		public double  stockAmount; // Menge in Lagereinheiten
 		public double  scanned;     // schon gescannte Menge in Lagereinheiten
-		public boolean doneInGrocy; // abgehakt (aus Grocy oder von Hand)
-		public boolean pending;     // lokal geändert, noch nicht an Grocy übertragen
+		public boolean serverDone;  // Stand in Grocy
+		public Integer manual;      // Wunsch des Nutzers: 1 = abgehakt, 0 = offen, null = keiner
 		public Long    shopId;
 		public String  shopName;
 		public String  group;
@@ -527,9 +527,22 @@ public final class ShoppingRepository {
 		public Double  lastPrice;   // letzter Preis je Lagereinheit
 		public Integer bestBeforeDays;
 
-		/** Abgehakt oder durch Scans bereits vollständig abgedeckt. */
+		/** Abgehakt (von Hand oder in Grocy) oder durch Scans bereits vollständig abgedeckt. */
 		public boolean isDone() {
-			return doneInGrocy || isCoveredByScans();
+			if (isCoveredByScans()) {
+				return true;
+			}
+			return manual != null ? manual == 1 : serverDone;
+		}
+
+		/** Der gewünschte Stand weicht vom Stand in Grocy ab und muss noch dorthin übertragen werden. */
+		public boolean needsUpload() {
+			return isDone() != serverDone;
+		}
+
+		/** Von Hand abgehakt und noch nicht eingebucht: wird beim Senden gebucht. */
+		public boolean needsBooking() {
+			return manual != null && manual == 1 && !isCoveredByScans();
 		}
 
 		/** Durch Scans erledigt (lässt sich nicht von Hand zurücknehmen). */
@@ -549,23 +562,26 @@ public final class ShoppingRepository {
 	}
 
 	/**
-	 * Übernimmt die Einkaufsliste aus Grocy. Einträge, die lokal abgehakt oder wieder geöffnet wurden und
-	 * noch nicht übertragen sind, behalten ihren lokalen Stand.
+	 * Übernimmt die Einkaufsliste aus Grocy. Der Wunsch des Nutzers (abgehakt oder wieder geöffnet) bleibt
+	 * erhalten, bis er erfüllt ist.
 	 */
 	private static void mergeShoppingEntries(SQLiteDatabase db, List<ContentValues> incoming) {
-		Map<Long, Integer> localDone = new HashMap<>();
-		try (Cursor c = db.query(ShoppingDb.T_SHOPPING, new String[]{"id", "done"}, "pending = 1", null,
+		Map<Long, Integer> wishes = new HashMap<>();
+		try (Cursor c = db.query(ShoppingDb.T_SHOPPING, new String[]{"id", "manual"}, "manual IS NOT NULL", null,
 				null, null, null)) {
 			while (c.moveToNext()) {
-				localDone.put(c.getLong(0), c.getInt(1));
+				wishes.put(c.getLong(0), c.getInt(1));
 			}
 		}
 		db.delete(ShoppingDb.T_SHOPPING, null, null);
 		for (ContentValues v : incoming) {
-			Integer local = localDone.get(v.getAsLong("id"));
-			if (local != null) {
-				v.put("done", local);
-				v.put("pending", 1);
+			Integer wish = wishes.get(v.getAsLong("id"));
+			if (wish != null) {
+				boolean serverDone = v.getAsInteger("done") != null && v.getAsInteger("done") != 0;
+				// Ein gewünschtes "offen" ist erfüllt, wenn Grocy den Eintrag ebenfalls offen hat
+				if (wish == 1 || serverDone) {
+					v.put("manual", wish);
+				}
 			}
 			db.insertWithOnConflict(ShoppingDb.T_SHOPPING, null, v, SQLiteDatabase.CONFLICT_REPLACE);
 		}
@@ -575,7 +591,7 @@ public final class ShoppingRepository {
 	public void getShoppingList(Callback<ShoppingData> callback) {
 		read(() -> {
 			SQLiteDatabase db = dbHelper.getReadableDatabase();
-			String sql = "SELECT e.id, e.product_id, e.note, e.amount, e.stock_amount, e.done, e.pending, "
+			String sql = "SELECT e.id, e.product_id, e.note, e.amount, e.stock_amount, e.done, e.manual, "
 					+ "u.name AS unit, p.name AS pname, p.group_name, p.shop_id, p.stock_unit, p.best_before_days, "
 					+ "s.name AS shop, lp.price AS last_price, COALESCE(sc.scanned, 0) AS scanned "
 					+ "FROM g_shopping e "
@@ -601,8 +617,9 @@ public final class ShoppingRepository {
 					e.amount = c.getDouble(c.getColumnIndexOrThrow("amount"));
 					e.stockAmount = c.getDouble(c.getColumnIndexOrThrow("stock_amount"));
 					e.unit = c.getString(c.getColumnIndexOrThrow("unit"));
-					e.doneInGrocy = c.getInt(c.getColumnIndexOrThrow("done")) != 0;
-					e.pending = c.getInt(c.getColumnIndexOrThrow("pending")) != 0;
+					e.serverDone = c.getInt(c.getColumnIndexOrThrow("done")) != 0;
+					int manualCol = c.getColumnIndexOrThrow("manual");
+					e.manual = c.isNull(manualCol) ? null : c.getInt(manualCol);
 					e.scanned = c.getDouble(c.getColumnIndexOrThrow("scanned"));
 					e.group = c.getString(c.getColumnIndexOrThrow("group_name"));
 					int shopCol = c.getColumnIndexOrThrow("shop_id");
@@ -619,12 +636,31 @@ public final class ShoppingRepository {
 		}, callback);
 	}
 
-	/** Hakt einen Eintrag von Hand ab oder öffnet ihn wieder; die Änderung wird beim Senden übertragen. */
+	/** Hakt einen Eintrag von Hand ab oder öffnet ihn wieder; die App überträgt das an Grocy, sobald es geht. */
 	public void setShoppingDone(final long entryId, final boolean done) {
 		write(() -> {
 			ContentValues v = new ContentValues();
+			v.put("manual", done ? 1 : 0);
+			return dbHelper.getWritableDatabase().update(ShoppingDb.T_SHOPPING, v, "id = ?",
+					new String[]{String.valueOf(entryId)});
+		}, null);
+	}
+
+	/** Grocy hat den Abhak-Stand dieses Eintrags übernommen. */
+	public void setServerDone(final long entryId, final boolean done) {
+		write(() -> {
+			ContentValues v = new ContentValues();
 			v.put("done", done ? 1 : 0);
-			v.put("pending", 1);
+			return dbHelper.getWritableDatabase().update(ShoppingDb.T_SHOPPING, v, "id = ?",
+					new String[]{String.valueOf(entryId)});
+		}, null);
+	}
+
+	/** Der Eintrag wurde gebucht beziehungsweise abgehakt übertragen: kein offener Wunsch mehr. */
+	public void clearShoppingManual(final long entryId) {
+		write(() -> {
+			ContentValues v = new ContentValues();
+			v.putNull("manual");
 			return dbHelper.getWritableDatabase().update(ShoppingDb.T_SHOPPING, v, "id = ?",
 					new String[]{String.valueOf(entryId)});
 		}, null);

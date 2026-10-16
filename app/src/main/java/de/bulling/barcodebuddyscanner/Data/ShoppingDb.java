@@ -7,7 +7,7 @@ import android.database.sqlite.SQLiteOpenHelper;
 class ShoppingDb extends SQLiteOpenHelper {
 
 	private static final String DB_NAME    = "shopping.db";
-	private static final int    DB_VERSION = 4;
+	private static final int    DB_VERSION = 5;
 
 	static final String T_ITEMS      = "items";
 	static final String T_TRIPS      = "trips";
@@ -58,7 +58,9 @@ class ShoppingDb extends SQLiteOpenHelper {
 			db.execSQL("ALTER TABLE " + T_ITEMS + " ADD COLUMN shop_name TEXT");
 			createGrocyTables(db);
 		}
-		if (oldVersion >= 2 && oldVersion < 4) {
+		if (oldVersion >= 2 && oldVersion < 5) {
+			// Die Einkaufsliste ist nur eine Kopie aus Grocy und wird bei der nächsten Synchronisierung neu gefüllt
+			db.execSQL("DROP TABLE IF EXISTS " + T_SHOPPING);
 			createShoppingTables(db);
 		}
 		if (oldVersion >= 2 && oldVersion < 3) {
@@ -74,7 +76,7 @@ class ShoppingDb extends SQLiteOpenHelper {
 
 	/** Einkaufsliste aus Grocy mit lokalem Abhak-Stand und Einheitennamen. */
 	private static void createShoppingTables(SQLiteDatabase db) {
-		// done: abgehakt (aus Grocy oder lokal); pending: lokal geändert, noch nicht an Grocy übertragen
+		// done: Stand in Grocy; manual: Wunsch des Nutzers (1 = abgehakt, 0 = offen, NULL = keiner)
 		// stock_amount: Menge in Lagereinheiten (für den Vergleich mit gescannten Mengen)
 		db.execSQL("CREATE TABLE IF NOT EXISTS " + T_SHOPPING + " ("
 				+ "id INTEGER PRIMARY KEY, "
@@ -85,7 +87,7 @@ class ShoppingDb extends SQLiteOpenHelper {
 				+ "qu_id INTEGER, "
 				+ "stock_amount REAL NOT NULL DEFAULT 1, "
 				+ "done INTEGER NOT NULL DEFAULT 0, "
-				+ "pending INTEGER NOT NULL DEFAULT 0)");
+				+ "manual INTEGER)");
 		db.execSQL("CREATE TABLE IF NOT EXISTS " + T_UNITS + " ("
 				+ "id INTEGER PRIMARY KEY, "
 				+ "name TEXT NOT NULL)");

@@ -34,6 +34,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
+import de.bulling.barcodebuddyscanner.Api.GrocySync;
 import de.bulling.barcodebuddyscanner.Data.ShoppingRepository;
 import de.bulling.barcodebuddyscanner.Helper.PermissionHelper;
 import de.bulling.barcodebuddyscanner.Helper.ScanFeedback;
@@ -362,7 +363,8 @@ public class ScannerService extends Service {
 		}
 		main.post(() -> {
 			feedback.beep();
-			repo.addScan(code, null);
+			// Danach die Einkaufsliste in Grocy abhaken, falls der Scan einen Eintrag abdeckt
+			repo.addScan(code, item -> GrocySync.pushShoppingDone(getApplicationContext()));
 			scanCount++;
 			updateNotification();
 		});
