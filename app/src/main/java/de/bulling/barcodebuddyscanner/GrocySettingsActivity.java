@@ -136,6 +136,11 @@ public class GrocySettingsActivity extends AppCompatActivity {
 				Toast.makeText(this, message, Toast.LENGTH_LONG).show();
 				return;
 			}
+			String previous = SharedPrefHelper.getGrocyUrl(this);
+			if (!previous.isEmpty() && !previous.equals(GrocyClient.normalizeUrl(url))) {
+				// Anderer Grocy-Server (z. B. Test -> Live): alte Daten und Abhak-Stände nicht übernehmen
+				de.bulling.barcodebuddyscanner.Data.ShoppingRepository.get(this).clearGrocyCache();
+			}
 			SharedPrefHelper.saveGrocy(this, url, key);
 			sync();
 		});

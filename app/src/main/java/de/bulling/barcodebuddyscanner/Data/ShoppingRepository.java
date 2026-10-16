@@ -439,6 +439,28 @@ public final class ShoppingRepository {
 		}, callback);
 	}
 
+	/**
+	 * Verwirft die lokale Kopie der Grocy-Daten samt Einkaufsliste und lokalem Abhak-Stand. Nötig beim
+	 * Wechsel auf einen anderen Grocy-Server, weil dessen Nummern sonst mit den alten durcheinandergeraten.
+	 * Scans, Verlauf und die Reihenfolge der Geschäfte bleiben erhalten.
+	 */
+	public void clearGrocyCache() {
+		write(() -> {
+			SQLiteDatabase db = dbHelper.getWritableDatabase();
+			db.beginTransaction();
+			try {
+				for (String table : new String[]{ShoppingDb.T_SHOPS, ShoppingDb.T_PRODUCTS, ShoppingDb.T_BARCODES,
+						ShoppingDb.T_LASTPRICE, ShoppingDb.T_STOCK, ShoppingDb.T_SHOPPING, ShoppingDb.T_UNITS}) {
+					db.delete(table, null, null);
+				}
+				db.setTransactionSuccessful();
+				return null;
+			} finally {
+				db.endTransaction();
+			}
+		}, null);
+	}
+
 	/** Alle Geschäfte in der vom Nutzer gewählten Reihenfolge; neue Geschäfte stehen hinten, nach Name. */
 	public void getShops(Callback<List<Shop>> callback) {
 		read(() -> {
