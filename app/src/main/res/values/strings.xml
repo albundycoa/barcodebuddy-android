@@ -189,6 +189,17 @@
     <string name="scanner_standby">Scanner-Dienst</string>
     <string name="scanner_standby_connected">Nur aktiv, solange der Scanner verbunden ist (spart Akku)</string>
     <string name="scanner_standby_always">Immer aktiv halten und Scanner suchen</string>
+    <string name="scanner_control_title">Scanner-Einstellungen</string>
+    <string name="scanner_control_auto_off">Automatisch ausschalten nach</string>
+    <string name="scanner_control_volume">Lautstärke des Signaltons</string>
+    <string name="scanner_control_vibration">Vibration</string>
+    <string name="scanner_control_actions">Weiteres</string>
+    <string name="scanner_control_battery">Akkustand abfragen</string>
+    <string name="scanner_control_sleep_now">Jetzt in den Ruhezustand</string>
+    <string name="scanner_control_sleep_confirm">Der Scanner schaltet sich aus und trennt die Verbindung. Zum Einschalten die Taste am Scanner drücken.</string>
+    <string name="scanner_control_sleep_yes">Ausschalten</string>
+    <string name="scanner_control_sent">Gesendet: %1$s</string>
+    <string name="scanner_control_not_connected">Scanner nicht verbunden</string>
     <string name="scanner_battery_menu">Akku des Scanners prüfen</string>
     <string name="scanner_battery_dialog_title">Akku des Scanners</string>
     <string name="scanner_battery_dialog_text">Scanne diesen Code mit dem Barcode-Scanner. Er sendet dann seinen Akkustand, der in der Statuszeile erscheint.</string>

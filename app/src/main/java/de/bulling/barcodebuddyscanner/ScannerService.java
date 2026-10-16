@@ -168,28 +168,41 @@ public class ScannerService extends Service {
 
 	/** Fragt den Akkustand des verbundenen Scanners ab. Liefert false, wenn gerade keine Verbindung besteht. */
 	public static boolean requestBattery() {
+		return sendCommand(BATTERY_COMMAND);
+	}
+
+	/**
+	 * Schickt einen Befehl an den verbundenen Scanner: den Inhalt eines Einstellungs-QR-Codes aus dem
+	 * Handbuch. Der Scanner verhält sich dann, als hätte er den Code gescannt. Liefert false, wenn gerade
+	 * keine Verbindung besteht.
+	 */
+	public static boolean sendCommand(String command) {
 		ScannerService service = current;
 		if (service == null || !connected || service.out == null) {
 			return false;
 		}
-		service.sendBatteryQuery();
+		service.write(command);
 		return true;
 	}
 
 	private void sendBatteryQuery() {
+		write(BATTERY_COMMAND);
+	}
+
+	private void write(final String command) {
 		final java.io.OutputStream o = out;
 		if (o == null) {
 			return;
 		}
-		// Die Antwort kommt als normaler Scan ("61%") und wird in handleCode erkannt
+		// Eine eventuelle Antwort (Akku: "61%") kommt als normaler Scan und wird in handleCode erkannt
 		new Thread(() -> {
 			try {
-				o.write(BATTERY_COMMAND.getBytes(java.nio.charset.StandardCharsets.US_ASCII));
+				o.write(command.getBytes(java.nio.charset.StandardCharsets.US_ASCII));
 				o.flush();
 			} catch (IOException e) {
-				Log.i(TAG, "Akku-Abfrage nicht möglich: " + e.getMessage());
+				Log.i(TAG, "Befehl an den Scanner nicht möglich: " + e.getMessage());
 			}
-		}, "scanner-battery").start();
+		}, "scanner-command").start();
 	}
 
 	/** Fragt den Akkustand regelmäßig ab, solange der Scanner verbunden ist. */

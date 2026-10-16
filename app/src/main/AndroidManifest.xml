@@ -71,6 +71,10 @@
             android:label="@string/shop_order_title"
             android:theme="@style/AppTheme.NoActionBar" />
         <activity
+            android:name=".ScannerControlActivity"
+            android:label="@string/scanner_control_title"
+            android:theme="@style/AppTheme.NoActionBar" />
+        <activity
             android:name=".GroupOrderActivity"
             android:label="@string/group_order_title"
             android:theme="@style/AppTheme.NoActionBar" />

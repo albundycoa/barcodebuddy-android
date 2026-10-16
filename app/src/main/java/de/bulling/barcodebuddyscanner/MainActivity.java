@@ -788,6 +788,9 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
             GrocySync.start(this, (ok, message) -> Toast.makeText(this,
                     ok ? getString(R.string.shopping_updated) : message, Toast.LENGTH_LONG).show());
             return true;
+        } else if (itemId == R.id.action_scanner_control) {
+            startActivity(new Intent(this, ScannerControlActivity.class));
+            return true;
         } else if (itemId == R.id.action_scanner_battery) {
             if (ScannerService.requestBattery()) {
                 Toast.makeText(this, R.string.scanner_battery_asking, Toast.LENGTH_SHORT).show();
