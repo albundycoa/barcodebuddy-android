@@ -21,6 +21,18 @@
             app:title="@string/volume" />
 
     </PreferenceCategory>
+    <PreferenceCategory app:title="@string/bb_header">
+
+        <Preference
+            app:key="bb_connection"
+            app:summary="@string/bb_pref_summary"
+            app:title="@string/bb_title">
+            <intent
+                android:targetClass="de.bulling.barcodebuddyscanner.BbSettingsActivity"
+                android:targetPackage="de.bulling.barcodebuddyscanner" />
+        </Preference>
+
+    </PreferenceCategory>
     <PreferenceCategory app:title="@string/grocy_header">
 
         <Preference

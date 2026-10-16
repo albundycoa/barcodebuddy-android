@@ -117,6 +117,21 @@
     </plurals>
     <string name="open_barcode_buddy">Barcode Buddy öffnen</string>
 
+    <!-- Barcode-Buddy-Verbindung -->
+    <string name="bb_header">Barcode Buddy</string>
+    <string name="bb_title">Barcode-Buddy-Verbindung</string>
+    <string name="bb_pref_summary">Server ansehen, prüfen, neu koppeln oder abmelden</string>
+    <string name="bb_connected">Verbunden mit\n%1$s</string>
+    <string name="bb_not_connected">Nicht mit Barcode Buddy verbunden</string>
+    <string name="bb_detail_hint">Mit „Verbindung prüfen“ siehst du, ob Server und Schlüssel noch stimmen. Zum Neukoppeln scanne den QR-Code aus Barcode Buddy (Menü „API“ → „Mobile App hinzufügen“).</string>
+    <string name="bb_test">Verbindung prüfen</string>
+    <string name="bb_testing">Prüfe Verbindung …</string>
+    <string name="bb_test_ok">Verbindung in Ordnung (Serverversion %1$d).</string>
+    <string name="bb_test_failed">Verbindung fehlgeschlagen: %1$s</string>
+    <string name="bb_saved">Verbunden und gespeichert.</string>
+    <string name="bb_logout_title">Von Barcode Buddy abmelden?</string>
+    <string name="bb_logout_message">Adresse und Schlüssel werden vergessen, danach koppelst du die App neu. Grocy-Verbindung, Verlauf und alle Einstellungen bleiben erhalten.</string>
+
     <!-- Einkaufsliste aus Grocy (Einkaufsmodus) -->
     <string name="tab_shopping">Einkaufsliste</string>
     <string name="tab_scanned">Gescannt</string>

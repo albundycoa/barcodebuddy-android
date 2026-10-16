@@ -27,11 +27,17 @@ public class SharedPrefHelper {
 	}
 
 
+	/** Meldet von Barcode Buddy ab; Grocy-Verbindung, Scanner und alle anderen Einstellungen bleiben erhalten. */
 	public static void clearSettings(final Context context) {
 		SharedPreferences.Editor preferences = PreferenceManager.getDefaultSharedPreferences(context).edit();
-		preferences.clear();
+		preferences.remove("url");
+		preferences.remove("key");
 		preferences.putBoolean("needsSetup", true);
 		preferences.apply();
+	}
+
+	public static void setUnsafeSsl(final Context context, final boolean unsafe) {
+		PreferenceManager.getDefaultSharedPreferences(context).edit().putBoolean("unsafe", unsafe).apply();
 	}
 
 	public SharedPrefHelper(final Context context) {

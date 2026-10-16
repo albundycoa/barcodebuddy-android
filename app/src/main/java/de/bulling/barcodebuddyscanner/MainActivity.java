@@ -153,6 +153,11 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
                 break;
             case RESULT_SETTINGS_OPENED:
                 feedback.reloadPrefs();
+                if (SharedPrefHelper.noApiDetailsSaved(this)) {
+                    // In den Einstellungen von Barcode Buddy abgemeldet: neu koppeln
+                    showSetupScreen();
+                    break;
+                }
                 checkIfBarcodeScannerEnabled();
                 break;
         }
