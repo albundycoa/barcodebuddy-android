@@ -195,8 +195,13 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
         boolean useSpp = SharedPrefHelper.isSppScannerEnabled(this);
         btHint.setVisibility(useBarcodeScanner || useSpp ? View.VISIBLE : View.GONE);
         String sppStatus = ScannerService.getStatusText();
-        btHint.setText(useSpp ? (sppStatus.isEmpty() ? getString(R.string.scanner_standby_idle) : sppStatus)
-                : getString(R.string.bt_scanner_active));
+        if (useSpp) {
+            setScannerBanner(sppStatus.isEmpty() ? getString(R.string.scanner_standby_idle) : sppStatus,
+                    ScannerService.isConnected());
+        } else {
+            btHint.setText(R.string.bt_scanner_active);
+            setBannerColors(R.attr.colorSecondaryContainer, R.attr.colorOnSecondaryContainer);
+        }
         cameraButton.setVisibility(useCamera ? View.VISIBLE : View.GONE);
         ensureSppService();
         updateEmptyText();
@@ -223,7 +228,7 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
                 bluetoothPermissionAsked = true;
                 PermissionHelper.requestBluetoothPermissions(this);
             } else {
-                btHint.setText(R.string.scanner_status_no_permission);
+                setScannerBanner(getString(R.string.scanner_status_no_permission), false);
             }
             return;
         }
@@ -233,7 +238,7 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
             PermissionHelper.requestBluetoothPermissions(this);
         }
         if (SharedPrefHelper.getSppAddress(this).isEmpty()) {
-            btHint.setText(R.string.scanner_status_no_device);
+            setScannerBanner(getString(R.string.scanner_status_no_device), false);
             return;
         }
         if (!ScannerService.isRunning()) {
@@ -251,9 +256,24 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
 
     private final ScannerService.StatusListener sppStatusListener = (text, connected) -> {
         if (SharedPrefHelper.isSppScannerEnabled(this)) {
-            btHint.setText(text.isEmpty() ? getString(R.string.scanner_standby_idle) : text);
+            setScannerBanner(text.isEmpty() ? getString(R.string.scanner_standby_idle) : text, connected);
         }
     };
+
+    /** Statuszeile des Scanners: grün, solange er verbunden ist, sonst rot. */
+    private void setScannerBanner(String text, boolean connected) {
+        btHint.setText(text);
+        btHint.setBackgroundColor(getColor(connected ? R.color.scanner_ok_bg : R.color.scanner_off_bg));
+        btHint.setTextColor(getColor(connected ? R.color.scanner_ok_text : R.color.scanner_off_text));
+    }
+
+    private void setBannerColors(int backgroundAttr, int textAttr) {
+        android.util.TypedValue value = new android.util.TypedValue();
+        getTheme().resolveAttribute(backgroundAttr, value, true);
+        btHint.setBackgroundColor(value.data);
+        getTheme().resolveAttribute(textAttr, value, true);
+        btHint.setTextColor(value.data);
+    }
 
     private void setupUI() {
         Toolbar toolbar = findViewById(R.id.toolbar);

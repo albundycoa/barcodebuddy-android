@@ -28,4 +28,8 @@
     <color name="md_surface_dim">#0E1513</color>
     <color name="md_surface_bright">#343B39</color>
     <color name="md_error_text">#FFB4AB</color>
+    <color name="scanner_ok_bg">#1F5130</color>
+    <color name="scanner_ok_text">#D7F5DB</color>
+    <color name="scanner_off_bg">#6B2323</color>
+    <color name="scanner_off_text">#FFDAD6</color>
 </resources>
