@@ -256,6 +256,8 @@
     <string name="scanner_status_bt_off">Bluetooth ist ausgeschaltet</string>
     <string name="scanner_status_no_permission">Bluetooth-Berechtigung fehlt</string>
     <string name="scanner_status_connecting">Verbinde mit %1$s …</string>
+    <string name="scanner_status_connected_battery">Scanner verbunden: %1$s · Akku %2$d %%</string>
+    <string name="scanner_battery_toast">Akku des Scanners: %1$d %%</string>
     <string name="scanner_status_connected">Scanner verbunden: %1$s</string>
     <string name="scanner_status_retry">%1$s nicht erreichbar, neuer Versuch …</string>
     <string name="scanner_status_retry_reason">%1$s nicht erreichbar, neuer Versuch … (%2$s)</string>

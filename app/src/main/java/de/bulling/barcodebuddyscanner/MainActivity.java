@@ -823,7 +823,10 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
     private void processKeypress(final KeyEvent event, final int keycode) {
         if (keycode == KeyEvent.KEYCODE_ENTER || keycode == KeyEvent.KEYCODE_NUMPAD_ENTER) {
             if (event.getAction() == KeyEvent.ACTION_UP) {
-                if (!receivedBarcode.isEmpty()) {
+                Integer battery = ScannerService.parseBattery(receivedBarcode);
+                if (battery != null) {
+                    Toast.makeText(this, getString(R.string.scanner_battery_toast, battery), Toast.LENGTH_LONG).show();
+                } else if (!receivedBarcode.isEmpty()) {
                     feedback.beep();
                     repo.addScan(receivedBarcode, item -> ScanNotifier.show(this));
                 }

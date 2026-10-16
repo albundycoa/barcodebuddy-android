@@ -142,6 +142,23 @@ public class ScannerService extends Service {
 		}
 	}
 
+	private static final java.util.regex.Pattern BATTERY = java.util.regex.Pattern.compile("^(\\d{1,3})\\s*%$");
+
+	/**
+	 * Der Scanner sendet nach dem Einstellungscode "Verbleibender Akku" (Handbuch) seinen Akkustand als Text,
+	 * zum Beispiel "61%". Liefert den Wert, oder null, wenn der Text etwas anderes ist.
+	 */
+	public static Integer parseBattery(String text) {
+		java.util.regex.Matcher m = BATTERY.matcher(text.trim());
+		if (!m.matches()) {
+			return null;
+		}
+		int level = Integer.parseInt(m.group(1));
+		return level <= 100 ? level : null;
+	}
+
+	private volatile String  deviceName = "";
+	private volatile int     batteryLevel = -1;
 	private volatile boolean stopping   = false;
 	private volatile boolean endedByItself = false;
 	private volatile BluetoothSocket socket;
@@ -245,6 +262,8 @@ public class ScannerService extends Service {
 			boolean alwaysOn = SharedPrefHelper.isScannerAlwaysOn(this);
 			String address = SharedPrefHelper.getSppAddress(this);
 			String name = SharedPrefHelper.getSppName(this);
+			deviceName = name;
+			batteryLevel = -1;
 			if (address.isEmpty()) {
 				if (!alwaysOn) {
 					endService(getString(R.string.scanner_status_no_device));
@@ -360,6 +379,15 @@ public class ScannerService extends Service {
 		final String code = buffer.toString().trim();
 		buffer.setLength(0);
 		if (code.isEmpty()) {
+			return;
+		}
+		final Integer battery = parseBattery(code);
+		if (battery != null) {
+			// Antwort auf den Akku-Code: kein Artikel, sondern Anzeige in der Statuszeile
+			batteryLevel = battery;
+			if (connected) {
+				publish(getString(R.string.scanner_status_connected_battery, deviceName, battery), true);
+			}
 			return;
 		}
 		main.post(() -> {
