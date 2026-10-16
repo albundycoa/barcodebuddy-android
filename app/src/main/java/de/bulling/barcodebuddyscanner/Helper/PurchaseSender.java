@@ -22,6 +22,7 @@ import de.bulling.barcodebuddyscanner.Api.BBApiCallback;
 import de.bulling.barcodebuddyscanner.Api.GrocyClient;
 import de.bulling.barcodebuddyscanner.Data.ShoppingItem;
 import de.bulling.barcodebuddyscanner.Data.ShoppingRepository;
+import de.bulling.barcodebuddyscanner.Data.ShoppingRepository.ShoppingEntry;
 
 /**
  * Schickt die offene Einkaufsliste als Einkauf los. Produkte, die Grocy kennt und deren
@@ -57,6 +58,8 @@ public class PurchaseSender {
 		public int    remainingItems;
 		/** Barcodes, die Barcode Buddy nicht kannte und in seine Liste "Unbekannte Barcodes" gelegt hat */
 		public int    newProducts;
+		/** Von Hand abgehakte Einträge der Einkaufsliste, die an Grocy übertragen wurden */
+		public int    manualUnits;
 	}
 
 	private static class Job {
@@ -91,6 +94,9 @@ public class PurchaseSender {
 	private final Result              result = new Result();
 	private final List<Job>           directJobs = new ArrayList<>();
 	private final List<Job>           bbJobs     = new ArrayList<>();
+	private final List<ShoppingEntry> manualJobs = new ArrayList<>();
+	private final boolean             bookManual;
+	private int                       manualIndex;
 
 	private Listener listener;
 	private Result   finishedResult;
@@ -104,10 +110,14 @@ public class PurchaseSender {
 	/**
 	 * @param grocy Zugriff auf Grocy für direkte Buchungen, oder null: dann läuft alles über Barcode Buddy
 	 */
-	public PurchaseSender(BBApi api, GrocyClient grocy, ShoppingRepository repo) {
-		this.api   = api;
-		this.grocy = grocy;
-		this.repo  = repo;
+	/**
+	 * @param bookManual von Hand abgehakte Produkte der Einkaufsliste einbuchen (sonst nur in Grocy abhaken)
+	 */
+	public PurchaseSender(BBApi api, GrocyClient grocy, boolean bookManual, ShoppingRepository repo) {
+		this.api        = api;
+		this.grocy      = grocy;
+		this.bookManual = bookManual;
+		this.repo       = repo;
 	}
 
 	public boolean isRunning() {
@@ -152,12 +162,29 @@ public class PurchaseSender {
 				}
 				result.unitsTotal += remaining;
 			}
-			if (directJobs.isEmpty() && bbJobs.isEmpty()) {
-				finish();
+			if (grocy == null) {
+				finishLoading();
 				return;
 			}
-			bookDirectNext();
+			repo.getShoppingList(shopping -> {
+				for (ShoppingEntry e : shopping.entries) {
+					// Nur, was von Hand abgehakt wurde: Eintrag aus Grocy oder durch Scans erledigte laufen anders
+					if (e.pending && e.doneInGrocy && !e.isCoveredByScans()) {
+						manualJobs.add(e);
+						result.unitsTotal++;
+					}
+				}
+				finishLoading();
+			});
 		});
+	}
+
+	private void finishLoading() {
+		if (directJobs.isEmpty() && bbJobs.isEmpty() && manualJobs.isEmpty()) {
+			finish();
+			return;
+		}
+		bookDirectNext();
 	}
 
 	// ---------------------------------------------------------------- Direkt in Grocy
@@ -173,16 +200,7 @@ public class PurchaseSender {
 		final Job job = directJobs.get(directIndex);
 		final ShoppingItem item = job.item;
 		final double amount = item.stockPerScan * job.remaining;
-		final JsonObject body = new JsonObject();
-		body.addProperty("amount", amount);
-		body.addProperty("transaction_type", "purchase");
-		body.addProperty("best_before_date", bestBeforeDate(item.bestBeforeDays));
-		if (job.pricePerStock != null) {
-			body.addProperty("price", new BigDecimal(job.pricePerStock).setScale(5, RoundingMode.HALF_UP));
-		}
-		if (item.shopId != null) {
-			body.addProperty("shopping_location_id", item.shopId);
-		}
+		final JsonObject body = purchaseBody(amount, job.pricePerStock, item.bestBeforeDays, item.shopId);
 		GROCY_IO.execute(() -> {
 			IOException failure = null;
 			try {
@@ -194,6 +212,20 @@ public class PurchaseSender {
 			final IOException error = failure;
 			main.post(() -> onDirectResult(job, amount, error));
 		});
+	}
+
+	private static JsonObject purchaseBody(double amount, Double pricePerStock, Integer bestBeforeDays, Long shopId) {
+		JsonObject body = new JsonObject();
+		body.addProperty("amount", amount);
+		body.addProperty("transaction_type", "purchase");
+		body.addProperty("best_before_date", bestBeforeDate(bestBeforeDays));
+		if (pricePerStock != null) {
+			body.addProperty("price", new BigDecimal(pricePerStock).setScale(5, RoundingMode.HALF_UP));
+		}
+		if (shopId != null) {
+			body.addProperty("shopping_location_id", shopId);
+		}
+		return body;
 	}
 
 	/** Wie Barcode Buddy: heute plus Standard-Haltbarkeit, -1 bedeutet unbegrenzt. */
@@ -258,10 +290,73 @@ public class PurchaseSender {
 
 	private void startBarcodeBuddy() {
 		if (bbJobs.isEmpty()) {
-			archive();
+			afterBarcodeBuddy();
 			return;
 		}
 		readMode();
+	}
+
+	/** Nach den Buchungen: von Hand abgehakte Einträge übertragen, außer es gab einen Abbruch. */
+	private void afterBarcodeBuddy() {
+		if (result.error != null || manualJobs.isEmpty()) {
+			archive();
+			return;
+		}
+		transferManualNext();
+	}
+
+	private void transferManualNext() {
+		if (manualIndex >= manualJobs.size()) {
+			archive();
+			return;
+		}
+		final ShoppingEntry entry = manualJobs.get(manualIndex++);
+		GROCY_IO.execute(() -> {
+			IOException failure = null;
+			try {
+				if (entry.isNote || !bookManual) {
+					// Notizen und "nur abhaken": den Eintrag in Grocy als erledigt markieren
+					grocy.put("objects/shopping_list/" + entry.id, "{\"done\":1}");
+				} else {
+					double remaining = Math.max(0, entry.stockAmount - entry.scanned);
+					if (remaining > 0) {
+						grocy.post("stock/products/" + entry.productId + "/add",
+								purchaseBody(remaining, entry.lastPrice, entry.bestBeforeDays, entry.shopId).toString());
+					}
+					// Gekauft: der Eintrag verschwindet von der Einkaufsliste
+					grocy.delete("objects/shopping_list/" + entry.id);
+				}
+			} catch (IOException e) {
+				failure = e;
+			}
+			final IOException error = failure;
+			main.post(() -> onManualResult(entry, error));
+		});
+	}
+
+	private void onManualResult(ShoppingEntry entry, IOException error) {
+		if (error == null) {
+			done++;
+			result.unitsSent++;
+			result.manualUnits++;
+			reportProgress();
+			transferManualNext();
+			return;
+		}
+		int status = error instanceof GrocyClient.HttpException ? ((GrocyClient.HttpException) error).statusCode : 0;
+		if (status == 401 || status == 403) {
+			result.error = "Ungültiger Grocy-API-Schlüssel";
+			archive();
+		} else if (status == 0) {
+			result.error = "Grocy nicht erreichbar";
+			archive();
+		} else {
+			// Dieser Eintrag ging nicht durch, die übrigen werden trotzdem übertragen
+			done++;
+			result.warning = "Eintrag „" + entry.name + "“ konnte nicht übertragen werden (Fehler " + status + ").";
+			reportProgress();
+			transferManualNext();
+		}
 	}
 
 	private void readMode() {
@@ -355,19 +450,19 @@ public class PurchaseSender {
 
 	private void restoreMode() {
 		if (!modeChanged || previousMode == null) {
-			archive();
+			afterBarcodeBuddy();
 			return;
 		}
 		api.setMode(previousMode, new BBApiCallback() {
 			@Override
 			public void onResult(Object value) {
-				archive();
+				afterBarcodeBuddy();
 			}
 
 			@Override
 			public void onError(int errorCode, String errorMessage, Integer statusCode) {
 				result.warning = "Der vorherige Barcode-Buddy-Modus konnte nicht wiederhergestellt werden.";
-				archive();
+				afterBarcodeBuddy();
 			}
 		});
 	}

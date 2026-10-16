@@ -411,6 +411,11 @@ public final class ShoppingRepository {
 				db.delete(ShoppingDb.T_BARCODES, null, null);
 				db.delete(ShoppingDb.T_LASTPRICE, null, null);
 				db.delete(ShoppingDb.T_STOCK, null, null);
+				db.delete(ShoppingDb.T_UNITS, null, null);
+				for (ContentValues v : data.units) {
+					db.insertWithOnConflict(ShoppingDb.T_UNITS, null, v, SQLiteDatabase.CONFLICT_REPLACE);
+				}
+				mergeShoppingEntries(db, data.shopping);
 				for (ContentValues v : data.stock) {
 					db.insertWithOnConflict(ShoppingDb.T_STOCK, null, v, SQLiteDatabase.CONFLICT_REPLACE);
 				}
@@ -476,6 +481,130 @@ public final class ShoppingRepository {
 			} finally {
 				db.endTransaction();
 			}
+		}, null);
+	}
+
+	// ---------------------------------------------------------------- Einkaufsliste aus Grocy
+
+	/** Ein Eintrag der Grocy-Einkaufsliste für die Anzeige. */
+	public static final class ShoppingEntry {
+		public long    id;
+		public Long    productId;
+		public String  name;        // Produktname oder Notiz
+		public boolean isNote;      // Eintrag ohne Produkt
+		public double  amount;      // Menge in der Einheit des Eintrags
+		public String  unit;
+		public double  stockAmount; // Menge in Lagereinheiten
+		public double  scanned;     // schon gescannte Menge in Lagereinheiten
+		public boolean doneInGrocy; // abgehakt (aus Grocy oder von Hand)
+		public boolean pending;     // lokal geändert, noch nicht an Grocy übertragen
+		public Long    shopId;
+		public String  shopName;
+		public String  group;
+		public String  stockUnit;
+		public Double  lastPrice;   // letzter Preis je Lagereinheit
+		public Integer bestBeforeDays;
+
+		/** Abgehakt oder durch Scans bereits vollständig abgedeckt. */
+		public boolean isDone() {
+			return doneInGrocy || isCoveredByScans();
+		}
+
+		/** Durch Scans erledigt (lässt sich nicht von Hand zurücknehmen). */
+		public boolean isCoveredByScans() {
+			return !isNote && scanned > 0 && scanned + 1e-9 >= stockAmount;
+		}
+	}
+
+	public static final class ShoppingData {
+		public final List<ShoppingEntry> entries;
+		public final Map<Long, Integer>  shopPosition;
+
+		ShoppingData(List<ShoppingEntry> entries, Map<Long, Integer> shopPosition) {
+			this.entries      = entries;
+			this.shopPosition = shopPosition;
+		}
+	}
+
+	/**
+	 * Übernimmt die Einkaufsliste aus Grocy. Einträge, die lokal abgehakt oder wieder geöffnet wurden und
+	 * noch nicht übertragen sind, behalten ihren lokalen Stand.
+	 */
+	private static void mergeShoppingEntries(SQLiteDatabase db, List<ContentValues> incoming) {
+		Map<Long, Integer> localDone = new HashMap<>();
+		try (Cursor c = db.query(ShoppingDb.T_SHOPPING, new String[]{"id", "done"}, "pending = 1", null,
+				null, null, null)) {
+			while (c.moveToNext()) {
+				localDone.put(c.getLong(0), c.getInt(1));
+			}
+		}
+		db.delete(ShoppingDb.T_SHOPPING, null, null);
+		for (ContentValues v : incoming) {
+			Integer local = localDone.get(v.getAsLong("id"));
+			if (local != null) {
+				v.put("done", local);
+				v.put("pending", 1);
+			}
+			db.insertWithOnConflict(ShoppingDb.T_SHOPPING, null, v, SQLiteDatabase.CONFLICT_REPLACE);
+		}
+	}
+
+	/** Die Einkaufsliste mit Produktdaten und der Menge, die schon gescannt wurde. */
+	public void getShoppingList(Callback<ShoppingData> callback) {
+		read(() -> {
+			SQLiteDatabase db = dbHelper.getReadableDatabase();
+			String sql = "SELECT e.id, e.product_id, e.note, e.amount, e.stock_amount, e.done, e.pending, "
+					+ "u.name AS unit, p.name AS pname, p.group_name, p.shop_id, p.stock_unit, p.best_before_days, "
+					+ "s.name AS shop, lp.price AS last_price, COALESCE(sc.scanned, 0) AS scanned "
+					+ "FROM g_shopping e "
+					+ "LEFT JOIN g_units u ON u.id = e.qu_id "
+					+ "LEFT JOIN g_products p ON p.id = e.product_id "
+					+ "LEFT JOIN g_shops s ON s.id = p.shop_id "
+					+ "LEFT JOIN g_lastprice lp ON lp.product_id = e.product_id "
+					+ "LEFT JOIN (SELECT b.product_id AS pid, SUM(i.quantity * b.stock_per_scan) AS scanned "
+					+ "FROM items i JOIN g_barcodes b ON b.barcode = i.barcode WHERE i.trip_id = 0 "
+					+ "GROUP BY b.product_id) sc ON sc.pid = e.product_id "
+					+ "ORDER BY e.id";
+			List<ShoppingEntry> entries = new ArrayList<>();
+			try (Cursor c = db.rawQuery(sql, null)) {
+				while (c.moveToNext()) {
+					ShoppingEntry e = new ShoppingEntry();
+					e.id = c.getLong(c.getColumnIndexOrThrow("id"));
+					int productCol = c.getColumnIndexOrThrow("product_id");
+					e.productId = c.isNull(productCol) ? null : c.getLong(productCol);
+					String pname = c.getString(c.getColumnIndexOrThrow("pname"));
+					String note = c.getString(c.getColumnIndexOrThrow("note"));
+					e.isNote = e.productId == null || pname == null;
+					e.name = pname != null ? pname : (note != null ? note : "?");
+					e.amount = c.getDouble(c.getColumnIndexOrThrow("amount"));
+					e.stockAmount = c.getDouble(c.getColumnIndexOrThrow("stock_amount"));
+					e.unit = c.getString(c.getColumnIndexOrThrow("unit"));
+					e.doneInGrocy = c.getInt(c.getColumnIndexOrThrow("done")) != 0;
+					e.pending = c.getInt(c.getColumnIndexOrThrow("pending")) != 0;
+					e.scanned = c.getDouble(c.getColumnIndexOrThrow("scanned"));
+					e.group = c.getString(c.getColumnIndexOrThrow("group_name"));
+					int shopCol = c.getColumnIndexOrThrow("shop_id");
+					e.shopId = c.isNull(shopCol) ? null : c.getLong(shopCol);
+					e.shopName = c.getString(c.getColumnIndexOrThrow("shop"));
+					e.stockUnit = c.getString(c.getColumnIndexOrThrow("stock_unit"));
+					e.lastPrice = getDouble(c, "last_price");
+					Double days = getDouble(c, "best_before_days");
+					e.bestBeforeDays = days == null ? null : (int) Math.round(days);
+					entries.add(e);
+				}
+			}
+			return new ShoppingData(entries, readShopPositions(db));
+		}, callback);
+	}
+
+	/** Hakt einen Eintrag von Hand ab oder öffnet ihn wieder; die Änderung wird beim Senden übertragen. */
+	public void setShoppingDone(final long entryId, final boolean done) {
+		write(() -> {
+			ContentValues v = new ContentValues();
+			v.put("done", done ? 1 : 0);
+			v.put("pending", 1);
+			return dbHelper.getWritableDatabase().update(ShoppingDb.T_SHOPPING, v, "id = ?",
+					new String[]{String.valueOf(entryId)});
 		}, null);
 	}
 

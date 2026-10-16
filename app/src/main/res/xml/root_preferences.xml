@@ -41,6 +41,14 @@
             app:title="@string/booking_mode" />
 
         <ListPreference
+            android:defaultValue="book"
+            android:entries="@array/manual_done_mode"
+            android:entryValues="@array/manual_done_mode_val"
+            android:summary="%s"
+            app:key="manual_done_mode"
+            app:title="@string/manual_done_mode" />
+
+        <ListPreference
             android:defaultValue="open"
             android:entries="@array/sync_mode"
             android:entryValues="@array/sync_mode_val"

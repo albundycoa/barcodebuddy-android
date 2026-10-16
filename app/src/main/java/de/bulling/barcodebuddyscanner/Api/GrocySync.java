@@ -36,7 +36,7 @@ public final class GrocySync {
 	private static final long FRESH_MS = 10 * 60 * 1000L;
 
 	/** Version der gespeicherten Datenfelder; bei einer Änderung wird einmal neu synchronisiert. */
-	private static final int CACHE_VERSION = 3;
+	private static final int CACHE_VERSION = 4;
 
 	public interface Callback {
 		/** ok = false: Verbindung oder Daten fehlerhaft, die bisherige Kopie bleibt erhalten */
@@ -183,6 +183,7 @@ public final class GrocySync {
 		JsonArray lastPrices = array(client.get("objects/products_last_purchased"));
 		JsonArray groups     = array(client.get("objects/product_groups"));
 		JsonArray stockRows  = array(client.get("objects/stock"));
+		JsonArray shoppingRows = array(client.get("objects/shopping_list"));
 
 		GrocyData data = new GrocyData();
 
@@ -192,6 +193,10 @@ public final class GrocySync {
 			Long id = asLong(o, "id");
 			if (id != null) {
 				unitNames.put(id, asString(o, "name"));
+				ContentValues uv = new ContentValues();
+				uv.put("id", id);
+				uv.put("name", asString(o, "name") == null ? "" : asString(o, "name"));
+				data.units.add(uv);
 			}
 		}
 
@@ -291,6 +296,47 @@ public final class GrocySync {
 				v.put("shop_id", shop);
 			}
 			data.barcodes.add(v);
+		}
+
+		// Einkaufsliste: Menge zusätzlich in Lagereinheiten, um sie mit gescannten Mengen zu vergleichen
+		for (JsonElement e : shoppingRows) {
+			JsonObject o = e.getAsJsonObject();
+			Long id = asLong(o, "id");
+			if (id == null) {
+				continue;
+			}
+			Long product = asLong(o, "product_id");
+			Double amount = asDouble(o, "amount");
+			Long quId = asLong(o, "qu_id");
+			double listAmount = amount != null ? amount : 1;
+			double stockAmount = listAmount;
+			long[] pu = product == null ? null : productUnits.get(product);
+			if (pu != null && quId != null) {
+				stockAmount = listAmount * factor(factors, product, quId, pu[0]);
+			}
+			ContentValues v = new ContentValues();
+			v.put("id", id);
+			Long listId = asLong(o, "shopping_list_id");
+			if (listId != null) {
+				v.put("list_id", listId);
+			}
+			if (product != null) {
+				v.put("product_id", product);
+			}
+			String note = asString(o, "note");
+			if (note != null) {
+				v.put("note", note);
+			}
+			v.put("amount", listAmount);
+			if (quId != null) {
+				v.put("qu_id", quId);
+			} else if (pu != null) {
+				v.put("qu_id", pu[0]);
+			}
+			v.put("stock_amount", stockAmount);
+			Long done = asLong(o, "done");
+			v.put("done", done != null && done != 0 ? 1 : 0);
+			data.shopping.add(v);
 		}
 
 		// Bestand: Grocy liefert einzelne Bestandseinträge (Chargen), die hier je Produkt addiert werden

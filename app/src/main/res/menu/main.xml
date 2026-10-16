@@ -6,6 +6,10 @@
         android:title="@string/title_history"
         app:showAsAction="never" />
     <item
+        android:id="@+id/action_sync_list"
+        android:title="@string/action_sync_list"
+        app:showAsAction="never" />
+    <item
         android:id="@+id/action_products"
         android:title="@string/products_title"
         app:showAsAction="never" />

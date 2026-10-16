@@ -28,6 +28,7 @@ import com.google.android.material.button.MaterialButton;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
 import com.google.android.material.snackbar.Snackbar;
+import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 
@@ -44,6 +45,8 @@ import de.bulling.barcodebuddyscanner.Api.GrocySync;
 import de.bulling.barcodebuddyscanner.Api.SyncScheduler;
 import de.bulling.barcodebuddyscanner.Data.ShoppingItem;
 import de.bulling.barcodebuddyscanner.Data.ShoppingRepository;
+import de.bulling.barcodebuddyscanner.Data.ShoppingRepository.ShoppingData;
+import de.bulling.barcodebuddyscanner.Data.ShoppingRepository.ShoppingEntry;
 import de.bulling.barcodebuddyscanner.Helper.EdgeToEdgeHelper;
 import de.bulling.barcodebuddyscanner.Helper.Money;
 import de.bulling.barcodebuddyscanner.Helper.ReceiptPdf;
@@ -64,6 +67,11 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
     private ShoppingRepository repo;
     private ScanFeedback feedback;
     private ItemAdapter adapter;
+    private ShoppingEntryAdapter entryAdapter;
+    private TabLayout tabs;
+    private ShoppingData shoppingData;
+    /** 0 = Einkaufsliste aus Grocy, 1 = gescannte Artikel */
+    private int currentTab = 1;
 
     private RecyclerView itemList;
     private TextView emptyView;
@@ -161,13 +169,7 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
                 : getString(R.string.bt_scanner_active));
         cameraButton.setVisibility(useCamera ? View.VISIBLE : View.GONE);
         ensureSppService();
-        if (useCamera && useBarcodeScanner) {
-            emptyView.setText(R.string.list_empty);
-        } else if (useCamera) {
-            emptyView.setText(R.string.list_empty_camera_only);
-        } else {
-            emptyView.setText(R.string.list_empty_scanner_only);
-        }
+        updateEmptyText();
         if (useBarcodeScanner) {
             getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         } else {
@@ -255,8 +257,27 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
         cameraButton = findViewById(R.id.button_camera);
 
         adapter = new ItemAdapter(this, this);
+        entryAdapter = new ShoppingEntryAdapter(this, this::onToggleEntry);
         itemList.setLayoutManager(new LinearLayoutManager(this));
         itemList.setAdapter(adapter);
+
+        tabs = findViewById(R.id.tabs);
+        tabs.addTab(tabs.newTab().setText(R.string.tab_shopping));
+        tabs.addTab(tabs.newTab().setText(R.string.tab_scanned));
+        tabs.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
+            @Override
+            public void onTabSelected(TabLayout.Tab tab) {
+                showTab(tab.getPosition());
+            }
+
+            @Override
+            public void onTabUnselected(TabLayout.Tab tab) {
+            }
+
+            @Override
+            public void onTabReselected(TabLayout.Tab tab) {
+            }
+        });
         new ItemTouchHelper(new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) {
             @Override
             public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder,
@@ -266,6 +287,9 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
 
             @Override
             public int getSwipeDirs(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder) {
+                if (itemList.getAdapter() != adapter) {
+                    return 0;
+                }
                 int position = viewHolder.getBindingAdapterPosition();
                 boolean isHeader = position == RecyclerView.NO_POSITION || adapter.getItem(position) == null;
                 return sending || isHeader ? 0 : super.getSwipeDirs(recyclerView, viewHolder);
@@ -282,6 +306,8 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
 
         cameraButton.setOnClickListener(v -> startActivity(new Intent(this, ContinuousCaptureActivity.class)));
         sendButton.setOnClickListener(v -> confirmSend());
+        // Mit Grocy startet die App in der Einkaufsliste, sonst bei den gescannten Artikeln
+        showTab(SharedPrefHelper.hasGrocy(this) ? 0 : 1);
     }
 
     // ---------------------------------------------------------------- Liste
@@ -292,6 +318,75 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
             adapter.submit(list);
             updateListState();
         });
+        repo.getShoppingList(data -> {
+            shoppingData = data;
+            entryAdapter.submit(data);
+            updateTabs();
+            updateListState();
+        });
+    }
+
+    /** Reiter nur zeigen, wenn Grocy gekoppelt ist; Titel mit Anzahl der offenen Einträge. */
+    private void updateTabs() {
+        boolean grocy = SharedPrefHelper.hasGrocy(this);
+        tabs.setVisibility(grocy ? View.VISIBLE : View.GONE);
+        if (!grocy) {
+            if (currentTab != 1) {
+                showTab(1);
+            }
+            return;
+        }
+        int open = 0;
+        if (shoppingData != null) {
+            for (ShoppingEntry e : shoppingData.entries) {
+                if (!e.isDone()) {
+                    open++;
+                }
+            }
+        }
+        TabLayout.Tab shopping = tabs.getTabAt(0);
+        TabLayout.Tab scanned = tabs.getTabAt(1);
+        if (shopping != null) {
+            shopping.setText(getString(R.string.tab_shopping_count, open));
+        }
+        if (scanned != null) {
+            scanned.setText(getString(R.string.tab_scanned_count, currentItems.size()));
+        }
+    }
+
+    private void showTab(int tab) {
+        currentTab = tab;
+        itemList.setAdapter(tab == 0 ? entryAdapter : adapter);
+        TabLayout.Tab selected = tabs.getTabAt(tab);
+        if (selected != null && !selected.isSelected()) {
+            selected.select();
+        }
+        updateListState();
+    }
+
+    /** Eintrag von Hand abhaken oder wieder öffnen. */
+    private void onToggleEntry(ShoppingEntry entry) {
+        if (sending) {
+            return;
+        }
+        if (entry.isCoveredByScans()) {
+            Toast.makeText(this, R.string.entry_done_by_scan, Toast.LENGTH_SHORT).show();
+            return;
+        }
+        repo.setShoppingDone(entry.id, !entry.doneInGrocy);
+    }
+
+    /** Einträge, die von Hand abgehakt wurden und beim Senden an Grocy übertragen werden. */
+    private int manualDoneCount() {
+        int count = 0;
+        if (shoppingData != null) {
+            for (ShoppingEntry e : shoppingData.entries) {
+                if (e.pending && e.doneInGrocy && !e.isCoveredByScans()) {
+                    count++;
+                }
+            }
+        }
+        return count;
     }
 
     private int openUnits() {
@@ -303,13 +398,40 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
     }
 
     private void updateListState() {
-        boolean empty = currentItems.isEmpty();
+        boolean grocyTab = currentTab == 0 && SharedPrefHelper.hasGrocy(this);
+        boolean empty = grocyTab ? (shoppingData == null || shoppingData.entries.isEmpty()) : currentItems.isEmpty();
         emptyView.setVisibility(empty ? View.VISIBLE : View.GONE);
         itemList.setVisibility(empty ? View.INVISIBLE : View.VISIBLE);
-        updateTotalBar();
-        sendButton.setEnabled(!empty && !sending);
-        sendButton.setText(empty ? getString(R.string.button_send)
-                : getString(R.string.button_send_count, openUnits()));
+        if (grocyTab) {
+            emptyView.setText(R.string.shopping_empty);
+            if (!empty) {
+                totalBar.setText(getString(R.string.shopping_progress, entryAdapter.getDoneCount(),
+                        entryAdapter.getTotalCount()));
+                totalBar.setVisibility(View.VISIBLE);
+            } else {
+                totalBar.setVisibility(View.GONE);
+            }
+        } else {
+            updateEmptyText();
+            updateTotalBar();
+        }
+        int pending = openUnits() + manualDoneCount();
+        sendButton.setEnabled(pending > 0 && !sending);
+        sendButton.setText(pending == 0 ? getString(R.string.button_send)
+                : getString(R.string.button_send_count, pending));
+    }
+
+    /** Hinweistext der leeren Liste der gescannten Artikel, passend zur gewählten Scan-Methode. */
+    private void updateEmptyText() {
+        boolean useCamera = SharedPrefHelper.isCameraScannerEnabled(this);
+        boolean useScanner = SharedPrefHelper.isBtScannerEnabled(this) || SharedPrefHelper.isSppScannerEnabled(this);
+        if (useCamera && useScanner) {
+            emptyView.setText(R.string.list_empty);
+        } else if (useCamera) {
+            emptyView.setText(R.string.list_empty_camera_only);
+        } else {
+            emptyView.setText(R.string.list_empty_scanner_only);
+        }
     }
 
     /** Gesamtbetrag oben: was der Einkauf voraussichtlich kostet. */
@@ -476,12 +598,18 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
     // ---------------------------------------------------------------- Senden
 
     private void confirmSend() {
-        if (sending || currentItems.isEmpty()) {
+        int manual = manualDoneCount();
+        if (sending || (currentItems.isEmpty() && manual == 0)) {
             return;
         }
+        String message = currentItems.isEmpty()
+                ? getString(R.string.confirm_send_message_only_manual, manual)
+                : manual > 0
+                ? getString(R.string.confirm_send_message_manual, currentItems.size(), openUnits(), manual)
+                : getString(R.string.confirm_send_message, currentItems.size(), openUnits());
         new MaterialAlertDialogBuilder(this)
                 .setTitle(R.string.confirm_send_title)
-                .setMessage(getString(R.string.confirm_send_message, currentItems.size(), openUnits()))
+                .setMessage(message)
                 .setPositiveButton(R.string.send, (d, w) -> startSend())
                 .setNegativeButton(android.R.string.cancel, null)
                 .show();
@@ -491,7 +619,7 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
         SharedPrefHelper prefs = new SharedPrefHelper(this);
         // Bekannte Produkte direkt in Grocy buchen, wenn Grocy gekoppelt und die Einstellung aktiv ist
         GrocyClient grocy = SharedPrefHelper.isDirectBookingEnabled(this) ? prefs.initGrocyClient() : null;
-        activeSender = new PurchaseSender(prefs.initBBApi(), grocy, repo);
+        activeSender = new PurchaseSender(prefs.initBBApi(), grocy, SharedPrefHelper.isManualDoneBooked(this), repo);
         setSending(true);
         activeSender.attach(senderListener);
         activeSender.start();
@@ -525,6 +653,8 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
             activeSender = null;
             setSending(false);
             showSendResult(result);
+            // Einkaufsliste, Bestand und Preise neu aus Grocy laden
+            GrocySync.start(MainActivity.this, null);
         }
     };
 
@@ -543,6 +673,9 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
         }
         if (result.warning != null) {
             message.append("\n\n").append(result.warning);
+        }
+        if (result.manualUnits > 0) {
+            message.append("\n\n").append(getResources().getQuantityString(R.plurals.send_manual_done, result.manualUnits, result.manualUnits));
         }
         if (result.newProducts > 0) {
             message.append("\n\n").append(getResources().getQuantityString(
@@ -583,6 +716,11 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
             return true;
         } else if (itemId == R.id.action_history) {
             startActivity(new Intent(this, HistoryActivity.class));
+            return true;
+        } else if (itemId == R.id.action_sync_list) {
+            Toast.makeText(this, R.string.grocy_syncing, Toast.LENGTH_SHORT).show();
+            GrocySync.start(this, (ok, message) -> Toast.makeText(this,
+                    ok ? getString(R.string.shopping_updated) : message, Toast.LENGTH_LONG).show());
             return true;
         } else if (itemId == R.id.action_products) {
             startActivity(new Intent(this, ProductsActivity.class));

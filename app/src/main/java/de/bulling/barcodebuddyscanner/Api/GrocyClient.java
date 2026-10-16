@@ -60,6 +60,15 @@ public class GrocyClient {
 		return request("POST", path, jsonBody);
 	}
 
+	/** Ändert einen Eintrag, z. B. "objects/shopping_list/12" mit {"done":1}. */
+	public JsonElement put(String path, String jsonBody) throws IOException {
+		return request("PUT", path, jsonBody);
+	}
+
+	public JsonElement delete(String path) throws IOException {
+		return request("DELETE", path, null);
+	}
+
 	private JsonElement request(String method, String path, String jsonBody) throws IOException {
 		HttpURLConnection connection = null;
 		try {

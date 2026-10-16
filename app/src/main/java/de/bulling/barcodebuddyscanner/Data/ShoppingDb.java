@@ -7,7 +7,7 @@ import android.database.sqlite.SQLiteOpenHelper;
 class ShoppingDb extends SQLiteOpenHelper {
 
 	private static final String DB_NAME    = "shopping.db";
-	private static final int    DB_VERSION = 3;
+	private static final int    DB_VERSION = 4;
 
 	static final String T_ITEMS      = "items";
 	static final String T_TRIPS      = "trips";
@@ -17,6 +17,8 @@ class ShoppingDb extends SQLiteOpenHelper {
 	static final String T_LASTPRICE  = "g_lastprice";
 	static final String T_SHOP_ORDER = "shop_order";
 	static final String T_STOCK      = "g_stock";
+	static final String T_SHOPPING   = "g_shopping";
+	static final String T_UNITS      = "g_units";
 
 	ShoppingDb(Context context) {
 		super(context, DB_NAME, null, DB_VERSION);
@@ -45,6 +47,7 @@ class ShoppingDb extends SQLiteOpenHelper {
 				+ "shop_name TEXT)");
 		db.execSQL("CREATE INDEX items_trip ON " + T_ITEMS + " (trip_id)");
 		createGrocyTables(db);
+		createShoppingTables(db);
 	}
 
 	@Override
@@ -55,6 +58,9 @@ class ShoppingDb extends SQLiteOpenHelper {
 			db.execSQL("ALTER TABLE " + T_ITEMS + " ADD COLUMN shop_name TEXT");
 			createGrocyTables(db);
 		}
+		if (oldVersion >= 2 && oldVersion < 4) {
+			createShoppingTables(db);
+		}
 		if (oldVersion >= 2 && oldVersion < 3) {
 			db.execSQL("ALTER TABLE " + T_ITEMS + " ADD COLUMN shop_name TEXT");
 			// Die Kopie der Grocy-Daten wird bei der nächsten Synchronisierung vollständig neu gefüllt
@@ -64,6 +70,25 @@ class ShoppingDb extends SQLiteOpenHelper {
 			db.execSQL("ALTER TABLE " + T_BARCODES + " ADD COLUMN exact INTEGER NOT NULL DEFAULT 0");
 			db.execSQL("CREATE TABLE " + T_STOCK + " (product_id INTEGER PRIMARY KEY, amount REAL NOT NULL)");
 		}
+	}
+
+	/** Einkaufsliste aus Grocy mit lokalem Abhak-Stand und Einheitennamen. */
+	private static void createShoppingTables(SQLiteDatabase db) {
+		// done: abgehakt (aus Grocy oder lokal); pending: lokal geändert, noch nicht an Grocy übertragen
+		// stock_amount: Menge in Lagereinheiten (für den Vergleich mit gescannten Mengen)
+		db.execSQL("CREATE TABLE IF NOT EXISTS " + T_SHOPPING + " ("
+				+ "id INTEGER PRIMARY KEY, "
+				+ "list_id INTEGER, "
+				+ "product_id INTEGER, "
+				+ "note TEXT, "
+				+ "amount REAL NOT NULL DEFAULT 1, "
+				+ "qu_id INTEGER, "
+				+ "stock_amount REAL NOT NULL DEFAULT 1, "
+				+ "done INTEGER NOT NULL DEFAULT 0, "
+				+ "pending INTEGER NOT NULL DEFAULT 0)");
+		db.execSQL("CREATE TABLE IF NOT EXISTS " + T_UNITS + " ("
+				+ "id INTEGER PRIMARY KEY, "
+				+ "name TEXT NOT NULL)");
 	}
 
 	/**

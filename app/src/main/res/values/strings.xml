@@ -117,6 +117,29 @@
     </plurals>
     <string name="open_barcode_buddy">Barcode Buddy öffnen</string>
 
+    <!-- Einkaufsliste aus Grocy (Einkaufsmodus) -->
+    <string name="tab_shopping">Einkaufsliste</string>
+    <string name="tab_scanned">Gescannt</string>
+    <string name="tab_shopping_count">Einkaufsliste (%1$d)</string>
+    <string name="tab_scanned_count">Gescannt (%1$d)</string>
+    <string name="shopping_empty">Keine Einträge auf der Einkaufsliste in Grocy.</string>
+    <string name="shopping_progress">%1$d von %2$d erledigt</string>
+    <string name="shopping_updated">Einkaufsliste aktualisiert.</string>
+    <string name="action_sync_list">Einkaufsliste aktualisieren</string>
+    <string name="section_done">Erledigt</string>
+    <string name="entry_price">%1$s (Einheit)</string>
+    <string name="entry_scanned">%1$s von %2$s %3$s gescannt</string>
+    <string name="entry_done_by_scan">Durch Scan erledigt. Entferne den Scan, um den Eintrag wieder zu öffnen.</string>
+    <string name="confirm_send_message_manual">%1$d Artikel (%2$d Stück) werden gebucht, dazu %3$d von Hand abgehakte Einträge der Einkaufsliste.</string>
+    <string name="confirm_send_message_only_manual">%1$d von Hand abgehakte Einträge der Einkaufsliste werden übertragen.</string>
+    <string name="manual_done_mode">Von Hand abgehakte Produkte</string>
+    <string name="manual_done_book">Beim Senden einbuchen und von der Liste entfernen</string>
+    <string name="manual_done_mark">Beim Senden nur in Grocy abhaken</string>
+    <plurals name="send_manual_done">
+        <item quantity="one">%1$d Eintrag der Einkaufsliste übertragen.</item>
+        <item quantity="other">%1$d Einträge der Einkaufsliste übertragen.</item>
+    </plurals>
+
     <!-- Einstellungen: Buchung, Synchronisierung, Scanner-Dienst, Produkte -->
     <string name="booking_mode">Buchung</string>
     <string name="booking_mode_grocy">Bekannte Produkte direkt in Grocy buchen</string>

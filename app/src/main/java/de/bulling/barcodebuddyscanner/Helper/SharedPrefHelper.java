@@ -161,6 +161,11 @@ public class SharedPrefHelper {
 		PreferenceManager.getDefaultSharedPreferences(context).edit().putInt("grocy_cache_version", version).apply();
 	}
 
+	/** Von Hand abgehakte Produkte beim Senden einbuchen ("book", Standard) oder nur in Grocy abhaken ("mark"). */
+	public static boolean isManualDoneBooked(Context context) {
+		return !"mark".equals(PreferenceManager.getDefaultSharedPreferences(context).getString("manual_done_mode", "book"));
+	}
+
 	public static boolean hasGrocy(Context context) {
 		SharedPreferences p = PreferenceManager.getDefaultSharedPreferences(context);
 		return !p.getString("grocy_url", "").isEmpty() && !p.getString("grocy_key", "").isEmpty();
