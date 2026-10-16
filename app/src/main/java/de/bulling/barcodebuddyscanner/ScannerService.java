@@ -9,7 +9,9 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothSocket;
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.IntentFilter;
 import android.content.Intent;
 import android.content.pm.ServiceInfo;
 import android.os.Build;
@@ -27,6 +29,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 import de.bulling.barcodebuddyscanner.Data.ShoppingRepository;
 import de.bulling.barcodebuddyscanner.Helper.PermissionHelper;
@@ -142,6 +148,20 @@ public class ScannerService extends Service {
 	private ScanFeedback             feedback;
 	private NotificationManager      notifications;
 	private int                      scanCount = 0;
+	private boolean                  aclReceiverRegistered;
+
+	/** Meldet Android, dass der gewählte Scanner getrennt wurde, beenden wir das blockierende Lesen sofort. */
+	private final BroadcastReceiver aclDisconnected = new BroadcastReceiver() {
+		@Override
+		public void onReceive(Context context, Intent intent) {
+			BluetoothDevice device = Build.VERSION.SDK_INT >= 33
+					? intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE, BluetoothDevice.class)
+					: (BluetoothDevice) intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+			if (device != null && device.getAddress().equalsIgnoreCase(SharedPrefHelper.getSppAddress(context))) {
+				closeSocket();
+			}
+		}
+	};
 	private long                     startedAt;
 	private boolean                  everConnected;
 
@@ -176,6 +196,11 @@ public class ScannerService extends Service {
 		}
 		running = true;
 		notifications.cancel(WAKE_NOTIFICATION_ID);
+		if (!aclReceiverRegistered) {
+			ContextCompat.registerReceiver(this, aclDisconnected,
+					new IntentFilter(BluetoothDevice.ACTION_ACL_DISCONNECTED), ContextCompat.RECEIVER_EXPORTED);
+			aclReceiverRegistered = true;
+		}
 		if (worker == null) {
 			stopping = false;
 			endedByItself = false;
@@ -191,6 +216,10 @@ public class ScannerService extends Service {
 	public void onDestroy() {
 		stopping = true;
 		running = false;
+		if (aclReceiverRegistered) {
+			unregisterReceiver(aclDisconnected);
+			aclReceiverRegistered = false;
+		}
 		closeSocket();
 		if (worker != null) {
 			worker.interrupt();
@@ -281,30 +310,47 @@ public class ScannerService extends Service {
 		main.post(this::stopSelf);
 	}
 
-	/** Liest Zeichen vom Scanner; ein Barcode endet mit Zeilenende oder einer kurzen Pause. */
+	/**
+	 * Liest vom Scanner; ein Barcode endet mit Zeilenende oder einer kurzen Pause. Das Lesen blockiert
+	 * absichtlich, denn nur so merkt die App, wenn der Scanner die Verbindung beendet (z. B. weil er sich
+	 * nach der eingestellten Zeit ausschaltet). Eine Abfrage mit available() erkennt das nicht.
+	 */
 	private void readLoop(InputStream in) throws IOException {
-		StringBuilder buffer = new StringBuilder();
-		long lastByteAt = 0;
-		while (!stopping) {
-			if (in.available() > 0) {
-				int b = in.read();
-				if (b < 0) {
+		final StringBuilder buffer = new StringBuilder();
+		final ScheduledExecutorService timer = Executors.newSingleThreadScheduledExecutor();
+		ScheduledFuture<?> pending = null;
+		byte[] chunk = new byte[256];
+		try {
+			while (!stopping) {
+				int n = in.read(chunk);
+				if (n < 0) {
 					throw new IOException("Verbindung geschlossen");
 				}
-				lastByteAt = System.currentTimeMillis();
-				if (b == '\r' || b == '\n') {
-					flush(buffer);
-				} else if (b >= 32) {
-					buffer.append((char) b);
-				}
-			} else {
-				if (buffer.length() > 0 && System.currentTimeMillis() - lastByteAt > FLUSH_AFTER_MS) {
-					flush(buffer);
-				}
-				if (!sleep(25)) {
-					return;
+				synchronized (buffer) {
+					for (int i = 0; i < n; i++) {
+						int b = chunk[i] & 0xFF;
+						if (b == '\r' || b == '\n') {
+							flush(buffer);
+						} else if (b >= 32) {
+							buffer.append((char) b);
+						}
+					}
+					if (pending != null) {
+						pending.cancel(false);
+						pending = null;
+					}
+					if (buffer.length() > 0) {
+						// Scanner ohne Zeilenende: nach einer kurzen Pause gilt der Barcode als vollständig
+						pending = timer.schedule(() -> {
+							synchronized (buffer) {
+								flush(buffer);
+							}
+						}, FLUSH_AFTER_MS, TimeUnit.MILLISECONDS);
+					}
 				}
 			}
+		} finally {
+			timer.shutdownNow();
 		}
 	}
 
