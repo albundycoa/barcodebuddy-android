@@ -2,6 +2,9 @@ package de.bulling.barcodebuddyscanner;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.InputType;
+import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.view.MenuItem;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -120,7 +123,12 @@ public class BbSettingsActivity extends AppCompatActivity {
 			return;
 		}
 		if (!content.contains("issetup")) {
-			Toast.makeText(this, R.string.e_invalidqr, Toast.LENGTH_LONG).show();
+			if (content.trim().matches("[A-Za-z0-9]{16,64}")) {
+				// QR-Code aus der Schlüsseltabelle ("QR Code" neben einem Schlüssel): nur der Schlüssel, ohne Adresse
+				askServerAddress(content.trim());
+			} else {
+				Toast.makeText(this, R.string.e_invalidqr, Toast.LENGTH_LONG).show();
+			}
 			return;
 		}
 		try {
@@ -129,6 +137,38 @@ public class BbSettingsActivity extends AppCompatActivity {
 		} catch (JSONException e) {
 			Toast.makeText(this, R.string.e_invalidqr, Toast.LENGTH_LONG).show();
 		}
+	}
+
+	/** Der QR-Code enthielt nur den Schlüssel: die Adresse von Barcode Buddy von Hand ergänzen. */
+	private void askServerAddress(final String key) {
+		final EditText input = new EditText(this);
+		input.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI);
+		input.setHint("https://bb.example.de");
+		input.setText(SharedPrefHelper.noApiDetailsSaved(this) ? "https://" : new SharedPrefHelper(this).getBbWebUrl());
+		input.setSelection(input.getText().length());
+		int pad = (int) (20 * getResources().getDisplayMetrics().density);
+		FrameLayout box = new FrameLayout(this);
+		box.setPadding(pad, pad / 2, pad, 0);
+		box.addView(input);
+		new MaterialAlertDialogBuilder(this)
+				.setTitle(R.string.bb_key_only_title)
+				.setMessage(R.string.bb_key_only_message)
+				.setView(box)
+				.setPositiveButton(R.string.connect, (d, w) -> connect(normalizeApiUrl(input.getText().toString()), key))
+				.setNegativeButton(android.R.string.cancel, null)
+				.show();
+	}
+
+	/** Macht aus "https://bb.example.de" die API-Adresse "https://bb.example.de/api/". */
+	private static String normalizeApiUrl(String text) {
+		String url = text.trim();
+		while (url.endsWith("/")) {
+			url = url.substring(0, url.length() - 1);
+		}
+		if (!url.endsWith("/api")) {
+			url += "/api";
+		}
+		return url + "/";
 	}
 
 	private void connect(final String url, final String key) {

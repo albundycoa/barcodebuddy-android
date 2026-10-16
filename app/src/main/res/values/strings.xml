@@ -129,6 +129,8 @@
     <string name="bb_test_ok">Verbindung in Ordnung (Serverversion %1$d).</string>
     <string name="bb_test_failed">Verbindung fehlgeschlagen: %1$s</string>
     <string name="bb_saved">Verbunden und gespeichert.</string>
+    <string name="bb_key_only_title">Nur API-Schlüssel erkannt</string>
+    <string name="bb_key_only_message">Dieser QR-Code enthält nur den Schlüssel, keine Adresse. Gib die Adresse von Barcode Buddy ein, zum Beispiel https://bb.deinedomain.de. Der einfachere Weg: in Barcode Buddy unter „API“ den Knopf „Add mobile app“ benutzen.</string>
     <string name="bb_logout_title">Von Barcode Buddy abmelden?</string>
     <string name="bb_logout_message">Adresse und Schlüssel werden vergessen, danach koppelst du die App neu. Grocy-Verbindung, Verlauf und alle Einstellungen bleiben erhalten.</string>
 
