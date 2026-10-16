@@ -6,6 +6,7 @@ import android.content.pm.ActivityInfo;
 import android.preference.PreferenceManager;
 
 import de.bulling.barcodebuddyscanner.Api.BBApi;
+import de.bulling.barcodebuddyscanner.Api.GrocyClient;
 
 public class SharedPrefHelper {
 
@@ -82,6 +83,74 @@ public class SharedPrefHelper {
 			default:
 				return NO_ORIENTATION_CHANGE;
 		}
+	}
+
+	// ---- Grocy ----
+
+	/** Ob ungültige SSL-Zertifikate akzeptiert werden (gilt für Barcode Buddy und Grocy). */
+	public static boolean isUnsafeSsl(Context context) {
+		return PreferenceManager.getDefaultSharedPreferences(context).getBoolean("unsafe", false);
+	}
+
+	public static boolean hasGrocy(Context context) {
+		SharedPreferences p = PreferenceManager.getDefaultSharedPreferences(context);
+		return !p.getString("grocy_url", "").isEmpty() && !p.getString("grocy_key", "").isEmpty();
+	}
+
+	public static void saveGrocy(Context context, String url, String key) {
+		PreferenceManager.getDefaultSharedPreferences(context).edit()
+				.putString("grocy_url", GrocyClient.normalizeUrl(url))
+				.putString("grocy_key", key)
+				.putLong("grocy_last_sync", 0)
+				.apply();
+	}
+
+	public static void clearGrocy(Context context) {
+		PreferenceManager.getDefaultSharedPreferences(context).edit()
+				.remove("grocy_url").remove("grocy_key")
+				.remove("grocy_last_sync").remove("grocy_summary")
+				.apply();
+	}
+
+	public static String getGrocyUrl(Context context) {
+		return PreferenceManager.getDefaultSharedPreferences(context).getString("grocy_url", "");
+	}
+
+	public static long getGrocyLastSync(Context context) {
+		return PreferenceManager.getDefaultSharedPreferences(context).getLong("grocy_last_sync", 0);
+	}
+
+	public static String getGrocySummary(Context context) {
+		return PreferenceManager.getDefaultSharedPreferences(context).getString("grocy_summary", "");
+	}
+
+	public static void saveGrocySync(Context context, long time, String summary) {
+		PreferenceManager.getDefaultSharedPreferences(context).edit()
+				.putLong("grocy_last_sync", time)
+				.putString("grocy_summary", summary)
+				.apply();
+	}
+
+	/** null, wenn Grocy nicht gekoppelt ist. */
+	public GrocyClient initGrocyClient() {
+		String url = this.globalPreferences.getString("grocy_url", "");
+		String key = this.globalPreferences.getString("grocy_key", "");
+		if (url.isEmpty() || key.isEmpty()) {
+			return null;
+		}
+		return new GrocyClient(url, key, this.globalPreferences.getBoolean("unsafe", false));
+	}
+
+	/** Adresse der Barcode-Buddy-Weboberfläche, abgeleitet aus der API-Adresse. */
+	public String getBbWebUrl() {
+		String url = this.globalPreferences.getString("url", "");
+		if (url.endsWith("/")) {
+			url = url.substring(0, url.length() - 1);
+		}
+		if (url.endsWith("/api")) {
+			url = url.substring(0, url.length() - 4);
+		}
+		return url + "/";
 	}
 
 	public BBApi initBBApi() {

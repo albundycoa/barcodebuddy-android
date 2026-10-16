@@ -84,6 +84,52 @@
     <string name="orientation_auto">Automatisch</string>
     <string name="orientation_land">Querformat</string>
     <string name="orientation_port">Hochformat</string>
+    <!-- Einkaufsliste: Geschäfte und Preise -->
+    <string name="section_new">Neue Produkte (noch nicht in Grocy)</string>
+    <string name="section_none">Ohne Geschäft</string>
+    <string name="section_title">%1$s · %2$d</string>
+    <string name="item_per_scan">%1$s %2$s/Scan</string>
+    <string name="price_add">Preis eintragen</string>
+    <string name="price_line">%1$s / %2$s = %3$s</string>
+    <string name="price_unit_scan">Scan</string>
+    <string name="price_hint_unit">Preis pro %1$s</string>
+    <string name="price_hint_total">Gesamtpreis</string>
+    <string name="price_stock_hint">Grocy rechnet daraus den Preis je Lagereinheit aus, genau wie beim Einkauf in Grocy.</string>
+    <string name="price_reset">Zurücksetzen</string>
+    <plurals name="send_new_products">
+        <item quantity="one">%1$d neues Produkt wartet in Barcode Buddy auf Zuordnung.</item>
+        <item quantity="other">%1$d neue Produkte warten in Barcode Buddy auf Zuordnung.</item>
+    </plurals>
+    <string name="open_barcode_buddy">Barcode Buddy öffnen</string>
+
+    <!-- Grocy-Verbindung -->
+    <string name="grocy_header">Grocy</string>
+    <string name="grocy_title">Grocy-Verbindung</string>
+    <string name="grocy_pref_summary">Adresse, Schlüssel und Synchronisierung</string>
+    <string name="grocy_scan">QR-Code scannen</string>
+    <string name="grocy_scan_prompt">QR-Code von Grocy scannen</string>
+    <string name="grocy_sync">Jetzt synchronisieren</string>
+    <string name="grocy_disconnect">Verbindung trennen</string>
+    <string name="grocy_disconnect_title">Grocy trennen?</string>
+    <string name="grocy_disconnect_message">Die App vergisst Adresse und Schlüssel. Die gespeicherten Produktdaten bleiben erhalten.</string>
+    <string name="grocy_not_connected">Nicht mit Grocy verbunden</string>
+    <string name="grocy_how_to">Öffne in Grocy die Seite „API-Schlüssel verwalten“, tippe beim Schlüssel auf das QR-Symbol und scanne den Code hier.</string>
+    <string name="grocy_connected">Verbunden mit\n%1$s</string>
+    <string name="grocy_never_synced">Noch nicht synchronisiert.</string>
+    <string name="grocy_last_sync">Zuletzt synchronisiert: %1$s\n%2$s</string>
+    <string name="grocy_syncing">Synchronisiere …</string>
+    <string name="grocy_connecting">Prüfe Verbindung …</string>
+    <string name="grocy_invalid_qr">Das ist kein QR-Code von Grocy.</string>
+    <string name="shop_order_title">Geschäfte-Reihenfolge</string>
+    <string name="shop_order_pref_summary">Reihenfolge der Abschnitte in der Einkaufsliste</string>
+    <string name="shop_order_hint">Zum Sortieren den Griff halten und ziehen. Neue Produkte stehen immer oben, Produkte ohne Geschäft unten.</string>
+    <string name="shop_order_empty">Noch keine Geschäfte. Verbinde zuerst Grocy.</string>
+    <string name="shop_order_handle">Zum Verschieben ziehen</string>
+
+    <!-- Verlauf: Preise -->
+    <string name="trip_total">Summe %1$s</string>
+    <string name="trip_item_price">×%1$d · %2$s</string>
+
     <string name="scan_method">Scan-Methode</string>
     <string name="scan_method_scanner">Barcodescanner (Bluetooth, Tastaturmodus)</string>
     <string name="scan_method_camera">Handy-Kamera</string>

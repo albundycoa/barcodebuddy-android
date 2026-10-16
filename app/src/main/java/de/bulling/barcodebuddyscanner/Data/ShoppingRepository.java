@@ -10,16 +10,19 @@ import android.os.Looper;
 import android.util.Log;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
- * Lokaler Speicher für die Einkaufsliste und den Verlauf. Alle Zugriffe laufen
- * nacheinander auf einem eigenen Thread, Ergebnisse kommen auf dem Main-Thread an.
- * Nach jeder Änderung werden die Listener benachrichtigt.
+ * Lokaler Speicher für die Einkaufsliste, den Verlauf und die Kopie der
+ * Grocy-Stammdaten. Alle Zugriffe laufen nacheinander auf einem eigenen Thread,
+ * Ergebnisse kommen auf dem Main-Thread an. Nach jeder Änderung werden die
+ * Listener benachrichtigt.
  */
 public final class ShoppingRepository {
 
@@ -43,9 +46,52 @@ public final class ShoppingRepository {
 		}
 	}
 
+	/** Die offene Liste samt allem, was zum Gruppieren nach Geschäften nötig ist. */
+	public static final class OpenList {
+		public final List<ShoppingItem> items;
+		/** Es gibt eine lokale Kopie der Grocy-Daten (sonst ist "unbekannt" nicht aussagekräftig) */
+		public final boolean            cacheAvailable;
+		/** Position der Geschäfte in der vom Nutzer gewählten Reihenfolge */
+		public final Map<Long, Integer> shopPosition;
+
+		OpenList(List<ShoppingItem> items, boolean cacheAvailable, Map<Long, Integer> shopPosition) {
+			this.items          = items;
+			this.cacheAvailable = cacheAvailable;
+			this.shopPosition   = shopPosition;
+		}
+	}
+
+	public static final class Shop {
+		public final long   id;
+		public final String name;
+
+		Shop(long id, String name) {
+			this.id   = id;
+			this.name = name;
+		}
+	}
+
 	private static final String[] ITEM_COLUMNS = {
-			"id", "trip_id", "barcode", "name", "quantity", "scanned_at", "sent_count", "message", "error"
+			"id", "trip_id", "barcode", "name", "quantity", "scanned_at", "sent_count", "message", "error",
+			"price", "scan_price"
 	};
+
+	/** Offene Artikel mit den passenden Grocy-Daten (Name, Geschäft, Einheiten, Letztpreis). */
+	private static final String OPEN_ITEMS_SQL =
+			"SELECT i.id, i.trip_id, i.barcode, i.name, i.quantity, i.scanned_at, i.sent_count, i.message, "
+					+ "i.error, i.price, i.scan_price, "
+					+ "b.product_id AS g_product_id, b.stock_per_scan AS g_stock_per_scan, "
+					+ "p.name AS g_name, p.stock_to_price AS g_stock_to_price, p.stock_unit AS g_stock_unit, "
+					+ "p.price_unit AS g_price_unit, "
+					+ "COALESCE(b.shop_id, p.shop_id) AS g_shop_id, s.name AS g_shop_name, "
+					+ "lp.price AS g_last_price "
+					+ "FROM items i "
+					// Wie Barcode Buddy: ein führend mit Nullen aufgefüllter Code (GTIN-14) trifft auch den EAN-13
+					+ "LEFT JOIN g_barcodes b ON b.barcode = i.barcode OR b.barcode = ltrim(i.barcode, '0') "
+					+ "LEFT JOIN g_products p ON p.id = b.product_id "
+					+ "LEFT JOIN g_shops s ON s.id = COALESCE(b.shop_id, p.shop_id) "
+					+ "LEFT JOIN g_lastprice lp ON lp.product_id = p.id "
+					+ "WHERE i.trip_id = 0 ORDER BY i.scanned_at DESC";
 
 	private static ShoppingRepository instance;
 
@@ -56,10 +102,10 @@ public final class ShoppingRepository {
 		return instance;
 	}
 
-	private final ShoppingDb                       dbHelper;
-	private final ExecutorService                  io        = Executors.newSingleThreadExecutor();
-	private final Handler                          main      = new Handler(Looper.getMainLooper());
-	private final CopyOnWriteArrayList<Listener>   listeners = new CopyOnWriteArrayList<>();
+	private final ShoppingDb                     dbHelper;
+	private final ExecutorService                io        = Executors.newSingleThreadExecutor();
+	private final Handler                        main      = new Handler(Looper.getMainLooper());
+	private final CopyOnWriteArrayList<Listener> listeners = new CopyOnWriteArrayList<>();
 
 	private ShoppingRepository(Context appContext) {
 		dbHelper = new ShoppingDb(appContext);
@@ -148,14 +194,34 @@ public final class ShoppingRepository {
 		}, callback);
 	}
 
-	public void getOpenItems(Callback<List<ShoppingItem>> callback) {
-		read(() -> readItems(dbHelper.getReadableDatabase(), 0), callback);
+	public void getOpenList(Callback<OpenList> callback) {
+		read(() -> {
+			SQLiteDatabase db = dbHelper.getReadableDatabase();
+			List<ShoppingItem> items = new ArrayList<>();
+			try (Cursor c = db.rawQuery(OPEN_ITEMS_SQL, null)) {
+				while (c.moveToNext()) {
+					items.add(openItemFromCursor(c));
+				}
+			}
+			boolean cache = DatabaseUtils.queryNumEntries(db, ShoppingDb.T_PRODUCTS) > 0;
+			return new OpenList(items, cache, readShopPositions(db));
+		}, callback);
 	}
 
 	public void setQuantity(final long itemId, final int quantity) {
 		write(() -> {
 			ContentValues v = new ContentValues();
 			v.put("quantity", Math.max(1, quantity));
+			return dbHelper.getWritableDatabase().update(ShoppingDb.T_ITEMS, v, "id = ?",
+					new String[]{String.valueOf(itemId)});
+		}, null);
+	}
+
+	/** Setzt den Preis je Preiseinheit; null stellt den letzten Einkaufspreis aus Grocy wieder her. */
+	public void setPrice(final long itemId, final Double price) {
+		write(() -> {
+			ContentValues v = new ContentValues();
+			v.put("price", price);
 			return dbHelper.getWritableDatabase().update(ShoppingDb.T_ITEMS, v, "id = ?",
 					new String[]{String.valueOf(itemId)});
 		}, null);
@@ -179,15 +245,26 @@ public final class ShoppingRepository {
 	// ---------------------------------------------------------------- Senden
 
 	/**
-	 * Merkt sich den Sendefortschritt eines Artikels. Löst bewusst keine
-	 * Benachrichtigung aus, damit die Liste beim Senden nicht ständig neu lädt.
+	 * Merkt sich den Sendefortschritt eines Artikels samt Name und Preis, die
+	 * beim Senden galten. Löst bewusst keine Benachrichtigung aus, damit die
+	 * Liste beim Senden nicht ständig neu lädt.
 	 */
-	public void updateProgress(final long itemId, final int sentCount, final String message, final String error) {
+	public void updateProgress(final long itemId, final int sentCount, final String message, final String error,
+							   final String name, final Double price, final Double scanPrice) {
 		read(() -> {
 			ContentValues v = new ContentValues();
 			v.put("sent_count", sentCount);
 			v.put("message", message);
 			v.put("error", error);
+			if (name != null) {
+				v.put("name", name);
+			}
+			if (price != null) {
+				v.put("price", price);
+			}
+			if (scanPrice != null) {
+				v.put("scan_price", scanPrice);
+			}
 			return dbHelper.getWritableDatabase().update(ShoppingDb.T_ITEMS, v, "id = ?",
 					new String[]{String.valueOf(itemId)});
 		}, null);
@@ -316,7 +393,95 @@ public final class ShoppingRepository {
 		}, null);
 	}
 
+	// ---------------------------------------------------------------- Grocy-Stammdaten und Geschäfte
+
+	/** Ersetzt die lokale Kopie der Grocy-Stammdaten vollständig. */
+	public void replaceGrocyCache(final GrocyData data, Callback<Boolean> callback) {
+		write(() -> {
+			SQLiteDatabase db = dbHelper.getWritableDatabase();
+			db.beginTransaction();
+			try {
+				db.delete(ShoppingDb.T_SHOPS, null, null);
+				db.delete(ShoppingDb.T_PRODUCTS, null, null);
+				db.delete(ShoppingDb.T_BARCODES, null, null);
+				db.delete(ShoppingDb.T_LASTPRICE, null, null);
+				for (ContentValues v : data.shops) {
+					db.insert(ShoppingDb.T_SHOPS, null, v);
+				}
+				for (ContentValues v : data.products) {
+					db.insert(ShoppingDb.T_PRODUCTS, null, v);
+				}
+				for (ContentValues v : data.barcodes) {
+					db.insertWithOnConflict(ShoppingDb.T_BARCODES, null, v, SQLiteDatabase.CONFLICT_REPLACE);
+				}
+				for (ContentValues v : data.lastPrices) {
+					db.insertWithOnConflict(ShoppingDb.T_LASTPRICE, null, v, SQLiteDatabase.CONFLICT_REPLACE);
+				}
+				db.setTransactionSuccessful();
+				return true;
+			} finally {
+				db.endTransaction();
+			}
+		}, callback);
+	}
+
+	/** Alle Geschäfte in der vom Nutzer gewählten Reihenfolge; neue Geschäfte stehen hinten, nach Name. */
+	public void getShops(Callback<List<Shop>> callback) {
+		read(() -> {
+			SQLiteDatabase db = dbHelper.getReadableDatabase();
+			Map<Long, Integer> positions = readShopPositions(db);
+			List<Shop> shops = new ArrayList<>();
+			try (Cursor c = db.query(ShoppingDb.T_SHOPS, new String[]{"id", "name"}, null, null,
+					null, null, "name COLLATE NOCASE")) {
+				while (c.moveToNext()) {
+					shops.add(new Shop(c.getLong(0), c.getString(1)));
+				}
+			}
+			final Map<Long, Integer> pos = positions;
+			java.util.Collections.sort(shops, (a, b) -> {
+				int pa = pos.containsKey(a.id) ? pos.get(a.id) : Integer.MAX_VALUE;
+				int pb = pos.containsKey(b.id) ? pos.get(b.id) : Integer.MAX_VALUE;
+				if (pa != pb) {
+					return pa < pb ? -1 : 1;
+				}
+				return a.name.compareToIgnoreCase(b.name);
+			});
+			return shops;
+		}, callback);
+	}
+
+	public void saveShopOrder(final List<Long> shopIds) {
+		write(() -> {
+			SQLiteDatabase db = dbHelper.getWritableDatabase();
+			db.beginTransaction();
+			try {
+				db.delete(ShoppingDb.T_SHOP_ORDER, null, null);
+				for (int i = 0; i < shopIds.size(); i++) {
+					ContentValues v = new ContentValues();
+					v.put("shop_id", shopIds.get(i));
+					v.put("position", i);
+					db.insert(ShoppingDb.T_SHOP_ORDER, null, v);
+				}
+				db.setTransactionSuccessful();
+				return null;
+			} finally {
+				db.endTransaction();
+			}
+		}, null);
+	}
+
 	// ---------------------------------------------------------------- Helfer
+
+	private static Map<Long, Integer> readShopPositions(SQLiteDatabase db) {
+		Map<Long, Integer> positions = new HashMap<>();
+		try (Cursor c = db.query(ShoppingDb.T_SHOP_ORDER, new String[]{"shop_id", "position"},
+				null, null, null, null, null)) {
+			while (c.moveToNext()) {
+				positions.put(c.getLong(0), c.getInt(1));
+			}
+		}
+		return positions;
+	}
 
 	private static List<ShoppingItem> readItems(SQLiteDatabase db, long tripId) {
 		List<ShoppingItem> items = new ArrayList<>();
@@ -340,7 +505,36 @@ public final class ShoppingRepository {
 		item.sentCount = c.getInt(c.getColumnIndexOrThrow("sent_count"));
 		item.message   = c.getString(c.getColumnIndexOrThrow("message"));
 		item.error     = c.getString(c.getColumnIndexOrThrow("error"));
+		item.price     = getDouble(c, "price");
+		item.scanPrice = getDouble(c, "scan_price");
 		return item;
+	}
+
+	/** Wie {@link #itemFromCursor}, dazu die Grocy-Spalten der offenen Liste. */
+	private static ShoppingItem openItemFromCursor(Cursor c) {
+		ShoppingItem item = itemFromCursor(c);
+		int productCol = c.getColumnIndexOrThrow("g_product_id");
+		if (!c.isNull(productCol)) {
+			item.known         = true;
+			item.productId     = c.getLong(productCol);
+			item.productName   = c.getString(c.getColumnIndexOrThrow("g_name"));
+			item.stockPerScan  = c.getDouble(c.getColumnIndexOrThrow("g_stock_per_scan"));
+			item.stockToPrice  = c.getDouble(c.getColumnIndexOrThrow("g_stock_to_price"));
+			item.stockUnitName = c.getString(c.getColumnIndexOrThrow("g_stock_unit"));
+			item.priceUnitName = c.getString(c.getColumnIndexOrThrow("g_price_unit"));
+			item.lastPrice     = getDouble(c, "g_last_price");
+			int shopCol = c.getColumnIndexOrThrow("g_shop_id");
+			if (!c.isNull(shopCol)) {
+				item.shopId   = c.getLong(shopCol);
+				item.shopName = c.getString(c.getColumnIndexOrThrow("g_shop_name"));
+			}
+		}
+		return item;
+	}
+
+	private static Double getDouble(Cursor c, String column) {
+		int index = c.getColumnIndexOrThrow(column);
+		return c.isNull(index) ? null : c.getDouble(index);
 	}
 
 	private static ContentValues itemToValues(ShoppingItem item, boolean withId) {
@@ -356,6 +550,8 @@ public final class ShoppingRepository {
 		v.put("sent_count", item.sentCount);
 		v.put("message", item.message);
 		v.put("error", item.error);
+		v.put("price", item.price);
+		v.put("scan_price", item.scanPrice);
 		return v;
 	}
 

@@ -2,6 +2,8 @@ package de.bulling.barcodebuddyscanner.Helper;
 
 import android.text.Html;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -39,16 +41,24 @@ public class PurchaseSender {
 		public String warning;
 		/** Artikel, die in der Liste geblieben sind */
 		public int    remainingItems;
+		/** Barcodes, die Barcode Buddy nicht kannte und in seine Liste "Unbekannte Barcodes" gelegt hat */
+		public int    newProducts;
 	}
 
 	private static class Job {
 		final ShoppingItem item;
-		int remaining;
-		int sent;
+		/** Preis je Lagereinheit für Barcode Buddy, null = kein Preis bekannt */
+		final String       priceParam;
+		int                remaining;
+		int                sent;
+		boolean            isNew;
 
 		Job(ShoppingItem item, int remaining) {
 			this.item      = item;
 			this.remaining = remaining;
+			Double perStock = item.effectivePricePerStockUnit();
+			this.priceParam = perStock == null ? null
+					: new BigDecimal(perStock).setScale(5, RoundingMode.HALF_UP).stripTrailingZeros().toPlainString();
 		}
 	}
 
@@ -100,8 +110,8 @@ public class PurchaseSender {
 			return;
 		}
 		running = true;
-		repo.getOpenItems(items -> {
-			for (ShoppingItem item : items) {
+		repo.getOpenList(openList -> {
+			for (ShoppingItem item : openList.items) {
 				int remaining = item.quantity - item.sentCount;
 				if (remaining > 0) {
 					jobs.add(new Job(item, remaining));
@@ -166,7 +176,7 @@ public class PurchaseSender {
 			return;
 		}
 		final Job job = jobs.get(jobIndex);
-		api.postBarcode(job.item.barcode, new BBApiCallback() {
+		api.postBarcode(job.item.barcode, job.priceParam, new BBApiCallback() {
 			@Override
 			public void onResult(Object value) {
 				if (!(value instanceof String)) {
@@ -178,7 +188,14 @@ public class PurchaseSender {
 				job.remaining--;
 				done++;
 				result.unitsSent++;
-				repo.updateProgress(job.item.id, job.item.sentCount + job.sent, cleanMessage((String) value), null);
+				String text = cleanMessage((String) value);
+				// Barcode Buddy meldet unbekannte Barcodes mit festen englischen Texten
+				if (!job.isNew && (text.contains("Unknown barcode") || text.contains("Unknown product"))) {
+					job.isNew = true;
+					result.newProducts++;
+				}
+				repo.updateProgress(job.item.id, job.item.sentCount + job.sent, text, null,
+						job.item.displayName(), job.item.effectivePrice(), job.item.effectiveScanPrice());
 				reportProgress();
 				sendNext();
 			}
@@ -188,7 +205,8 @@ public class PurchaseSender {
 				String text = describe(errorCode, errorMessage);
 				if (errorCode == BBApiCallback.ERROR_NETWORK || errorCode == BBApiCallback.ERROR_UNAUTHORIZED) {
 					// Der Server ist nicht erreichbar oder lehnt uns ab: alles Weitere würde auch scheitern
-					repo.updateProgress(job.item.id, job.item.sentCount + job.sent, job.item.message, text);
+					repo.updateProgress(job.item.id, job.item.sentCount + job.sent, job.item.message, text,
+							null, null, null);
 					result.error = text;
 					restoreMode();
 				} else {
@@ -201,7 +219,7 @@ public class PurchaseSender {
 
 	/** Überspringt die restlichen Stücke dieses Artikels, die anderen Artikel werden weiter gesendet. */
 	private void skipRest(Job job, String error) {
-		repo.updateProgress(job.item.id, job.item.sentCount + job.sent, job.item.message, error);
+		repo.updateProgress(job.item.id, job.item.sentCount + job.sent, job.item.message, error, null, null, null);
 		done += job.remaining;
 		job.remaining = 0;
 		reportProgress();

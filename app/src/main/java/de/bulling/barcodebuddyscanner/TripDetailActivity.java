@@ -25,6 +25,7 @@ import java.util.List;
 import de.bulling.barcodebuddyscanner.Data.ShoppingItem;
 import de.bulling.barcodebuddyscanner.Data.ShoppingRepository;
 import de.bulling.barcodebuddyscanner.Helper.EdgeToEdgeHelper;
+import de.bulling.barcodebuddyscanner.Helper.Money;
 
 /**
  * Die Artikel eines gesendeten Einkaufs mit der Antwort von Barcode Buddy.
@@ -37,6 +38,7 @@ public class TripDetailActivity extends AppCompatActivity {
 	private long               tripId;
 	private List<ShoppingItem> items = new ArrayList<>();
 	private LineAdapter        adapter;
+	private String             summary = "";
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -66,13 +68,31 @@ public class TripDetailActivity extends AppCompatActivity {
 				return;
 			}
 			setTitle(dateFormat.format(new Date(trip.sentAt)));
-			((TextView) findViewById(R.id.trip_summary)).setText(
-					getString(R.string.trip_summary, trip.itemCount, trip.unitCount));
+			summary = getString(R.string.trip_summary, trip.itemCount, trip.unitCount);
+			updateSummary();
 		});
 		repo.getTripItems(tripId, result -> {
 			items = result;
 			adapter.notifyDataSetChanged();
+			updateSummary();
 		});
+	}
+
+	/** Kopfzeile: Anzahl der Artikel und, wenn Preise bekannt sind, die Summe. */
+	private void updateSummary() {
+		double total = 0;
+		boolean hasPrice = false;
+		for (ShoppingItem item : items) {
+			if (item.scanPrice != null) {
+				total += item.scanPrice * item.quantity;
+				hasPrice = true;
+			}
+		}
+		String text = summary;
+		if (hasPrice) {
+			text += " · " + getString(R.string.trip_total, Money.format(total));
+		}
+		((TextView) findViewById(R.id.trip_summary)).setText(text);
 	}
 
 	@Override
@@ -126,7 +146,9 @@ public class TripDetailActivity extends AppCompatActivity {
 			}
 			holder.subtitle.setText(subtitle);
 			holder.subtitle.setVisibility(subtitle.length() > 0 ? View.VISIBLE : View.GONE);
-			holder.quantity.setText(getString(R.string.trip_item_quantity, item.quantity));
+			holder.quantity.setText(item.scanPrice == null
+					? getString(R.string.trip_item_quantity, item.quantity)
+					: getString(R.string.trip_item_price, item.quantity, Money.format(item.scanPrice * item.quantity)));
 		}
 
 		@Override

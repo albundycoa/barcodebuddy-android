@@ -37,6 +37,16 @@
                 android:textColor="?attr/colorOnSurfaceVariant" />
 
             <TextView
+                android:id="@+id/item_price"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="?attr/selectableItemBackground"
+                android:minHeight="32dp"
+                android:gravity="center_vertical"
+                android:textAppearance="?attr/textAppearanceBodyMedium"
+                android:textColor="?attr/colorPrimary" />
+
+            <TextView
                 android:id="@+id/item_error"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

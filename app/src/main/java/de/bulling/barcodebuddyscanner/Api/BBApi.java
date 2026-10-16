@@ -166,9 +166,15 @@ public class BBApi {
 		executeRequest(REQUEST_SYSTEM_INFO, "system/info", "GET", null, callback);
 	}
 
-	public void postBarcode(String barcode, final BBApiCallback callback) {
+	/**
+	 * @param price Preis je Lagereinheit (wie ihn Grocy erwartet) oder null
+	 */
+	public void postBarcode(String barcode, String price, final BBApiCallback callback) {
 		Map<String, String> params = new HashMap<>();
 		params.put("barcode", barcode);
+		if (price != null) {
+			params.put("price", price);
+		}
 		executeRequest(REQUEST_ACTION_BARCODE, "action/scan", "POST", params, callback);
 	}
 

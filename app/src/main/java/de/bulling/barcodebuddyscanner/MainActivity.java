@@ -24,13 +24,17 @@ import com.google.android.material.button.MaterialButton;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
 import com.google.android.material.snackbar.Snackbar;
+import com.google.android.material.textfield.TextInputEditText;
+import com.google.android.material.textfield.TextInputLayout;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import de.bulling.barcodebuddyscanner.Api.GrocySync;
 import de.bulling.barcodebuddyscanner.Data.ShoppingItem;
 import de.bulling.barcodebuddyscanner.Data.ShoppingRepository;
 import de.bulling.barcodebuddyscanner.Helper.EdgeToEdgeHelper;
+import de.bulling.barcodebuddyscanner.Helper.Money;
 import de.bulling.barcodebuddyscanner.Helper.PermissionHelper;
 import de.bulling.barcodebuddyscanner.Helper.PurchaseSender;
 import de.bulling.barcodebuddyscanner.Helper.ScanFeedback;
@@ -86,6 +90,8 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
         super.onStart();
         repo.addListener(this);
         refreshList();
+        // Geschäfte, Namen und Preise aus Grocy auffrischen (ohne Verbindung bleibt die letzte Kopie)
+        GrocySync.startIfStale(this);
         if (activeSender != null) {
             activeSender.attach(senderListener);
         }
@@ -168,7 +174,7 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
         sendButton = findViewById(R.id.button_send);
         cameraButton = findViewById(R.id.button_camera);
 
-        adapter = new ItemAdapter(this);
+        adapter = new ItemAdapter(this, this);
         itemList.setLayoutManager(new LinearLayoutManager(this));
         itemList.setAdapter(adapter);
         new ItemTouchHelper(new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) {
@@ -180,13 +186,15 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
 
             @Override
             public int getSwipeDirs(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder) {
-                return sending ? 0 : super.getSwipeDirs(recyclerView, viewHolder);
+                int position = viewHolder.getBindingAdapterPosition();
+                boolean isHeader = position == RecyclerView.NO_POSITION || adapter.getItem(position) == null;
+                return sending || isHeader ? 0 : super.getSwipeDirs(recyclerView, viewHolder);
             }
 
             @Override
             public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
                 int position = viewHolder.getBindingAdapterPosition();
-                if (position != RecyclerView.NO_POSITION) {
+                if (position != RecyclerView.NO_POSITION && adapter.getItem(position) != null) {
                     onDelete(adapter.getItem(position));
                 }
             }
@@ -199,9 +207,9 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
     // ---------------------------------------------------------------- Liste
 
     private void refreshList() {
-        repo.getOpenItems(items -> {
-            currentItems = items;
-            adapter.submit(items);
+        repo.getOpenList(list -> {
+            currentItems = list.items;
+            adapter.submit(list);
             updateListState();
         });
     }
@@ -257,6 +265,67 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
                     }
                 })
                 .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
+    @Override
+    public void onEditPrice(ShoppingItem item) {
+        final View content = getLayoutInflater().inflate(R.layout.dialog_price, null);
+        final TextInputEditText unitInput = content.findViewById(R.id.price_unit_input);
+        final TextInputEditText totalInput = content.findViewById(R.id.price_total_input);
+        TextInputLayout unitLayout = content.findViewById(R.id.price_unit_layout);
+        TextView stockHint = content.findViewById(R.id.price_stock_hint);
+
+        final String unitName = item.priceUnitName != null ? item.priceUnitName : getString(R.string.price_unit_scan);
+        unitLayout.setHint(getString(R.string.price_hint_unit, unitName));
+        // Eine Packung (ein Scan) enthält priceUnitsPerScan Preiseinheiten, normalerweise genau eine
+        final double perScan = item.priceUnitsPerScan();
+        final double units = item.quantity * perScan;
+
+        Double current = item.effectivePrice();
+        if (current != null) {
+            unitInput.setText(Money.formatPlain(current));
+            totalInput.setText(Money.formatPlain(current * units));
+        }
+        if (item.known && item.stockToPrice != 1 && item.stockUnitName != null) {
+            stockHint.setText(R.string.price_stock_hint);
+        } else {
+            stockHint.setVisibility(View.GONE);
+        }
+
+        // Preis und Gesamtpreis hängen zusammen: Eingabe in einem Feld rechnet das andere aus
+        final boolean[] updating = {false};
+        unitInput.addTextChangedListener(new SimpleTextWatcher() {
+            @Override
+            public void onChanged(String text) {
+                if (updating[0]) return;
+                updating[0] = true;
+                Double value = Money.parse(text);
+                totalInput.setText(value == null ? "" : Money.formatPlain(value * units));
+                updating[0] = false;
+            }
+        });
+        totalInput.addTextChangedListener(new SimpleTextWatcher() {
+            @Override
+            public void onChanged(String text) {
+                if (updating[0]) return;
+                updating[0] = true;
+                Double value = Money.parse(text);
+                unitInput.setText(value == null || units <= 0 ? "" : Money.formatPlain(value / units));
+                updating[0] = false;
+            }
+        });
+
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(item.displayName() != null ? item.displayName() : item.barcode)
+                .setView(content)
+                .setPositiveButton(android.R.string.ok, (d, w) -> {
+                    Double value = Money.parse(unitInput.getText() == null ? "" : unitInput.getText().toString());
+                    // Leeres Feld: zurück zum letzten Einkaufspreis aus Grocy
+                    repo.setPrice(item.id, value);
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .setNeutralButton(R.string.price_reset, (d, w) -> repo.setPrice(item.id, null))
                 .show();
     }
 
@@ -349,11 +418,21 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
         if (result.warning != null) {
             message.append("\n\n").append(result.warning);
         }
-        new MaterialAlertDialogBuilder(this)
+        if (result.newProducts > 0) {
+            message.append("\n\n").append(getResources().getQuantityString(
+                    R.plurals.send_new_products, result.newProducts, result.newProducts));
+        }
+        MaterialAlertDialogBuilder dialog = new MaterialAlertDialogBuilder(this)
                 .setTitle(R.string.send_result_title)
                 .setMessage(message.toString())
-                .setPositiveButton(android.R.string.ok, null)
-                .show();
+                .setPositiveButton(android.R.string.ok, null);
+        if (result.newProducts > 0) {
+            // Dort werden unbekannte Barcodes einem Grocy-Produkt zugeordnet oder neu angelegt
+            dialog.setNeutralButton(R.string.open_barcode_buddy, (d, w) ->
+                    startActivity(new Intent(Intent.ACTION_VIEW,
+                            android.net.Uri.parse(new SharedPrefHelper(this).getBbWebUrl()))));
+        }
+        dialog.show();
     }
 
     // ---------------------------------------------------------------- Menü

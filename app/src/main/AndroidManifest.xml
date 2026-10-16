@@ -25,6 +25,14 @@
             android:theme="@style/AppTheme.NoActionBar" />
         <activity android:name=".DebugActivity" />
         <activity
+            android:name=".GrocySettingsActivity"
+            android:label="@string/grocy_title"
+            android:theme="@style/AppTheme.NoActionBar" />
+        <activity
+            android:name=".ShopOrderActivity"
+            android:label="@string/shop_order_title"
+            android:theme="@style/AppTheme.NoActionBar" />
+        <activity
             android:name=".HistoryActivity"
             android:label="@string/title_history"
             android:theme="@style/AppTheme.NoActionBar" />

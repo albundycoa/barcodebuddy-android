@@ -1,5 +1,6 @@
 package de.bulling.barcodebuddyscanner;
 
+import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -9,14 +10,22 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import de.bulling.barcodebuddyscanner.Data.ShoppingItem;
+import de.bulling.barcodebuddyscanner.Data.ShoppingRepository;
+import de.bulling.barcodebuddyscanner.Helper.Money;
 
 /**
- * Zeigt die offene Einkaufsliste mit Stückzahl-Steuerung.
+ * Zeigt die offene Einkaufsliste, nach Geschäften gruppiert, mit Stückzahl- und Preis-Steuerung.
+ * Oben stehen Produkte, die Grocy nicht kennt, danach die Geschäfte in der vom Nutzer
+ * gewählten Reihenfolge und zuletzt Produkte ohne Geschäft.
  */
-public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ViewHolder> {
+public class ItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
 	public interface Actions {
 		void onIncrease(ShoppingItem item);
@@ -25,22 +34,100 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ViewHolder> {
 
 		void onEditQuantity(ShoppingItem item);
 
+		void onEditPrice(ShoppingItem item);
+
 		void onDelete(ShoppingItem item);
 	}
 
-	private final Actions            actions;
-	private final List<ShoppingItem> items    = new ArrayList<>();
-	private       boolean            editable = true;
+	private static final int TYPE_HEADER = 0;
+	private static final int TYPE_ITEM   = 1;
 
-	public ItemAdapter(Actions actions) {
+	private static final long GROUP_NEW  = -1;
+	private static final long GROUP_NONE = 0;
+
+	private static class Row {
+		final String       header;
+		final ShoppingItem item;
+
+		Row(String header, ShoppingItem item) {
+			this.header = header;
+			this.item   = item;
+		}
+	}
+
+	private final Context    context;
+	private final Actions    actions;
+	private final List<Row>  rows     = new ArrayList<>();
+	private       boolean    editable = true;
+
+	public ItemAdapter(Context context, Actions actions) {
+		this.context = context.getApplicationContext();
 		this.actions = actions;
 	}
 
-	public void submit(List<ShoppingItem> newItems) {
-		items.clear();
-		items.addAll(newItems);
+	public void submit(ShoppingRepository.OpenList list) {
+		rows.clear();
+		if (!list.cacheAvailable) {
+			// Ohne Grocy-Daten lässt sich nicht sagen, was neu ist und wo es gekauft wird
+			for (ShoppingItem item : list.items) {
+				rows.add(new Row(null, item));
+			}
+		} else {
+			final Map<Long, List<ShoppingItem>> groups = new HashMap<>();
+			final Map<Long, String> shopNames = new HashMap<>();
+			for (ShoppingItem item : list.items) {
+				long key = !item.known ? GROUP_NEW : (item.shopId != null ? item.shopId : GROUP_NONE);
+				List<ShoppingItem> group = groups.get(key);
+				if (group == null) {
+					group = new ArrayList<>();
+					groups.put(key, group);
+				}
+				group.add(item);
+				if (key > 0) {
+					shopNames.put(key, item.shopName);
+				}
+			}
+			final Map<Long, Integer> positions = list.shopPosition;
+			List<Long> keys = new ArrayList<>(groups.keySet());
+			Collections.sort(keys, (a, b) -> {
+				int ra = rank(a), rb = rank(b);
+				if (ra != rb) {
+					return ra < rb ? -1 : 1;
+				}
+				if (ra != 1) {
+					return 0;
+				}
+				int pa = positions.containsKey(a) ? positions.get(a) : Integer.MAX_VALUE;
+				int pb = positions.containsKey(b) ? positions.get(b) : Integer.MAX_VALUE;
+				if (pa != pb) {
+					return pa < pb ? -1 : 1;
+				}
+				return String.valueOf(shopNames.get(a)).compareToIgnoreCase(String.valueOf(shopNames.get(b)));
+			});
+			for (Long key : keys) {
+				List<ShoppingItem> group = groups.get(key);
+				Collections.sort(group, BY_NAME);
+				String title = key == GROUP_NEW ? context.getString(R.string.section_new)
+						: key == GROUP_NONE ? context.getString(R.string.section_none)
+						: shopNames.get(key);
+				rows.add(new Row(context.getString(R.string.section_title, title, group.size()), null));
+				for (ShoppingItem item : group) {
+					rows.add(new Row(null, item));
+				}
+			}
+		}
 		notifyDataSetChanged();
 	}
+
+	private static int rank(long key) {
+		return key == GROUP_NEW ? 0 : key == GROUP_NONE ? 2 : 1;
+	}
+
+	private static final Comparator<ShoppingItem> BY_NAME = (a, b) -> {
+		String na = a.displayName() != null ? a.displayName() : a.barcode;
+		String nb = b.displayName() != null ? b.displayName() : b.barcode;
+		return na.compareToIgnoreCase(nb);
+	};
 
 	/** Während des Sendens darf die Liste nicht verändert werden. */
 	public void setEditable(boolean editable) {
@@ -50,41 +137,64 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ViewHolder> {
 		}
 	}
 
+	/** null, wenn an dieser Stelle eine Abschnittsüberschrift steht. */
 	public ShoppingItem getItem(int position) {
-		return items.get(position);
+		return rows.get(position).item;
+	}
+
+	@Override
+	public int getItemViewType(int position) {
+		return rows.get(position).item == null ? TYPE_HEADER : TYPE_ITEM;
 	}
 
 	@Override
 	public int getItemCount() {
-		return items.size();
+		return rows.size();
 	}
 
 	@NonNull
 	@Override
-	public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-		View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_shopping, parent, false);
-		return new ViewHolder(view);
+	public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+		LayoutInflater inflater = LayoutInflater.from(parent.getContext());
+		if (viewType == TYPE_HEADER) {
+			return new HeaderHolder(inflater.inflate(R.layout.item_section, parent, false));
+		}
+		return new ItemHolder(inflater.inflate(R.layout.item_shopping, parent, false));
 	}
 
 	@Override
-	public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-		final ShoppingItem item    = items.get(position);
-		final android.content.Context context = holder.itemView.getContext();
+	public void onBindViewHolder(@NonNull RecyclerView.ViewHolder viewHolder, int position) {
+		Row row = rows.get(position);
+		if (row.item == null) {
+			((HeaderHolder) viewHolder).title.setText(row.header);
+			return;
+		}
+		final ShoppingItem item = row.item;
+		ItemHolder holder = (ItemHolder) viewHolder;
 
-		holder.title.setText(item.name != null ? item.name : item.barcode);
+		holder.title.setText(item.displayName() != null ? item.displayName() : item.barcode);
 
 		StringBuilder subtitle = new StringBuilder();
-		if (item.name != null) {
+		if (item.displayName() != null) {
 			subtitle.append(item.barcode);
 		}
+		if (item.known && item.stockPerScan > 1 && item.stockUnitName != null) {
+			append(subtitle, context.getString(R.string.item_per_scan, trim(item.stockPerScan), item.stockUnitName));
+		}
 		if (item.sentCount > 0 && item.sentCount < item.quantity) {
-			if (subtitle.length() > 0) {
-				subtitle.append(" · ");
-			}
-			subtitle.append(context.getString(R.string.item_partly_sent, item.sentCount));
+			append(subtitle, context.getString(R.string.item_partly_sent, item.sentCount));
 		}
 		holder.subtitle.setText(subtitle);
 		holder.subtitle.setVisibility(subtitle.length() > 0 ? View.VISIBLE : View.GONE);
+
+		Double price = item.effectivePrice();
+		if (price == null) {
+			holder.price.setText(R.string.price_add);
+		} else {
+			String unit = item.priceUnitName != null ? item.priceUnitName : context.getString(R.string.price_unit_scan);
+			holder.price.setText(context.getString(R.string.price_line, Money.format(price), unit,
+					Money.format(item.effectiveScanPrice() * item.quantity)));
+		}
 
 		holder.error.setText(item.error);
 		holder.error.setVisibility(item.error != null ? View.VISIBLE : View.GONE);
@@ -95,26 +205,51 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ViewHolder> {
 		holder.plus.setEnabled(editable);
 		holder.delete.setEnabled(editable);
 		holder.quantity.setEnabled(editable);
+		holder.price.setEnabled(editable);
 
 		holder.minus.setOnClickListener(v -> actions.onDecrease(item));
 		holder.plus.setOnClickListener(v -> actions.onIncrease(item));
 		holder.delete.setOnClickListener(v -> actions.onDelete(item));
 		holder.quantity.setOnClickListener(v -> actions.onEditQuantity(item));
+		holder.price.setOnClickListener(v -> actions.onEditPrice(item));
 	}
 
-	static class ViewHolder extends RecyclerView.ViewHolder {
+	private static void append(StringBuilder builder, String text) {
+		if (builder.length() > 0) {
+			builder.append(" · ");
+		}
+		builder.append(text);
+	}
+
+	/** 8.0 -> "8", 0.5 -> "0,5" */
+	private static String trim(double value) {
+		return value == Math.rint(value) ? String.valueOf((long) value) : String.valueOf(value).replace('.', ',');
+	}
+
+	static class HeaderHolder extends RecyclerView.ViewHolder {
+		final TextView title;
+
+		HeaderHolder(View view) {
+			super(view);
+			title = view.findViewById(R.id.section_title);
+		}
+	}
+
+	static class ItemHolder extends RecyclerView.ViewHolder {
 		final TextView title;
 		final TextView subtitle;
+		final TextView price;
 		final TextView error;
 		final TextView quantity;
 		final View     minus;
 		final View     plus;
 		final View     delete;
 
-		ViewHolder(View view) {
+		ItemHolder(View view) {
 			super(view);
 			title    = view.findViewById(R.id.item_title);
 			subtitle = view.findViewById(R.id.item_subtitle);
+			price    = view.findViewById(R.id.item_price);
 			error    = view.findViewById(R.id.item_error);
 			quantity = view.findViewById(R.id.item_quantity);
 			minus    = view.findViewById(R.id.item_minus);

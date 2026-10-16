@@ -21,6 +21,27 @@
             app:title="@string/volume" />
 
     </PreferenceCategory>
+    <PreferenceCategory app:title="@string/grocy_header">
+
+        <Preference
+            app:key="grocy_connection"
+            app:summary="@string/grocy_pref_summary"
+            app:title="@string/grocy_title">
+            <intent
+                android:targetClass="de.bulling.barcodebuddyscanner.GrocySettingsActivity"
+                android:targetPackage="de.bulling.barcodebuddyscanner" />
+        </Preference>
+
+        <Preference
+            app:key="shop_order"
+            app:summary="@string/shop_order_pref_summary"
+            app:title="@string/shop_order_title">
+            <intent
+                android:targetClass="de.bulling.barcodebuddyscanner.ShopOrderActivity"
+                android:targetPackage="de.bulling.barcodebuddyscanner" />
+        </Preference>
+
+    </PreferenceCategory>
     <PreferenceCategory app:title="@string/scanner_header">
 
         <ListPreference
