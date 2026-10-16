@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Einkauf</string>
+    <string name="shopping_list">Einkaufsliste</string>
+    <string name="scans">Gescannt</string>
+    <string name="no_data">Noch keine Daten. Öffne die App auf dem Handy.</string>
+    <string name="shopping_empty">Die Einkaufsliste ist leer.</string>
+    <string name="scans_empty">Noch nichts gescannt.</string>
+    <string name="open_count">%1$d offen</string>
+    <string name="scan_count">%1$d Artikel</string>
+    <string name="total">Summe %1$s</string>
+    <string name="done_by_scan">Durch Scan erledigt</string>
+    <string name="no_phone">Handy nicht erreichbar</string>
+</resources>

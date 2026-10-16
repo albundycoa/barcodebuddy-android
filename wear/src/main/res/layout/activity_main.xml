@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
+        android:orientation="vertical"
+        android:paddingStart="28dp"
+        android:paddingTop="32dp"
+        android:paddingEnd="28dp"
+        android:paddingBottom="32dp">
+
+        <Button
+            android:id="@+id/button_shopping"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/shopping_list" />
+
+        <TextView
+            android:id="@+id/text_shopping"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:textSize="12sp" />
+
+        <Button
+            android:id="@+id/button_scans"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/scans" />
+
+        <TextView
+            android:id="@+id/text_scans"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="12sp" />
+
+        <TextView
+            android:id="@+id/text_hint"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:gravity="center"
+            android:textSize="12sp" />
+    </LinearLayout>
+</ScrollView>

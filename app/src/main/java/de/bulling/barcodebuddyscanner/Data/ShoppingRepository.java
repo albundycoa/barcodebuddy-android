@@ -9,6 +9,8 @@ import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 
+import de.bulling.barcodebuddyscanner.Wear.WearSync;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -104,12 +106,14 @@ public final class ShoppingRepository {
 		return instance;
 	}
 
+	private final Context                       appContext;
 	private final ShoppingDb                     dbHelper;
 	private final ExecutorService                io        = Executors.newSingleThreadExecutor();
 	private final Handler                        main      = new Handler(Looper.getMainLooper());
 	private final CopyOnWriteArrayList<Listener> listeners = new CopyOnWriteArrayList<>();
 
 	private ShoppingRepository(Context appContext) {
+		this.appContext = appContext;
 		dbHelper = new ShoppingDb(appContext);
 	}
 
@@ -125,6 +129,8 @@ public final class ShoppingRepository {
 		for (Listener l : listeners) {
 			l.onDataChanged();
 		}
+		// Die Uhr bekommt jede Änderung mit, auch wenn die App nicht geöffnet ist
+		WearSync.push(appContext);
 	}
 
 	/** Lesezugriff: Ergebnis zurück auf den Main-Thread, keine Benachrichtigung. */
