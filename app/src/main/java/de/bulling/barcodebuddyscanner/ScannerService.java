@@ -385,8 +385,11 @@ public class ScannerService extends Service {
 					return;
 				}
 			}
-			publish(reason == null ? getString(R.string.scanner_status_retry, name)
-					: getString(R.string.scanner_status_retry_reason, name, reason), false);
+			// Gleichbleibende Meldung statt Wechsel zwischen "Verbinde" und "nicht erreichbar"; der Grund steht im Log
+			if (reason != null) {
+				Log.i(TAG, "Scanner nicht erreichbar: " + reason);
+			}
+			publish(getString(R.string.scanner_status_connecting, name), false);
 			sleep(RETRY_DELAY_MS);
 		}
 	}
