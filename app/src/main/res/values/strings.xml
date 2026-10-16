@@ -117,6 +117,19 @@
     </plurals>
     <string name="open_barcode_buddy">Barcode Buddy öffnen</string>
 
+    <!-- Scan-Benachrichtigung (auch für die Smartwatch) -->
+    <string name="scan_notification">Benachrichtigung bei jedem Scan</string>
+    <string name="scan_notification_summary">Zeigt Produkt, Preis und voraussichtlichen Gesamtbetrag, auch auf der Smartwatch</string>
+    <string name="notif_channel_scan">Scan-Info</string>
+    <string name="notif_channel_scan_description">Zuletzt gescanntes Produkt und voraussichtlicher Gesamtbetrag des Einkaufs</string>
+    <string name="notif_title_qty">%1$s  ×%2$d</string>
+    <string name="notif_no_price">kein Preis</string>
+    <string name="notif_total">Einkauf ca. %1$s</string>
+    <string name="notif_without_price">(%1$d ohne Preis)</string>
+    <string name="notif_new_product">Neues Produkt, noch nicht in Grocy</string>
+    <string name="notif_action_minus">−1</string>
+    <string name="notif_action_remove">Entfernen</string>
+
     <!-- Barcode-Buddy-Verbindung -->
     <string name="bb_header">Barcode Buddy</string>
     <string name="bb_title">Barcode-Buddy-Verbindung</string>

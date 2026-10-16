@@ -110,6 +110,12 @@
             app:key="spp_device"
             app:title="@string/spp_device_title" />
 
+        <SwitchPreferenceCompat
+            app:defaultValue="true"
+            app:key="scan_notification"
+            app:summary="@string/scan_notification_summary"
+            app:title="@string/scan_notification" />
+
         <ListPreference
             android:defaultValue="connected"
             android:entries="@array/scanner_standby"

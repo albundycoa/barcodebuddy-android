@@ -57,6 +57,7 @@ import de.bulling.barcodebuddyscanner.Helper.ReceiptPdf;
 import de.bulling.barcodebuddyscanner.Helper.PermissionHelper;
 import de.bulling.barcodebuddyscanner.Helper.PurchaseSender;
 import de.bulling.barcodebuddyscanner.Helper.ScanFeedback;
+import de.bulling.barcodebuddyscanner.Helper.ScanNotifier;
 import de.bulling.barcodebuddyscanner.Helper.SharedPrefHelper;
 
 public class MainActivity extends AppCompatActivity implements ShoppingRepository.Listener, ItemAdapter.Actions {
@@ -124,6 +125,9 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
         // still go ahead either way.
         PermissionHelper.requestLocalNetworkPermissionIfNeeded(this);
         checkIfBarcodeScannerEnabled();
+        if (SharedPrefHelper.isScanNotificationEnabled(this)) {
+            PermissionHelper.requestNotificationPermissionIfNeeded(this);
+        }
     }
 
     @Override
@@ -820,7 +824,7 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
             if (event.getAction() == KeyEvent.ACTION_UP) {
                 if (!receivedBarcode.isEmpty()) {
                     feedback.beep();
-                    repo.addScan(receivedBarcode, null);
+                    repo.addScan(receivedBarcode, item -> ScanNotifier.show(this));
                 }
                 receivedBarcode = "";
             }

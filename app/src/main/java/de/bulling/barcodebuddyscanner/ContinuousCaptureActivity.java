@@ -22,6 +22,7 @@ import de.bulling.barcodebuddyscanner.Data.ShoppingRepository;
 import de.bulling.barcodebuddyscanner.Helper.EdgeToEdgeHelper;
 import de.bulling.barcodebuddyscanner.Helper.PermissionHelper;
 import de.bulling.barcodebuddyscanner.Helper.ScanFeedback;
+import de.bulling.barcodebuddyscanner.Helper.ScanNotifier;
 import de.bulling.barcodebuddyscanner.Helper.SharedPrefHelper;
 
 
@@ -81,8 +82,10 @@ public class ContinuousCaptureActivity extends Activity {
 			lastScanTime = System.currentTimeMillis();
 			lastBarcode  = text;
 			feedback.beep();
-			repo.addScan(text, item -> barcodeView.setStatusText(
-					getString(R.string.scan_status, text, item.quantity)));
+			repo.addScan(text, item -> {
+				barcodeView.setStatusText(getString(R.string.scan_status, text, item.quantity));
+				ScanNotifier.show(ContinuousCaptureActivity.this);
+			});
 		}
 
 		@Override

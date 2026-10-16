@@ -35,6 +35,9 @@
                 <action android:name="android.bluetooth.device.action.ACL_CONNECTED" />
             </intent-filter>
         </receiver>
+        <receiver
+            android:name=".ScanActionReceiver"
+            android:exported="false" />
         <service
             android:name=".ScannerService"
             android:exported="false"

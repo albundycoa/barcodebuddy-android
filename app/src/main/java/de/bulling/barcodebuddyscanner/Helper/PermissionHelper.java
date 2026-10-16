@@ -83,6 +83,16 @@ public class PermissionHelper {
 		}
 	}
 
+	/** Benachrichtigungen sind ab Android 13 eine Berechtigung. */
+	public static void requestNotificationPermissionIfNeeded(final Activity activity) {
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+				&& ContextCompat.checkSelfPermission(activity, Manifest.permission.POST_NOTIFICATIONS)
+				!= PackageManager.PERMISSION_GRANTED) {
+			ActivityCompat.requestPermissions(activity,
+					new String[]{Manifest.permission.POST_NOTIFICATIONS}, REQUEST_CODE_BLUETOOTH);
+		}
+	}
+
 	public static boolean hasCameraPermission(final Context context) {
 		return ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA)
 				== PackageManager.PERMISSION_GRANTED;

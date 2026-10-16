@@ -69,6 +69,11 @@ public class SharedPrefHelper {
 	}
 
 	/** Bluetooth-Barcodescanner im seriellen Modus (SPP), läuft über einen Hintergrunddienst */
+	/** Nach jedem Scan eine Benachrichtigung zeigen (wird auf die Smartwatch gespiegelt). */
+	public static boolean isScanNotificationEnabled(Context context) {
+		return PreferenceManager.getDefaultSharedPreferences(context).getBoolean("scan_notification", true);
+	}
+
 	public static boolean isSppScannerEnabled(Context context) {
 		return SCAN_METHOD_SPP.equals(scanMethod(context));
 	}

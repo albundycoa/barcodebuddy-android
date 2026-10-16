@@ -38,6 +38,7 @@ import de.bulling.barcodebuddyscanner.Api.GrocySync;
 import de.bulling.barcodebuddyscanner.Data.ShoppingRepository;
 import de.bulling.barcodebuddyscanner.Helper.PermissionHelper;
 import de.bulling.barcodebuddyscanner.Helper.ScanFeedback;
+import de.bulling.barcodebuddyscanner.Helper.ScanNotifier;
 import de.bulling.barcodebuddyscanner.Helper.SharedPrefHelper;
 
 /**
@@ -364,7 +365,10 @@ public class ScannerService extends Service {
 		main.post(() -> {
 			feedback.beep();
 			// Danach die Einkaufsliste in Grocy abhaken, falls der Scan einen Eintrag abdeckt
-			repo.addScan(code, item -> GrocySync.pushShoppingDone(getApplicationContext()));
+			repo.addScan(code, item -> {
+				GrocySync.pushShoppingDone(getApplicationContext());
+				ScanNotifier.show(getApplicationContext());
+			});
 			scanCount++;
 			updateNotification();
 		});
