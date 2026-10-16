@@ -34,6 +34,18 @@ final class PhoneLink {
 
 	/** Bittet das Handy um den aktuellen Stand. */
 	static void requestSync(Context context) {
+		final Context app = context.getApplicationContext();
+		// Die Data Layer meldet nur Änderungen: den bereits vorhandenen Stand holt die Uhr selbst ab
+		Wearable.getDataClient(app).getDataItems(android.net.Uri.parse("wear://*/bbs/state"))
+				.addOnSuccessListener(items -> {
+					for (com.google.android.gms.wearable.DataItem item : items) {
+						String json = com.google.android.gms.wearable.DataMapItem.fromDataItem(item).getDataMap().getString("json");
+						if (json != null) {
+							State.save(app, json);
+						}
+					}
+					items.release();
+				});
 		JsonObject c = new JsonObject();
 		c.addProperty("a", "sync");
 		send(context, c);

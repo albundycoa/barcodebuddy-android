@@ -28,6 +28,7 @@ public class WearListenerService extends WearableListenerService {
 			return;
 		}
 		final Context app = getApplicationContext();
+		Log.d(TAG, "Befehl von der Uhr: " + new String(event.getData(), StandardCharsets.UTF_8));
 		try {
 			JsonObject cmd = JsonParser.parseString(new String(event.getData(), StandardCharsets.UTF_8)).getAsJsonObject();
 			String action = cmd.get("a").getAsString();

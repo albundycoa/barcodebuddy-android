@@ -9,7 +9,6 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
-import androidx.wear.widget.WearableLinearLayoutManager;
 import androidx.wear.widget.WearableRecyclerView;
 
 import com.google.gson.JsonArray;
@@ -35,8 +34,8 @@ public class ScansActivity extends Activity implements State.Listener {
 		setContentView(R.layout.activity_list);
 		WearableRecyclerView list = findViewById(R.id.list);
 		empty = findViewById(R.id.empty);
-		list.setEdgeItemsCenteringEnabled(true);
-		list.setLayoutManager(new WearableLinearLayoutManager(this));
+		list.setEdgeItemsCenteringEnabled(false);
+		list.setLayoutManager(new androidx.recyclerview.widget.LinearLayoutManager(this));
 		adapter = new RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 			@Override
 			public int getItemViewType(int position) {

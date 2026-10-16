@@ -10,7 +10,6 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
-import androidx.wear.widget.WearableLinearLayoutManager;
 import androidx.wear.widget.WearableRecyclerView;
 
 import com.google.gson.JsonArray;
@@ -42,8 +41,8 @@ public class ShoppingActivity extends Activity implements State.Listener {
 		setContentView(R.layout.activity_list);
 		list = findViewById(R.id.list);
 		empty = findViewById(R.id.empty);
-		list.setEdgeItemsCenteringEnabled(true);
-		list.setLayoutManager(new WearableLinearLayoutManager(this));
+		list.setEdgeItemsCenteringEnabled(false);
+		list.setLayoutManager(new androidx.recyclerview.widget.LinearLayoutManager(this));
 		adapter = new RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 			@Override
 			public int getItemViewType(int position) {
