@@ -12,4 +12,16 @@
         <item>1</item>
         <item>2</item>
     </string-array>
+
+    <string-array name="scan_method">
+        <item>@string/scan_method_scanner</item>
+        <item>@string/scan_method_camera</item>
+        <item>@string/scan_method_both</item>
+    </string-array>
+
+    <string-array name="scan_method_val">
+        <item>scanner</item>
+        <item>camera</item>
+        <item>both</item>
+    </string-array>
 </resources>

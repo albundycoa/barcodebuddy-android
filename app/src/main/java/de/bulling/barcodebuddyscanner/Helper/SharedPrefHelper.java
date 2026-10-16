@@ -45,9 +45,22 @@ public class SharedPrefHelper {
 		return this.globalPreferences.getBoolean("use_beep", true);
 	}
 
+	private static final String SCAN_METHOD_SCANNER = "scanner";
+	private static final String SCAN_METHOD_CAMERA  = "camera";
+
+	private static String scanMethod(Context context) {
+		return PreferenceManager.getDefaultSharedPreferences(context)
+				.getString("scan_method", SCAN_METHOD_SCANNER);
+	}
+
+	/** Bluetooth-Barcodescanner im Tastaturmodus: "Barcodescanner" oder "Beides" */
 	public static boolean isBtScannerEnabled(Context context) {
-		SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
-		return preferences.getBoolean("use_bluetooth_scanner", false);
+		return !SCAN_METHOD_CAMERA.equals(scanMethod(context));
+	}
+
+	/** Kamera-Scanner: "Kamera" oder "Beides" */
+	public static boolean isCameraScannerEnabled(Context context) {
+		return !SCAN_METHOD_SCANNER.equals(scanMethod(context));
 	}
 
 	public float getBeepVolume() {

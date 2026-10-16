@@ -1,47 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Barcode Buddy Scanner</string>
-    <string name="scan_barcode">Scan Barcode</string>
-    <string name="welcome">Welcome!</string>
-    <string name="tut_text">Let\'s connect to Barcode Buddy!\n\nPlease open Barcode Buddy, go to the API menu and click on the three dots in the top right corner, to select \"Add mobile app\". Then scan the displayed QR code.</string>
-    <string name="scan">Scan</string>
+
+    <!-- Einrichtung -->
+    <string name="welcome">Willkommen!</string>
+    <string name="tut_text">Verbinden wir die App mit Barcode Buddy!\n\nÖffne Barcode Buddy, gehe ins Menü „API“, tippe oben rechts auf die drei Punkte und wähle „Mobile App hinzufügen“. Scanne dann den angezeigten QR-Code.</string>
+    <string name="scan">Scannen</string>
     <string name="url">URL</string>
     <string name="api">API</string>
-    <string name="connect">Connect</string>
-    <string name="privacy_policy">Privacy Policy</string>
-    <string name="error_unex">Error: Unexpected response</string>
-    <string name="error">Error: </string>
-    <string name="e_invalidqr">Invalid QR code, no setup info found.</string>
-    <string name="error_too_old">Please update your Barcode Buddy server.</string>
-    <string name="tut_connected">Connected! Tap on the barcode picture to start scanning.</string>
-    <string name="error_cnc">Could not connect to server!</string>
-    <string name="error_camera_permission_denied">Camera permission is required to scan barcodes.</string>
-    <string name="tut_scan">Scan setup QR code</string>
-    <string name="ignore_invalid_ssl_certificates">Ignore invalid SSL certificates</string>
-    <string name="crashed">Unexpected Error</string>
-    <string name="crashed_t">Sorry, Barcode Buddy has crashed. Please click on okay to send us an email for debugging. You can also add info in the field below.</string>
-    <string name="log_out">Log out</string>
-    <string name="title_activity_settings">Settings</string>
-    <string name="feedback_header">Feedback for found barcodes</string>
-    <string name="use_vibration">Vibrate</string>
-    <string name="use_beep">Sound</string>
-    <string name="volume">Volume</string>
-    <string name="scanner_header">Barcode Scanner</string>
-    <string name="orientation">Orientation</string>
+    <string name="connect">Verbinden</string>
+    <string name="privacy_policy">Datenschutzerklärung</string>
+    <string name="error_unex">Fehler: Unerwartete Antwort</string>
+    <string name="error">Fehler: </string>
+    <string name="e_invalidqr">Ungültiger QR-Code, keine Einrichtungsdaten gefunden.</string>
+    <string name="error_too_old">Bitte aktualisiere deinen Barcode-Buddy-Server.</string>
+    <string name="tut_connected">Verbunden! Scanne Barcodes mit der Kamera oder deinem Bluetooth-Scanner.</string>
+    <string name="error_cnc">Verbindung zum Server fehlgeschlagen!</string>
+    <string name="error_camera_permission_denied">Zum Scannen von Barcodes wird die Kameraberechtigung benötigt.</string>
+    <string name="tut_scan">Einrichtungs-QR-Code scannen</string>
+    <string name="ignore_invalid_ssl_certificates">Ungültige SSL-Zertifikate ignorieren</string>
 
-    <string name="orientation_auto">Auto</string>
-    <string name="orientation_land">Landscape</string>
-    <string name="orientation_port">Portrait</string>
-    <string name="use_bluetooth_scanner">Enable Bluetooth Barcode Scanner</string>
-    <string name="use_bluetooth_scanner_s">Scan a barcode with a connected physical scanner</string>
-    <string name="use_bluetooth_barcode_scanner_in_this_menu">Use Bluetooth barcode scanner in this menu</string>
-    <string name="b_mode">Set Mode</string>
+    <!-- Menü -->
+    <string name="title_history">Verlauf</string>
+    <string name="action_clear">Liste leeren</string>
+    <string name="action_clear_history">Verlauf leeren</string>
+    <string name="action_delete_trip">Einkauf löschen</string>
+    <string name="log_out">Abmelden</string>
+    <string name="title_activity_settings">Einstellungen</string>
 
-    <string name="mode_p">Purchase</string>
-    <string name="mode_c">Consume</string>
-    <string name="mode_o">Open</string>
-    <string name="mode_i">Inventory</string>
-    <string name="mode_s">Add to shoppinglist</string>
-    <string name="mode_ca">Consume All</string>
-    <string name="mode_cs">Consume (spoiled)</string>
+    <!-- Einkaufsliste -->
+    <string name="list_empty">Noch nichts gescannt.\nScanne einen Barcode mit der Kamera oder mit deinem Bluetooth-Scanner.</string>
+    <string name="list_empty_scanner_only">Noch nichts gescannt.\nScanne einen Barcode mit deinem Bluetooth-Scanner.</string>
+    <string name="list_empty_camera_only">Noch nichts gescannt.\nTippe auf „Kamera“, um Barcodes zu scannen.</string>
+    <string name="bt_scanner_active">Bluetooth-Scanner aktiv: Scans landen in der Liste.</string>
+    <string name="button_camera">Kamera</string>
+    <string name="button_send">Einkauf senden</string>
+    <string name="button_send_count">Einkauf senden (%1$d)</string>
+    <string name="camera_done">Fertig</string>
+    <string name="scan_status">%1$s  ×%2$d</string>
+    <string name="item_quantity_label">Stückzahl</string>
+    <string name="item_decrease">Eine weniger</string>
+    <string name="item_increase">Eine mehr</string>
+    <string name="item_delete">Artikel entfernen</string>
+    <string name="item_partly_sent">%1$d Stück schon gesendet</string>
+    <string name="item_removed">Entfernt: %1$s</string>
+    <string name="undo">Rückgängig</string>
+    <string name="qty_dialog_title">Stückzahl ändern</string>
+    <string name="clear_confirm_title">Liste leeren?</string>
+    <string name="clear_confirm_message">Alle %1$d Artikel aus der Einkaufsliste entfernen?</string>
+    <string name="clear">Leeren</string>
 
+    <!-- Senden -->
+    <string name="confirm_send_title">Einkauf senden?</string>
+    <string name="confirm_send_message">%1$d Artikel (%2$d Stück) werden an Barcode Buddy gesendet und als Einkauf gebucht.</string>
+    <string name="send">Senden</string>
+    <string name="sending_progress">Sende %1$d von %2$d …</string>
+    <string name="send_done">Einkauf gesendet: %1$d Stück.</string>
+    <string name="send_still_open">%1$d Artikel sind in der Liste geblieben.</string>
+    <string name="send_partial">%1$d von %2$d Stück gesendet.\nGrund: %3$s</string>
+    <string name="send_failed">Nichts gesendet.\nGrund: %1$s</string>
+    <string name="send_result_title">Ergebnis</string>
+
+    <!-- Verlauf -->
+    <string name="history_empty">Noch keine Einkäufe gesendet.</string>
+    <string name="trip_summary">%1$d Artikel · %2$d Stück</string>
+    <string name="trip_complete">Vollständig</string>
+    <string name="trip_partial">Teilweise</string>
+    <string name="delete">Löschen</string>
+    <string name="delete_trip_title">Einkauf löschen?</string>
+    <string name="delete_trip_message">Der Eintrag wird nur aus dem Verlauf der App entfernt. Die Buchung in Grocy bleibt bestehen.</string>
+    <string name="clear_history_title">Verlauf leeren?</string>
+    <string name="clear_history_message">Alle gesendeten Einkäufe aus dem Verlauf der App löschen? Die Buchungen in Grocy bleiben bestehen.</string>
+    <string name="trip_item_quantity">×%1$d</string>
+    <string name="trip_not_found">Dieser Einkauf existiert nicht mehr.</string>
+
+    <!-- Einstellungen -->
+    <string name="feedback_header">Rückmeldung bei Scans</string>
+    <string name="use_vibration">Vibration</string>
+    <string name="use_beep">Ton</string>
+    <string name="volume">Lautstärke</string>
+    <string name="scanner_header">Barcode-Scanner</string>
+    <string name="orientation">Ausrichtung</string>
+    <string name="orientation_auto">Automatisch</string>
+    <string name="orientation_land">Querformat</string>
+    <string name="orientation_port">Hochformat</string>
+    <string name="scan_method">Scan-Methode</string>
+    <string name="scan_method_scanner">Barcodescanner (Bluetooth, Tastaturmodus)</string>
+    <string name="scan_method_camera">Handy-Kamera</string>
+    <string name="scan_method_both">Barcodescanner und Kamera</string>
 </resources>

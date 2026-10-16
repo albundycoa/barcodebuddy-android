@@ -16,6 +16,9 @@ public class SettingsActivity extends AppCompatActivity {
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.settings_activity);
+		setSupportActionBar(findViewById(R.id.toolbar));
+		// Die Leiste unter die Statusleiste schieben (Edge-to-Edge ab SDK 35)
+		EdgeToEdgeHelper.applyInsetsAsPadding(findViewById(R.id.app_bar), false, true, false, false);
 		getSupportFragmentManager()
 				.beginTransaction()
 				.replace(R.id.settings, new SettingsFragment())

@@ -2,13 +2,19 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <item
+        android:id="@+id/action_history"
+        android:title="@string/title_history"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_clear"
+        android:title="@string/action_clear"
+        app:showAsAction="never" />
+    <item
         android:id="@+id/action_settings"
-        app:showAsAction="never"
-        android:title="@string/title_activity_settings">
-    </item>
+        android:title="@string/title_activity_settings"
+        app:showAsAction="never" />
     <item
         android:id="@+id/action_logout"
-        app:showAsAction="never"
-        android:title="@string/log_out">
-    </item>
+        android:title="@string/log_out"
+        app:showAsAction="never" />
 </menu>

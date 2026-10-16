@@ -1,6 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Heller Modus. Die gleichen Namen mit dunklen Werten stehen in values-night. -->
 <resources>
-    <color name="colorPrimary">#008577</color>
-    <color name="colorPrimaryDark">#00574B</color>
-    <color name="colorAccent">#D81B60</color>
+    <color name="md_primary">#00695C</color>
+    <color name="md_on_primary">#FFFFFF</color>
+    <color name="md_primary_container">#BDF0E5</color>
+    <color name="md_on_primary_container">#00201B</color>
+    <color name="md_secondary">#4A635F</color>
+    <color name="md_on_secondary">#FFFFFF</color>
+    <color name="md_secondary_container">#CCE8E2</color>
+    <color name="md_on_secondary_container">#05201C</color>
+    <color name="md_tertiary">#456179</color>
+    <color name="md_on_tertiary">#FFFFFF</color>
+    <color name="md_tertiary_container">#CCE5FF</color>
+    <color name="md_on_tertiary_container">#001E31</color>
+    <color name="md_background">#F4FBF9</color>
+    <color name="md_on_background">#161D1B</color>
+    <color name="md_surface">#F4FBF9</color>
+    <color name="md_on_surface">#161D1B</color>
+    <color name="md_surface_variant">#DAE5E1</color>
+    <color name="md_on_surface_variant">#3F4947</color>
+    <color name="md_outline">#6F7977</color>
+    <color name="md_surface_container_lowest">#FFFFFF</color>
+    <color name="md_surface_container_low">#EEF5F3</color>
+    <color name="md_surface_container">#E8F0ED</color>
+    <color name="md_surface_container_high">#E3EAE8</color>
+    <color name="md_surface_container_highest">#DDE4E2</color>
+    <color name="md_surface_dim">#D5DBD9</color>
+    <color name="md_surface_bright">#F4FBF9</color>
+    <color name="md_error_text">#BA1A1A</color>
 </resources>

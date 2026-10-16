@@ -34,6 +34,7 @@ public class BBApi {
 	private static final int REQUEST_SYSTEM_INFO = 0;
 	private static final int REQUEST_ACTION_BARCODE = 1;
 	private static final int REQUEST_SET_MODE = 2;
+	private static final int REQUEST_GET_MODE = 3;
 
 	public BBApi(final String url, final String apiKey, final boolean isUnsafe) {
 		String formattedUrl = url != null ? url.trim() : "";
@@ -114,6 +115,9 @@ public class BBApi {
 						case REQUEST_ACTION_BARCODE:
 							result = responseBody.get("data").getAsJsonObject().get("result").getAsString();
 							break;
+						case REQUEST_GET_MODE:
+							result = responseBody.get("data").getAsJsonObject().get("mode").getAsInt();
+							break;
 					}
 
 					final Object finalResult = result;
@@ -123,19 +127,19 @@ public class BBApi {
 					mainHandler.post(() -> {
 						switch (statusCode) {
 							case 400:
-								callback.onError(BBApiCallback.ERROR_OTHER, "Illegal API Parameter", statusCode);
+								callback.onError(BBApiCallback.ERROR_OTHER, "Ungültiger API-Parameter", statusCode);
 								break;
 							case 401:
-								callback.onError(BBApiCallback.ERROR_UNAUTHORIZED, "Invalid API key", statusCode);
+								callback.onError(BBApiCallback.ERROR_UNAUTHORIZED, "Ungültiger API-Schlüssel", statusCode);
 								break;
 							case 404:
-								callback.onError(BBApiCallback.ERROR_OTHER, "Invalid URL or incorrect response. Please make sure that the URL is correct and URL rewriting enabled.", statusCode);
+								callback.onError(BBApiCallback.ERROR_OTHER, "Ungültige URL oder falsche Antwort. Bitte prüfe die URL und ob URL-Rewriting aktiviert ist.", statusCode);
 								break;
 							case 500:
-								callback.onError(BBApiCallback.ERROR_OTHER, "Server error", statusCode);
+								callback.onError(BBApiCallback.ERROR_OTHER, "Serverfehler", statusCode);
 								break;
 							default:
-								callback.onError(BBApiCallback.ERROR_OTHER, "Unknown error occurred. Please check URL.", statusCode);
+								callback.onError(BBApiCallback.ERROR_OTHER, "Unbekannter Fehler. Bitte prüfe die URL.", statusCode);
 								break;
 						}
 					});
@@ -166,6 +170,11 @@ public class BBApi {
 		Map<String, String> params = new HashMap<>();
 		params.put("barcode", barcode);
 		executeRequest(REQUEST_ACTION_BARCODE, "action/scan", "POST", params, callback);
+	}
+
+	/** Liefert den aktuellen Modus von Barcode Buddy als Integer. */
+	public void getMode(final BBApiCallback callback) {
+		executeRequest(REQUEST_GET_MODE, "state/getmode", "GET", null, callback);
 	}
 
 	public void setMode(int mode, final BBApiCallback callback) {

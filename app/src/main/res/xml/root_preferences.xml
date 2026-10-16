@@ -32,11 +32,13 @@
             app:key="orientation" />
 
 
-        <SwitchPreferenceCompat
-            app:defaultValue="false"
-            app:key="use_bluetooth_scanner"
-            app:title="@string/use_bluetooth_scanner"
-            app:summary="@string/use_bluetooth_scanner_s"/>
+        <ListPreference
+            android:defaultValue="scanner"
+            android:entries="@array/scan_method"
+            android:entryValues="@array/scan_method_val"
+            android:summary="%s"
+            app:key="scan_method"
+            app:title="@string/scan_method" />
 
     </PreferenceCategory>
 

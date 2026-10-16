@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Dunkler Modus, folgt der Systemeinstellung des Geräts. -->
+<resources>
+    <color name="md_primary">#80D5C8</color>
+    <color name="md_on_primary">#003731</color>
+    <color name="md_primary_container">#005048</color>
+    <color name="md_on_primary_container">#BDF0E5</color>
+    <color name="md_secondary">#B1CCC6</color>
+    <color name="md_on_secondary">#1C3531</color>
+    <color name="md_secondary_container">#334B47</color>
+    <color name="md_on_secondary_container">#CCE8E2</color>
+    <color name="md_tertiary">#ADCAE6</color>
+    <color name="md_on_tertiary">#153349</color>
+    <color name="md_tertiary_container">#2D4A61</color>
+    <color name="md_on_tertiary_container">#CCE5FF</color>
+    <color name="md_background">#0E1513</color>
+    <color name="md_on_background">#DDE4E1</color>
+    <color name="md_surface">#0E1513</color>
+    <color name="md_on_surface">#DDE4E1</color>
+    <color name="md_surface_variant">#3F4947</color>
+    <color name="md_on_surface_variant">#BEC9C6</color>
+    <color name="md_outline">#899390</color>
+    <color name="md_surface_container_lowest">#090F0E</color>
+    <color name="md_surface_container_low">#161D1B</color>
+    <color name="md_surface_container">#1A211F</color>
+    <color name="md_surface_container_high">#252B2A</color>
+    <color name="md_surface_container_highest">#2F3634</color>
+    <color name="md_surface_dim">#0E1513</color>
+    <color name="md_surface_bright">#343B39</color>
+    <color name="md_error_text">#FFB4AB</color>
+</resources>

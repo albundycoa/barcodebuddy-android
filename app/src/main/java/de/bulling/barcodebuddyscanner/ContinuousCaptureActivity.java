@@ -3,14 +3,10 @@ package de.bulling.barcodebuddyscanner;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
-import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
-import android.view.MenuInflater;
 import android.view.View;
 import android.view.WindowManager;
-import android.widget.Button;
-import android.widget.PopupMenu;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -22,20 +18,24 @@ import com.journeyapps.barcodescanner.DecoratedBarcodeView;
 
 import java.util.List;
 
-import de.bulling.barcodebuddyscanner.Helper.ApiConnection;
+import de.bulling.barcodebuddyscanner.Data.ShoppingRepository;
 import de.bulling.barcodebuddyscanner.Helper.EdgeToEdgeHelper;
 import de.bulling.barcodebuddyscanner.Helper.PermissionHelper;
+import de.bulling.barcodebuddyscanner.Helper.ScanFeedback;
 import de.bulling.barcodebuddyscanner.Helper.SharedPrefHelper;
 
 
+/**
+ * Kamera-Scanner: Jeder erkannte Barcode landet in der Einkaufsliste, es wird
+ * noch nichts an Barcode Buddy gesendet.
+ */
 public class ContinuousCaptureActivity extends Activity {
 	private DecoratedBarcodeView barcodeView;
-	private Button               modeButton;
 	private long                 lastScanTime = 0;
 	private String               lastBarcode  = null;
 
-	private       ApiConnection apiConnection = null;
-	private final boolean       IS_DEBUG      = BuildConfig.DEBUG;
+	private ShoppingRepository repo;
+	private ScanFeedback       feedback;
 
 
 	@SuppressLint("SourceLockedOrientationActivity")
@@ -46,83 +46,43 @@ public class ContinuousCaptureActivity extends Activity {
 		setContentView(R.layout.continuous_scan);
 		getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
-		// ACCESS_LOCAL_NETWORK is optional: if denied, connecting to a
-		// Barcode Buddy server on the same LAN might not succeed, but we
-		// still go ahead and create the API instance either way.
-		PermissionHelper.requestLocalNetworkPermissionIfNeeded(this);
-		apiConnection = new ApiConnection(this, IS_DEBUG);
+		repo = ShoppingRepository.get(this);
+		feedback = new ScanFeedback(this);
 
 		barcodeView = findViewById(R.id.barcode_scanner);
-		modeButton = findViewById(R.id.button_mode);
 		barcodeView.setStatusText("");
-		modeButton.setOnClickListener(v -> showOnClickMenu(getApplicationContext(),v));
+		findViewById(R.id.button_done).setOnClickListener(v -> finish());
 
 		// The button bar is anchored to the bottom of the screen. Since
 		// edge-to-edge is enforced when targeting SDK 35+, it would
 		// otherwise render underneath the navigation/gesture bar, making
-		// the mode button hard or impossible to tap. The camera preview
+		// the button hard or impossible to tap. The camera preview
 		// itself is left alone so it still fills the whole screen.
 		View buttonsLayout = findViewById(R.id.buttonsLayout);
 		EdgeToEdgeHelper.applyInsetsAsPadding(buttonsLayout, true, false, true, true);
 		barcodeView.initializeFromIntent(getIntent());
 		barcodeView.decodeContinuous(callback);
 
-		int requestOrientation = apiConnection.getSharedPrefHelper().getPreferredOrientation();
+		int requestOrientation = new SharedPrefHelper(this).getPreferredOrientation();
 		if (requestOrientation != SharedPrefHelper.NO_ORIENTATION_CHANGE)
 			this.setRequestedOrientation(requestOrientation);
-	}
-
-	private void showOnClickMenu(Context context, View view) {
-		PopupMenu    popupMenu = new PopupMenu(context, view);
-		MenuInflater inflater  = popupMenu.getMenuInflater();
-		inflater.inflate(R.menu.modeselect, popupMenu.getMenu());
-
-		popupMenu.setOnMenuItemClickListener(item -> {
-			int itemId = item.getItemId();
-
-			if (itemId == R.id.modesel_p) {
-				apiConnection.setMode(2);
-				return true;
-			} else if (itemId == R.id.modesel_c) {
-				apiConnection.setMode(0);
-				return true;
-			} else if (itemId == R.id.modesel_o) {
-				apiConnection.setMode(3);
-				return true;
-			} else if (itemId == R.id.modesel_i) {
-				apiConnection.setMode(4);
-				return true;
-			} else if (itemId == R.id.modesel_s) {
-				apiConnection.setMode(5);
-				return true;
-			} else if (itemId == R.id.modesel_ca) {
-				apiConnection.setMode(6);
-				return true;
-			} else if (itemId == R.id.modesel_cs) {
-				apiConnection.setMode(1);
-				return true;
-			} else {
-				return false;
-			}
-		});
-
-		popupMenu.show();
 	}
 
 	private BarcodeCallback callback = new BarcodeCallback() {
 		@Override
 		public void barcodeResult(BarcodeResult result) {
+			final String text = result.getText();
 			long millisSinceLastScan = (System.currentTimeMillis() - lastScanTime);
-			if (result.getText() == null || (result.getText().equals(lastBarcode) && millisSinceLastScan < 1500)) {
+			if (text == null || text.isEmpty() || (text.equals(lastBarcode) && millisSinceLastScan < 1500)) {
 				// Prevent duplicate scans
 				return;
 			}
 
 			lastScanTime = System.currentTimeMillis();
-			lastBarcode  = result.getText();
-			barcodeView.setStatusText(result.getText());
-			if (!result.getText().isEmpty())
-				apiConnection.processBarcode(result.getText());
+			lastBarcode  = text;
+			feedback.beep();
+			repo.addScan(text, item -> barcodeView.setStatusText(
+					getString(R.string.scan_status, text, item.quantity)));
 		}
 
 		@Override
