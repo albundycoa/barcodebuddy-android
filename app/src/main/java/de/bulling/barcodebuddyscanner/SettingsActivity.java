@@ -77,6 +77,27 @@ public class SettingsActivity extends AppCompatActivity {
 		@Override
 		public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
 			setPreferencesFromResource(R.xml.root_preferences, rootKey);
+			androidx.preference.EditTextPreference battery = findPreference("battery_interval");
+			if (battery != null) {
+				battery.setOnBindEditTextListener(edit -> {
+					edit.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+					edit.selectAll();
+				});
+				// Nur ganze Minuten von 0 bis 1440 (ein Tag) zulassen
+				battery.setOnPreferenceChangeListener((p, value) -> {
+					try {
+						long minutes = Long.parseLong(String.valueOf(value).trim());
+						return minutes >= 0 && minutes <= 1440;
+					} catch (NumberFormatException e) {
+						return false;
+					}
+				});
+				battery.setSummaryProvider(p -> {
+					long minutes = SharedPrefHelper.getBatteryIntervalMs(requireContext()) / 60_000L;
+					return minutes == 0 ? getString(R.string.battery_interval_summary_off)
+							: getString(R.string.battery_interval_summary, (int) minutes);
+				});
+			}
 			sppDevice = findPreference("spp_device");
 			if (sppDevice != null) {
 				sppDevice.setOnPreferenceClickListener(p -> {

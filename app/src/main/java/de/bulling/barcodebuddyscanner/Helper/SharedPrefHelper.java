@@ -74,6 +74,16 @@ public class SharedPrefHelper {
 		return PreferenceManager.getDefaultSharedPreferences(context).getBoolean("scan_notification", true);
 	}
 
+	/** Abstand der Akku-Abfrage beim Scanner in Millisekunden (Standard 5 Minuten), 0 = nie automatisch. */
+	public static long getBatteryIntervalMs(Context context) {
+		String value = PreferenceManager.getDefaultSharedPreferences(context).getString("battery_interval", "5");
+		try {
+			return Math.max(0, Long.parseLong(value)) * 60_000L;
+		} catch (NumberFormatException e) {
+			return 5 * 60_000L;
+		}
+	}
+
 	public static boolean isSppScannerEnabled(Context context) {
 		return SCAN_METHOD_SPP.equals(scanMethod(context));
 	}

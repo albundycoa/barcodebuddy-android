@@ -133,6 +133,12 @@
             app:key="scanner_standby"
             app:title="@string/scanner_standby" />
 
+        <EditTextPreference
+            android:defaultValue="5"
+            android:dialogMessage="@string/battery_interval_hint"
+            app:key="battery_interval"
+            app:title="@string/battery_interval" />
+
     </PreferenceCategory>
 
 </PreferenceScreen>

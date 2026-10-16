@@ -789,7 +789,12 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
                     ok ? getString(R.string.shopping_updated) : message, Toast.LENGTH_LONG).show());
             return true;
         } else if (itemId == R.id.action_scanner_battery) {
-            showScannerBatteryCode();
+            if (ScannerService.requestBattery()) {
+                Toast.makeText(this, R.string.scanner_battery_asking, Toast.LENGTH_SHORT).show();
+            } else {
+                // Keine Verbindung über den Dienst: den Code zum Abscannen zeigen
+                showScannerBatteryCode();
+            }
             return true;
         } else if (itemId == R.id.action_products) {
             startActivity(new Intent(this, ProductsActivity.class));

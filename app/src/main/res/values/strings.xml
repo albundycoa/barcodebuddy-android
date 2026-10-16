@@ -182,6 +182,10 @@
     <string name="sync_mode_bg1">Beim Öffnen und stündlich im Hintergrund (WLAN)</string>
     <string name="sync_mode_bg6">Beim Öffnen und alle 6 Stunden im Hintergrund (WLAN)</string>
     <string name="sync_mode_bg24">Beim Öffnen und täglich im Hintergrund (WLAN)</string>
+    <string name="battery_interval">Akkustand des Scanners prüfen</string>
+    <string name="battery_interval_hint">Abstand in Minuten. 0 schaltet die automatische Abfrage aus; über das Menü lässt sich der Akkustand jederzeit abfragen.</string>
+    <string name="battery_interval_summary">Alle %1$d Minuten</string>
+    <string name="battery_interval_summary_off">Nie automatisch (nur über das Menü)</string>
     <string name="scanner_standby">Scanner-Dienst</string>
     <string name="scanner_standby_connected">Nur aktiv, solange der Scanner verbunden ist (spart Akku)</string>
     <string name="scanner_standby_always">Immer aktiv halten und Scanner suchen</string>
@@ -261,6 +265,8 @@
     <string name="scanner_status_no_permission">Bluetooth-Berechtigung fehlt</string>
     <string name="scanner_status_connecting">Verbinde mit %1$s …</string>
     <string name="scanner_status_connected_battery">Scanner verbunden: %1$s · Akku %2$d %%</string>
+    <string name="scanner_status_connected_battery_low">Scanner verbunden: %1$s · Akku niedrig: %2$d %%</string>
+    <string name="scanner_battery_asking">Akkustand wird abgefragt …</string>
     <string name="scanner_battery_toast">Akku des Scanners: %1$d %%</string>
     <string name="scanner_status_connected">Scanner verbunden: %1$s</string>
     <string name="scanner_status_retry">%1$s nicht erreichbar, neuer Versuch …</string>

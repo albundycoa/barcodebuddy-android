@@ -159,6 +159,52 @@ public class ScannerService extends Service {
 
 	private volatile String  deviceName = "";
 	private volatile int     batteryLevel = -1;
+	private volatile java.io.OutputStream out;
+
+	/** Befehl, auf den der Scanner mit seinem Akkustand antwortet (Inhalt des Codes "Verbleibender Akku" im Handbuch). */
+	private static final String BATTERY_COMMAND = "^&037&^";
+
+	private static volatile ScannerService current;
+
+	/** Fragt den Akkustand des verbundenen Scanners ab. Liefert false, wenn gerade keine Verbindung besteht. */
+	public static boolean requestBattery() {
+		ScannerService service = current;
+		if (service == null || !connected || service.out == null) {
+			return false;
+		}
+		service.sendBatteryQuery();
+		return true;
+	}
+
+	private void sendBatteryQuery() {
+		final java.io.OutputStream o = out;
+		if (o == null) {
+			return;
+		}
+		// Die Antwort kommt als normaler Scan ("61%") und wird in handleCode erkannt
+		new Thread(() -> {
+			try {
+				o.write(BATTERY_COMMAND.getBytes(java.nio.charset.StandardCharsets.US_ASCII));
+				o.flush();
+			} catch (IOException e) {
+				Log.i(TAG, "Akku-Abfrage nicht möglich: " + e.getMessage());
+			}
+		}, "scanner-battery").start();
+	}
+
+	/** Fragt den Akkustand regelmäßig ab, solange der Scanner verbunden ist. */
+	private final Runnable batteryPoll = new Runnable() {
+		@Override
+		public void run() {
+			if (connected && !stopping) {
+				long interval = SharedPrefHelper.getBatteryIntervalMs(ScannerService.this);
+				if (interval > 0) {
+					sendBatteryQuery();
+					main.postDelayed(this, interval);
+				}
+			}
+		}
+	};
 	private volatile boolean stopping   = false;
 	private volatile boolean endedByItself = false;
 	private volatile BluetoothSocket socket;
@@ -191,6 +237,7 @@ public class ScannerService extends Service {
 		feedback = new ScanFeedback(this);
 		notifications = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
 		ensureChannel(this);
+		current = this;
 	}
 
 	@Override
@@ -233,6 +280,8 @@ public class ScannerService extends Service {
 
 	@Override
 	public void onDestroy() {
+		current = null;
+		main.removeCallbacks(batteryPoll);
 		stopping = true;
 		running = false;
 		if (aclReceiverRegistered) {
@@ -294,6 +343,11 @@ public class ScannerService extends Service {
 				everConnected = true;
 				wasConnected = true;
 				publish(getString(R.string.scanner_status_connected, name), true);
+				out = s.getOutputStream();
+				main.removeCallbacks(batteryPoll);
+				if (SharedPrefHelper.getBatteryIntervalMs(this) > 0) {
+					main.postDelayed(batteryPoll, 1500);
+				}
 				readLoop(s.getInputStream());
 			} catch (IOException | IllegalArgumentException e) {
 				Log.i(TAG, "Verbindung beendet: " + e.getMessage());
@@ -386,7 +440,8 @@ public class ScannerService extends Service {
 			// Antwort auf den Akku-Code: kein Artikel, sondern Anzeige in der Statuszeile
 			batteryLevel = battery;
 			if (connected) {
-				publish(getString(R.string.scanner_status_connected_battery, deviceName, battery), true);
+				publish(getString(battery <= 20 ? R.string.scanner_status_connected_battery_low
+						: R.string.scanner_status_connected_battery, deviceName, battery), true);
 			}
 			return;
 		}
