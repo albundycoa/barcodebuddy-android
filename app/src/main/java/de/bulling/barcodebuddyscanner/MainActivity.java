@@ -468,6 +468,7 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
                 }
                 String text = getString(R.string.shopping_progress, entryAdapter.getDoneCount(),
                         entryAdapter.getTotalCount());
+                text += "  ·  " + getString(R.string.shopping_value, Money.format(shoppingData.totalValue()));
                 if (unsynced > 0) {
                     text += "  ·  " + getString(R.string.shopping_unsynced, unsynced);
                 }

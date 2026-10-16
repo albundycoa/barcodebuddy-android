@@ -142,6 +142,9 @@ public class ShoppingActivity extends Activity implements State.Listener {
 		JsonObject state = State.load(this);
 		rows.clear();
 		JsonArray shop = State.array(state, "shop");
+		if (state != null && state.has("stotal") && shop.size() > 0) {
+			rows.add(header(getString(R.string.shopping_value, state.get("stotal").getAsString()), false));
+		}
 		String lastShop = null;
 		String lastGroup = null;
 		boolean inDone = false;

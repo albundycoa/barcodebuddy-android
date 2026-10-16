@@ -624,6 +624,17 @@ public final class ShoppingRepository {
 			this.groupPosition = groupPosition;
 		}
 
+		/** Gesamtwert der Liste wie in Grocy: Menge in Lagereinheiten mal letzter Preis, ohne bekannte Preise null. */
+		public double totalValue() {
+			double sum = 0;
+			for (ShoppingEntry e : entries) {
+				if (!e.isNote && e.lastPrice != null) {
+					sum += e.lastPrice * e.stockAmount;
+				}
+			}
+			return sum;
+		}
+
 		private int groupRank(ShoppingEntry e) {
 			if (e.isNote || e.group == null) {
 				return Integer.MAX_VALUE;

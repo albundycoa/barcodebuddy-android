@@ -57,7 +57,8 @@ public class MainActivity extends Activity implements State.Listener {
 				open++;
 			}
 		}
-		textShopping.setText(getString(R.string.open_count, open));
+		textShopping.setText(getString(R.string.open_count, open)
+				+ (state.has("stotal") ? " · " + state.get("stotal").getAsString() : ""));
 		JsonArray scans = State.array(state, "scans");
 		String total = state.has("total") ? state.get("total").getAsString() : "";
 		textScans.setText(getString(R.string.scan_count, scans.size()) + (scans.size() > 0 ? " · " + total : ""));

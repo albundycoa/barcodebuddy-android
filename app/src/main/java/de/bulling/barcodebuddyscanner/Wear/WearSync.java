@@ -81,6 +81,7 @@ public final class WearSync {
 			shop.add(o);
 		}
 		root.add("shop", shop);
+		root.addProperty("stotal", Money.format(shopping.totalValue()));
 
 		// Gescannte Artikel, der zuletzt gescannte zuerst
 		JsonArray scans = new JsonArray();

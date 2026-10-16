@@ -8,6 +8,7 @@
     <string name="scans_empty">Noch nichts gescannt.</string>
     <string name="open_count">%1$d offen</string>
     <string name="scan_count">%1$d Artikel</string>
+    <string name="shopping_value">Gesamtwert %1$s</string>
     <string name="total">Summe %1$s</string>
     <string name="done_by_scan">Durch Scan erledigt</string>
     <string name="no_phone">Handy nicht erreichbar</string>
