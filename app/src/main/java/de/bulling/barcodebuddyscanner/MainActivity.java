@@ -23,8 +23,10 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.color.MaterialColors;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
 import com.google.android.material.snackbar.Snackbar;
@@ -74,6 +76,7 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
     private int currentTab = 1;
 
     private RecyclerView itemList;
+    private SwipeRefreshLayout refresh;
     private TextView emptyView;
     private TextView btHint;
     private TextView totalBar;
@@ -247,6 +250,11 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
         feedback = new ScanFeedback(this);
 
         itemList = findViewById(R.id.item_list);
+        refresh = findViewById(R.id.refresh);
+        refresh.setColorSchemeColors(MaterialColors.getColor(this, androidx.appcompat.R.attr.colorPrimary, 0));
+        refresh.setProgressBackgroundColorSchemeColor(
+                MaterialColors.getColor(this, com.google.android.material.R.attr.colorSurfaceContainerHigh, 0));
+        refresh.setOnRefreshListener(this::refreshFromGrocy);
         emptyView = findViewById(R.id.empty_view);
         btHint = findViewById(R.id.bt_hint);
         totalBar = findViewById(R.id.total_bar);
@@ -331,6 +339,23 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
         });
     }
 
+    /** Herunterziehen: Einkaufsliste, Produkte, Bestand und Preise neu aus Grocy laden. */
+    private void refreshFromGrocy() {
+        if (!SharedPrefHelper.hasGrocy(this)) {
+            refresh.setRefreshing(false);
+            return;
+        }
+        GrocySync.start(this, (ok, message) -> {
+            if (isFinishing() || isDestroyed()) {
+                return;
+            }
+            refresh.setRefreshing(false);
+            if (!ok) {
+                Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+            }
+        });
+    }
+
     /** Reiter nur zeigen, wenn Grocy gekoppelt ist; Titel mit Anzahl der offenen Einträge. */
     private void updateTabs() {
         boolean grocy = SharedPrefHelper.hasGrocy(this);
@@ -406,7 +431,6 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
         boolean grocyTab = currentTab == 0 && SharedPrefHelper.hasGrocy(this);
         boolean empty = grocyTab ? (shoppingData == null || shoppingData.entries.isEmpty()) : currentItems.isEmpty();
         emptyView.setVisibility(empty ? View.VISIBLE : View.GONE);
-        itemList.setVisibility(empty ? View.INVISIBLE : View.VISIBLE);
         if (grocyTab) {
             emptyView.setText(R.string.shopping_empty);
             if (!empty) {
