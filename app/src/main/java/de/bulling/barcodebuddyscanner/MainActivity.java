@@ -64,6 +64,7 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
     private List<ShoppingItem> currentItems = new ArrayList<>();
     private boolean sending = false;
 
+    private boolean bluetoothPermissionAsked = false;
     private boolean useBarcodeScanner = false;
     private String receivedBarcode = "";
 
@@ -95,12 +96,17 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
         if (activeSender != null) {
             activeSender.attach(senderListener);
         }
+        ScannerService.addStatusListener(sppStatusListener);
+        if (!SharedPrefHelper.noApiDetailsSaved(this)) {
+            ensureSppService();
+        }
     }
 
     @Override
     protected void onStop() {
         super.onStop();
         repo.removeListener(this);
+        ScannerService.removeStatusListener(sppStatusListener);
         if (activeSender != null) {
             activeSender.detach();
         }
@@ -134,8 +140,11 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
         // Scan-Methode aus den Einstellungen: Barcodescanner, Kamera oder beides
         useBarcodeScanner = SharedPrefHelper.isBtScannerEnabled(this);
         boolean useCamera = SharedPrefHelper.isCameraScannerEnabled(this);
-        btHint.setVisibility(useBarcodeScanner ? View.VISIBLE : View.GONE);
+        boolean useSpp = SharedPrefHelper.isSppScannerEnabled(this);
+        btHint.setVisibility(useBarcodeScanner || useSpp ? View.VISIBLE : View.GONE);
+        btHint.setText(useSpp ? ScannerService.getStatusText() : getString(R.string.bt_scanner_active));
         cameraButton.setVisibility(useCamera ? View.VISIBLE : View.GONE);
+        ensureSppService();
         if (useCamera && useBarcodeScanner) {
             emptyView.setText(R.string.list_empty);
         } else if (useCamera) {
@@ -149,6 +158,54 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
             getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         }
     }
+
+    /**
+     * Startet den Dienst für den seriellen (SPP) Scanner, wenn diese Scan-Methode gewählt ist,
+     * und beendet ihn sonst. Fehlende Bluetooth-Berechtigungen werden einmal angefragt.
+     */
+    private void ensureSppService() {
+        if (!SharedPrefHelper.isSppScannerEnabled(this)) {
+            if (ScannerService.isRunning()) {
+                ScannerService.stop(this);
+            }
+            return;
+        }
+        if (!PermissionHelper.hasBluetoothConnectPermission(this)) {
+            if (!bluetoothPermissionAsked) {
+                bluetoothPermissionAsked = true;
+                PermissionHelper.requestBluetoothPermissions(this);
+            } else {
+                btHint.setText(R.string.scanner_status_no_permission);
+            }
+            return;
+        }
+        if (!bluetoothPermissionAsked) {
+            // Benachrichtigungen (Android 13+) einmal anfragen, damit die Dienst-Meldung sichtbar ist
+            bluetoothPermissionAsked = true;
+            PermissionHelper.requestBluetoothPermissions(this);
+        }
+        if (SharedPrefHelper.getSppAddress(this).isEmpty()) {
+            btHint.setText(R.string.scanner_status_no_device);
+            return;
+        }
+        if (!ScannerService.isRunning()) {
+            ScannerService.start(this);
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == PermissionHelper.REQUEST_CODE_BLUETOOTH) {
+            ensureSppService();
+        }
+    }
+
+    private final ScannerService.StatusListener sppStatusListener = (text, connected) -> {
+        if (SharedPrefHelper.isSppScannerEnabled(this) && !text.isEmpty()) {
+            btHint.setText(text);
+        }
+    };
 
     private void setupUI() {
         Toolbar toolbar = findViewById(R.id.toolbar);

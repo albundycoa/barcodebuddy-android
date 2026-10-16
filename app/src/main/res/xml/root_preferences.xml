@@ -61,6 +61,10 @@
             app:key="scan_method"
             app:title="@string/scan_method" />
 
+        <Preference
+            app:key="spp_device"
+            app:title="@string/spp_device_title" />
+
     </PreferenceCategory>
 
 </PreferenceScreen>

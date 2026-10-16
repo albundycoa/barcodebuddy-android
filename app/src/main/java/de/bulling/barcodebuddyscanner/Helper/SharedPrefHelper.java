@@ -47,21 +47,47 @@ public class SharedPrefHelper {
 	}
 
 	private static final String SCAN_METHOD_SCANNER = "scanner";
+	private static final String SCAN_METHOD_SPP     = "spp";
 	private static final String SCAN_METHOD_CAMERA  = "camera";
+	private static final String SCAN_METHOD_BOTH    = "both";
 
 	private static String scanMethod(Context context) {
 		return PreferenceManager.getDefaultSharedPreferences(context)
 				.getString("scan_method", SCAN_METHOD_SCANNER);
 	}
 
-	/** Bluetooth-Barcodescanner im Tastaturmodus: "Barcodescanner" oder "Beides" */
+	/** Bluetooth-Barcodescanner im Tastaturmodus (HID): "Barcodescanner" oder "Beides" */
 	public static boolean isBtScannerEnabled(Context context) {
-		return !SCAN_METHOD_CAMERA.equals(scanMethod(context));
+		String method = scanMethod(context);
+		return SCAN_METHOD_SCANNER.equals(method) || SCAN_METHOD_BOTH.equals(method);
+	}
+
+	/** Bluetooth-Barcodescanner im seriellen Modus (SPP), läuft über einen Hintergrunddienst */
+	public static boolean isSppScannerEnabled(Context context) {
+		return SCAN_METHOD_SPP.equals(scanMethod(context));
 	}
 
 	/** Kamera-Scanner: "Kamera" oder "Beides" */
 	public static boolean isCameraScannerEnabled(Context context) {
-		return !SCAN_METHOD_SCANNER.equals(scanMethod(context));
+		String method = scanMethod(context);
+		return SCAN_METHOD_CAMERA.equals(method) || SCAN_METHOD_BOTH.equals(method);
+	}
+
+	// ---- SPP-Scanner ----
+
+	public static String getSppAddress(Context context) {
+		return PreferenceManager.getDefaultSharedPreferences(context).getString("spp_address", "");
+	}
+
+	public static String getSppName(Context context) {
+		return PreferenceManager.getDefaultSharedPreferences(context).getString("spp_name", "");
+	}
+
+	public static void saveSppDevice(Context context, String address, String name) {
+		PreferenceManager.getDefaultSharedPreferences(context).edit()
+				.putString("spp_address", address)
+				.putString("spp_name", name)
+				.apply();
 	}
 
 	public float getBeepVolume() {

@@ -27,11 +27,14 @@ public final class BeepManager {
 	private SoundPool soundPool;
 	private int       beepSound;
 
-	public BeepManager(Activity activity) {
-		activity.setVolumeControlStream(AudioManager.STREAM_MUSIC);
+	/** Context einer Activity oder eines Dienstes (der Scanner-Dienst piept auch bei ausgeschaltetem Display). */
+	public BeepManager(Context context) {
+		if (context instanceof Activity) {
+			((Activity) context).setVolumeControlStream(AudioManager.STREAM_MUSIC);
+		}
 
 		// We do not keep a reference to the Activity itself, to prevent leaks
-		this.context = activity.getApplicationContext();
+		this.context = context.getApplicationContext();
 
 		AudioAttributes attributes = new AudioAttributes.Builder()
 				.setUsage(AudioAttributes.USAGE_MEDIA)

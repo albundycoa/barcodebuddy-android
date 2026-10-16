@@ -1,6 +1,6 @@
 package de.bulling.barcodebuddyscanner.Helper;
 
-import android.app.Activity;
+import android.content.Context;
 
 /**
  * Piepen und Vibrieren bei einem Scan, gemäß den Einstellungen.
@@ -10,9 +10,9 @@ public class ScanFeedback {
 	private final BeepManager     beepManager;
 	private final SharedPrefHelper prefHelper;
 
-	public ScanFeedback(Activity activity) {
-		prefHelper  = new SharedPrefHelper(activity);
-		beepManager = new BeepManager(activity);
+	public ScanFeedback(Context context) {
+		prefHelper  = new SharedPrefHelper(context);
+		beepManager = new BeepManager(context);
 		reloadPrefs();
 	}
 

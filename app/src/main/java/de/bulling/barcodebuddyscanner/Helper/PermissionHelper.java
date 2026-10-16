@@ -53,6 +53,36 @@ public class PermissionHelper {
 		}
 	}
 
+	public static final int REQUEST_CODE_BLUETOOTH = 2003;
+
+	/** Ab Android 12 muss die Verbindung zu gekoppelten Bluetooth-Geräten erlaubt werden. */
+	public static boolean hasBluetoothConnectPermission(final Context context) {
+		if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+			return true;
+		}
+		return ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT)
+				== PackageManager.PERMISSION_GRANTED;
+	}
+
+	/**
+	 * Fragt die Berechtigungen für den SPP-Scanner an: Bluetooth (Pflicht) und
+	 * Benachrichtigungen (damit die Dienst-Meldung sichtbar ist, ab Android 13).
+	 */
+	public static void requestBluetoothPermissions(final Activity activity) {
+		java.util.List<String> missing = new java.util.ArrayList<>();
+		if (!hasBluetoothConnectPermission(activity)) {
+			missing.add(Manifest.permission.BLUETOOTH_CONNECT);
+		}
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+				&& ContextCompat.checkSelfPermission(activity, Manifest.permission.POST_NOTIFICATIONS)
+				!= PackageManager.PERMISSION_GRANTED) {
+			missing.add(Manifest.permission.POST_NOTIFICATIONS);
+		}
+		if (!missing.isEmpty()) {
+			ActivityCompat.requestPermissions(activity, missing.toArray(new String[0]), REQUEST_CODE_BLUETOOTH);
+		}
+	}
+
 	public static boolean hasCameraPermission(final Context context) {
 		return ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA)
 				== PackageManager.PERMISSION_GRANTED;
