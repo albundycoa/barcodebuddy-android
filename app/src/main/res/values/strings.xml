@@ -88,6 +88,21 @@
     <string name="section_new">Neue Produkte (noch nicht in Grocy)</string>
     <string name="section_none">Ohne Geschäft</string>
     <string name="section_title">%1$s · %2$d</string>
+    <string name="section_title_sum">%1$s · %2$d · %3$s</string>
+    <string name="section_new_short">Neue Produkte</string>
+    <string name="total_estimate">Voraussichtlich: %1$s</string>
+    <string name="total_missing">%1$d Artikel ohne Preis</string>
+    <string name="action_receipt">Kassenbon exportieren</string>
+    <string name="receipt_title">Einkaufsbeleg</string>
+    <string name="receipt_overview">Übersicht</string>
+    <string name="receipt_note">Voraussichtliche Beträge aus der App, kein Kassenbon.</string>
+    <string name="receipt_subtotal">Zwischensumme</string>
+    <string name="receipt_total">Gesamt</string>
+    <string name="receipt_no_price">kein Preis</string>
+    <string name="receipt_missing_prices">%1$d Artikel ohne Preis nicht enthalten</string>
+    <string name="receipt_saved">Kassenbon gespeichert.</string>
+    <string name="receipt_failed">Kassenbon konnte nicht gespeichert werden.</string>
+    <string name="receipt_empty">Nichts zu exportieren.</string>
     <string name="item_per_scan">%1$s %2$s/Scan</string>
     <string name="price_add">Preis eintragen</string>
     <string name="price_line">%1$s / %2$s = %3$s</string>
@@ -101,6 +116,41 @@
         <item quantity="other">%1$d neue Produkte warten in Barcode Buddy auf Zuordnung.</item>
     </plurals>
     <string name="open_barcode_buddy">Barcode Buddy öffnen</string>
+
+    <!-- Einstellungen: Buchung, Synchronisierung, Scanner-Dienst, Produkte -->
+    <string name="booking_mode">Buchung</string>
+    <string name="booking_mode_grocy">Bekannte Produkte direkt in Grocy buchen</string>
+    <string name="booking_mode_bb">Alles über Barcode Buddy buchen</string>
+    <string name="sync_mode">Synchronisierung mit Grocy</string>
+    <string name="sync_mode_manual">Nur manuell</string>
+    <string name="sync_mode_open">Beim Öffnen der App</string>
+    <string name="sync_mode_bg1">Beim Öffnen und stündlich im Hintergrund (WLAN)</string>
+    <string name="sync_mode_bg6">Beim Öffnen und alle 6 Stunden im Hintergrund (WLAN)</string>
+    <string name="sync_mode_bg24">Beim Öffnen und täglich im Hintergrund (WLAN)</string>
+    <string name="scanner_standby">Scanner-Dienst</string>
+    <string name="scanner_standby_connected">Nur aktiv, solange der Scanner verbunden ist (spart Akku)</string>
+    <string name="scanner_standby_always">Immer aktiv halten und Scanner suchen</string>
+    <string name="products_title">Produkte</string>
+    <string name="products_pref_summary">Die lokale Produktdatenbank aus Grocy ansehen</string>
+    <string name="products_search_hint">Name oder Barcode suchen</string>
+    <string name="products_header">%1$d Produkte · %2$s</string>
+    <string name="products_never_synced">noch nicht synchronisiert</string>
+    <string name="products_synced_at">synchronisiert %1$s</string>
+    <string name="products_empty">Keine Produkte gefunden. Verbinde zuerst Grocy und synchronisiere.</string>
+    <string name="products_detail_stock">Bestand: %1$s %2$s</string>
+    <string name="products_detail_price">Letzter Preis: %1$s / %2$s</string>
+    <plurals name="products_detail_barcodes">
+        <item quantity="one">%1$d Barcode</item>
+        <item quantity="other">%1$d Barcodes</item>
+    </plurals>
+    <string name="products_sync_now">Jetzt synchronisieren</string>
+    <string name="products_barcodes_title">Barcodes</string>
+    <string name="item_stock">Bestand %1$s %2$s</string>
+    <string name="scanner_standby_idle">Scanner nicht verbunden (Dienst ruht)</string>
+    <string name="scanner_standby_not_found">Scanner nicht gefunden, Dienst beendet</string>
+    <string name="scanner_standby_disconnected">Scanner getrennt, Dienst beendet</string>
+    <string name="scanner_wake_title">Scanner verbunden</string>
+    <string name="scanner_wake_text">Zum Aktivieren der App tippen</string>
 
     <!-- Grocy-Verbindung -->
     <string name="grocy_header">Grocy</string>

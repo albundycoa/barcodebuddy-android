@@ -1,5 +1,6 @@
 package de.bulling.barcodebuddyscanner;
 
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -9,6 +10,8 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
@@ -17,7 +20,11 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
+import java.io.IOException;
+import java.io.OutputStream;
 import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Locale;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -26,6 +33,7 @@ import de.bulling.barcodebuddyscanner.Data.ShoppingItem;
 import de.bulling.barcodebuddyscanner.Data.ShoppingRepository;
 import de.bulling.barcodebuddyscanner.Helper.EdgeToEdgeHelper;
 import de.bulling.barcodebuddyscanner.Helper.Money;
+import de.bulling.barcodebuddyscanner.Helper.ReceiptPdf;
 
 /**
  * Die Artikel eines gesendeten Einkaufs mit der Antwort von Barcode Buddy.
@@ -39,6 +47,23 @@ public class TripDetailActivity extends AppCompatActivity {
 	private List<ShoppingItem> items = new ArrayList<>();
 	private LineAdapter        adapter;
 	private String             summary = "";
+	private long               sentAt;
+
+	private final ActivityResultLauncher<String> receiptLauncher = registerForActivityResult(
+			new ActivityResultContracts.CreateDocument("application/pdf"), uri -> {
+				if (uri != null) {
+					writeReceipt(uri);
+				}
+			});
+
+	private void writeReceipt(Uri uri) {
+		try (OutputStream out = getContentResolver().openOutputStream(uri)) {
+			ReceiptPdf.write(this, out, items, sentAt);
+			Toast.makeText(this, R.string.receipt_saved, Toast.LENGTH_LONG).show();
+		} catch (IOException | RuntimeException e) {
+			Toast.makeText(this, R.string.receipt_failed, Toast.LENGTH_LONG).show();
+		}
+	}
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -67,6 +92,7 @@ public class TripDetailActivity extends AppCompatActivity {
 				finish();
 				return;
 			}
+			sentAt = trip.sentAt;
 			setTitle(dateFormat.format(new Date(trip.sentAt)));
 			summary = getString(R.string.trip_summary, trip.itemCount, trip.unitCount);
 			updateSummary();
@@ -106,6 +132,14 @@ public class TripDetailActivity extends AppCompatActivity {
 		int id = item.getItemId();
 		if (id == android.R.id.home) {
 			finish();
+			return true;
+		} else if (id == R.id.action_receipt) {
+			if (items.isEmpty()) {
+				Toast.makeText(this, R.string.receipt_empty, Toast.LENGTH_SHORT).show();
+			} else {
+				receiptLauncher.launch("Einkaufsbeleg_"
+						+ new SimpleDateFormat("yyyy-MM-dd_HH-mm", Locale.GERMANY).format(new Date(sentAt)) + ".pdf");
+			}
 			return true;
 		} else if (id == R.id.action_delete_trip) {
 			new MaterialAlertDialogBuilder(this)

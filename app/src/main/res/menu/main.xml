@@ -6,6 +6,14 @@
         android:title="@string/title_history"
         app:showAsAction="never" />
     <item
+        android:id="@+id/action_products"
+        android:title="@string/products_title"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_receipt"
+        android:title="@string/action_receipt"
+        app:showAsAction="never" />
+    <item
         android:id="@+id/action_clear"
         android:title="@string/action_clear"
         app:showAsAction="never" />

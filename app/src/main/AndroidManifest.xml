@@ -27,6 +27,13 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
         android:usesCleartextTraffic="true">
+        <receiver
+            android:name=".ScannerConnectionReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.bluetooth.device.action.ACL_CONNECTED" />
+            </intent-filter>
+        </receiver>
         <service
             android:name=".ScannerService"
             android:exported="false"
@@ -43,6 +50,10 @@
         <activity
             android:name=".ShopOrderActivity"
             android:label="@string/shop_order_title"
+            android:theme="@style/AppTheme.NoActionBar" />
+        <activity
+            android:name=".ProductsActivity"
+            android:label="@string/products_title"
             android:theme="@style/AppTheme.NoActionBar" />
         <activity
             android:name=".HistoryActivity"

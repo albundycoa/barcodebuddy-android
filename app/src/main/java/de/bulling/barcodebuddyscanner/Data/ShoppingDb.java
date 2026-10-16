@@ -7,7 +7,7 @@ import android.database.sqlite.SQLiteOpenHelper;
 class ShoppingDb extends SQLiteOpenHelper {
 
 	private static final String DB_NAME    = "shopping.db";
-	private static final int    DB_VERSION = 2;
+	private static final int    DB_VERSION = 3;
 
 	static final String T_ITEMS      = "items";
 	static final String T_TRIPS      = "trips";
@@ -16,6 +16,7 @@ class ShoppingDb extends SQLiteOpenHelper {
 	static final String T_BARCODES   = "g_barcodes";
 	static final String T_LASTPRICE  = "g_lastprice";
 	static final String T_SHOP_ORDER = "shop_order";
+	static final String T_STOCK      = "g_stock";
 
 	ShoppingDb(Context context) {
 		super(context, DB_NAME, null, DB_VERSION);
@@ -40,7 +41,8 @@ class ShoppingDb extends SQLiteOpenHelper {
 				+ "message TEXT, "
 				+ "error TEXT, "
 				+ "price REAL, "
-				+ "scan_price REAL)");
+				+ "scan_price REAL, "
+				+ "shop_name TEXT)");
 		db.execSQL("CREATE INDEX items_trip ON " + T_ITEMS + " (trip_id)");
 		createGrocyTables(db);
 	}
@@ -50,7 +52,17 @@ class ShoppingDb extends SQLiteOpenHelper {
 		if (oldVersion < 2) {
 			db.execSQL("ALTER TABLE " + T_ITEMS + " ADD COLUMN price REAL");
 			db.execSQL("ALTER TABLE " + T_ITEMS + " ADD COLUMN scan_price REAL");
+			db.execSQL("ALTER TABLE " + T_ITEMS + " ADD COLUMN shop_name TEXT");
 			createGrocyTables(db);
+		}
+		if (oldVersion >= 2 && oldVersion < 3) {
+			db.execSQL("ALTER TABLE " + T_ITEMS + " ADD COLUMN shop_name TEXT");
+			// Die Kopie der Grocy-Daten wird bei der nächsten Synchronisierung vollständig neu gefüllt
+			db.execSQL("ALTER TABLE " + T_PRODUCTS + " ADD COLUMN best_before_days INTEGER");
+			db.execSQL("ALTER TABLE " + T_PRODUCTS + " ADD COLUMN tare INTEGER NOT NULL DEFAULT 0");
+			db.execSQL("ALTER TABLE " + T_PRODUCTS + " ADD COLUMN group_name TEXT");
+			db.execSQL("ALTER TABLE " + T_BARCODES + " ADD COLUMN exact INTEGER NOT NULL DEFAULT 0");
+			db.execSQL("CREATE TABLE " + T_STOCK + " (product_id INTEGER PRIMARY KEY, amount REAL NOT NULL)");
 		}
 	}
 
@@ -69,13 +81,22 @@ class ShoppingDb extends SQLiteOpenHelper {
 				+ "shop_id INTEGER, "
 				+ "stock_to_price REAL NOT NULL DEFAULT 1, "
 				+ "stock_unit TEXT, "
-				+ "price_unit TEXT)");
-		// stock_per_scan: Wie viele Lagereinheiten ein Scan dieses Barcodes bucht
+				+ "price_unit TEXT, "
+				+ "best_before_days INTEGER, "
+				+ "tare INTEGER NOT NULL DEFAULT 0, "
+				+ "group_name TEXT)");
+		// stock_per_scan: Wie viele Lagereinheiten ein Scan dieses Barcodes bucht;
+		// exact: Der Barcode hat in Grocy eine eigene Menge (sonst entscheidet Barcode Buddy)
 		db.execSQL("CREATE TABLE " + T_BARCODES + " ("
 				+ "barcode TEXT PRIMARY KEY, "
 				+ "product_id INTEGER NOT NULL, "
 				+ "stock_per_scan REAL NOT NULL DEFAULT 1, "
+				+ "exact INTEGER NOT NULL DEFAULT 0, "
 				+ "shop_id INTEGER)");
+		// Aktueller Bestand je Produkt in Lagereinheiten
+		db.execSQL("CREATE TABLE " + T_STOCK + " ("
+				+ "product_id INTEGER PRIMARY KEY, "
+				+ "amount REAL NOT NULL)");
 		// price: letzter Einkaufspreis je Lagereinheit
 		db.execSQL("CREATE TABLE " + T_LASTPRICE + " ("
 				+ "product_id INTEGER PRIMARY KEY, "

@@ -20,6 +20,42 @@
         <item>@string/scan_method_both</item>
     </string-array>
 
+    <string-array name="booking_mode">
+        <item>@string/booking_mode_grocy</item>
+        <item>@string/booking_mode_bb</item>
+    </string-array>
+
+    <string-array name="booking_mode_val">
+        <item>grocy</item>
+        <item>bb</item>
+    </string-array>
+
+    <string-array name="sync_mode">
+        <item>@string/sync_mode_manual</item>
+        <item>@string/sync_mode_open</item>
+        <item>@string/sync_mode_bg1</item>
+        <item>@string/sync_mode_bg6</item>
+        <item>@string/sync_mode_bg24</item>
+    </string-array>
+
+    <string-array name="sync_mode_val">
+        <item>manual</item>
+        <item>open</item>
+        <item>bg1</item>
+        <item>bg6</item>
+        <item>bg24</item>
+    </string-array>
+
+    <string-array name="scanner_standby">
+        <item>@string/scanner_standby_connected</item>
+        <item>@string/scanner_standby_always</item>
+    </string-array>
+
+    <string-array name="scanner_standby_val">
+        <item>connected</item>
+        <item>always</item>
+    </string-array>
+
     <string-array name="scan_method_val">
         <item>scanner</item>
         <item>spp</item>

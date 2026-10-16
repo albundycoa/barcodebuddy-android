@@ -75,6 +75,12 @@ public class SharedPrefHelper {
 
 	// ---- SPP-Scanner ----
 
+	/** Scanner-Dienst dauerhaft aktiv halten (statt nur, solange der Scanner verbunden ist). */
+	public static boolean isScannerAlwaysOn(Context context) {
+		return "always".equals(PreferenceManager.getDefaultSharedPreferences(context)
+				.getString("scanner_standby", "connected"));
+	}
+
 	public static String getSppAddress(Context context) {
 		return PreferenceManager.getDefaultSharedPreferences(context).getString("spp_address", "");
 	}
@@ -116,6 +122,43 @@ public class SharedPrefHelper {
 	/** Ob ungültige SSL-Zertifikate akzeptiert werden (gilt für Barcode Buddy und Grocy). */
 	public static boolean isUnsafeSsl(Context context) {
 		return PreferenceManager.getDefaultSharedPreferences(context).getBoolean("unsafe", false);
+	}
+
+	/** Bekannte Produkte direkt in Grocy buchen (Standard) oder alles über Barcode Buddy. */
+	public static boolean isDirectBookingEnabled(Context context) {
+		return !"bb".equals(PreferenceManager.getDefaultSharedPreferences(context).getString("booking_mode", "grocy"));
+	}
+
+	private static String syncMode(Context context) {
+		return PreferenceManager.getDefaultSharedPreferences(context).getString("sync_mode", "open");
+	}
+
+	/** Beim Öffnen der App automatisch synchronisieren (alle Modi außer "Nur manuell"). */
+	public static boolean isSyncOnOpenEnabled(Context context) {
+		return !"manual".equals(syncMode(context));
+	}
+
+	/** Intervall der Hintergrund-Synchronisierung in Stunden, 0 = aus. */
+	public static long getBackgroundSyncHours(Context context) {
+		switch (syncMode(context)) {
+			case "bg1":
+				return 1;
+			case "bg6":
+				return 6;
+			case "bg24":
+				return 24;
+			default:
+				return 0;
+		}
+	}
+
+	/** Version der lokalen Datenbank-Kopie, damit nach einem App-Update neu synchronisiert wird. */
+	public static boolean isGrocyCacheCurrent(Context context, int version) {
+		return PreferenceManager.getDefaultSharedPreferences(context).getInt("grocy_cache_version", 0) == version;
+	}
+
+	public static void setGrocyCacheVersion(Context context, int version) {
+		PreferenceManager.getDefaultSharedPreferences(context).edit().putInt("grocy_cache_version", version).apply();
 	}
 
 	public static boolean hasGrocy(Context context) {

@@ -32,6 +32,31 @@
                 android:targetPackage="de.bulling.barcodebuddyscanner" />
         </Preference>
 
+        <ListPreference
+            android:defaultValue="grocy"
+            android:entries="@array/booking_mode"
+            android:entryValues="@array/booking_mode_val"
+            android:summary="%s"
+            app:key="booking_mode"
+            app:title="@string/booking_mode" />
+
+        <ListPreference
+            android:defaultValue="open"
+            android:entries="@array/sync_mode"
+            android:entryValues="@array/sync_mode_val"
+            android:summary="%s"
+            app:key="sync_mode"
+            app:title="@string/sync_mode" />
+
+        <Preference
+            app:key="products"
+            app:summary="@string/products_pref_summary"
+            app:title="@string/products_title">
+            <intent
+                android:targetClass="de.bulling.barcodebuddyscanner.ProductsActivity"
+                android:targetPackage="de.bulling.barcodebuddyscanner" />
+        </Preference>
+
         <Preference
             app:key="shop_order"
             app:summary="@string/shop_order_pref_summary"
@@ -64,6 +89,14 @@
         <Preference
             app:key="spp_device"
             app:title="@string/spp_device_title" />
+
+        <ListPreference
+            android:defaultValue="connected"
+            android:entries="@array/scanner_standby"
+            android:entryValues="@array/scanner_standby_val"
+            android:summary="%s"
+            app:key="scanner_standby"
+            app:title="@string/scanner_standby" />
 
     </PreferenceCategory>
 

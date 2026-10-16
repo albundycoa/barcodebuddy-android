@@ -52,16 +52,33 @@ public class GrocyClient {
 	}
 
 	public JsonElement get(String path) throws IOException {
+		return request("GET", path, null);
+	}
+
+	/** Schreibender Aufruf mit JSON-Inhalt, z. B. "stock/products/7/add". */
+	public JsonElement post(String path, String jsonBody) throws IOException {
+		return request("POST", path, jsonBody);
+	}
+
+	private JsonElement request(String method, String path, String jsonBody) throws IOException {
 		HttpURLConnection connection = null;
 		try {
 			connection = (HttpURLConnection) new URL(baseUrl + path).openConnection();
-			connection.setRequestMethod("GET");
+			connection.setRequestMethod(method);
 			connection.setConnectTimeout(6000);
 			connection.setReadTimeout(30000);
 			connection.setRequestProperty("GROCY-API-KEY", apiKey);
 			connection.setRequestProperty("Accept", "application/json");
 			if (isUnsafe && connection instanceof HttpsURLConnection) {
 				UnsafeSslHelper.applyUnsafeSsl((HttpsURLConnection) connection);
+			}
+
+			if (jsonBody != null) {
+				connection.setDoOutput(true);
+				connection.setRequestProperty("Content-Type", "application/json");
+				try (java.io.OutputStream os = connection.getOutputStream()) {
+					os.write(jsonBody.getBytes(StandardCharsets.UTF_8));
+				}
 			}
 
 			int status = connection.getResponseCode();
@@ -76,7 +93,7 @@ public class GrocyClient {
 					body.append(line);
 				}
 			}
-			return JsonParser.parseString(body.toString());
+			return body.length() == 0 ? null : JsonParser.parseString(body.toString());
 		} catch (IOException e) {
 			throw e;
 		} catch (RuntimeException e) {

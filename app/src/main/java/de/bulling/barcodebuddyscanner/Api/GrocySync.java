@@ -13,7 +13,9 @@ import com.google.gson.JsonObject;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -33,6 +35,9 @@ public final class GrocySync {
 	/** Wie lange eine Synchronisierung als aktuell gilt, wenn nicht ausdrücklich neu geladen wird */
 	private static final long FRESH_MS = 10 * 60 * 1000L;
 
+	/** Version der gespeicherten Datenfelder; bei einer Änderung wird einmal neu synchronisiert. */
+	private static final int CACHE_VERSION = 3;
+
 	public interface Callback {
 		/** ok = false: Verbindung oder Daten fehlerhaft, die bisherige Kopie bleibt erhalten */
 		void onDone(boolean ok, String message);
@@ -50,11 +55,54 @@ public final class GrocySync {
 		if (!SharedPrefHelper.hasGrocy(context)) {
 			return;
 		}
-		long last = SharedPrefHelper.getGrocyLastSync(context);
-		if (System.currentTimeMillis() - last < FRESH_MS) {
-			return;
+		// Nach einem App-Update mit neuen Datenfeldern wird einmal neu geladen, auch im manuellen Modus
+		boolean outdated = !SharedPrefHelper.isGrocyCacheCurrent(context, CACHE_VERSION);
+		if (!outdated) {
+			if (!SharedPrefHelper.isSyncOnOpenEnabled(context)) {
+				return;
+			}
+			long last = SharedPrefHelper.getGrocyLastSync(context);
+			if (System.currentTimeMillis() - last < FRESH_MS) {
+				return;
+			}
 		}
 		start(context, null);
+	}
+
+	/**
+	 * Synchronisiert und wartet auf das Ergebnis; für den Hintergrund-Worker. Nicht auf dem
+	 * Main-Thread aufrufen.
+	 */
+	public static boolean syncBlocking(Context context) {
+		final Context appContext = context.getApplicationContext();
+		GrocyClient client = new SharedPrefHelper(appContext).initGrocyClient();
+		if (client == null || !running.compareAndSet(false, true)) {
+			return false;
+		}
+		try {
+			final GrocyData data = load(client);
+			final CountDownLatch latch = new CountDownLatch(1);
+			final boolean[] stored = {false};
+			ShoppingRepository.get(appContext).replaceGrocyCache(data, ok -> {
+				stored[0] = ok != null && ok;
+				latch.countDown();
+			});
+			if (!latch.await(60, TimeUnit.SECONDS) || !stored[0]) {
+				return false;
+			}
+			SharedPrefHelper.saveGrocySync(appContext, System.currentTimeMillis(),
+					data.products.size() + " Produkte, " + data.shops.size() + " Geschäfte");
+			SharedPrefHelper.setGrocyCacheVersion(appContext, CACHE_VERSION);
+			return true;
+		} catch (IOException | RuntimeException e) {
+			Log.w(TAG, "Hintergrund-Synchronisierung fehlgeschlagen: " + e.getMessage());
+			return false;
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			return false;
+		} finally {
+			running.set(false);
+		}
 	}
 
 	public static void start(Context context, final Callback callback) {
@@ -74,6 +122,7 @@ public final class GrocySync {
 				ShoppingRepository.get(appContext).replaceGrocyCache(data, stored -> {
 					String summary = data.products.size() + " Produkte, " + data.shops.size() + " Geschäfte";
 					SharedPrefHelper.saveGrocySync(appContext, System.currentTimeMillis(), summary);
+					SharedPrefHelper.setGrocyCacheVersion(appContext, CACHE_VERSION);
 					running.set(false);
 					if (callback != null) {
 						callback.onDone(true, summary);
@@ -132,6 +181,8 @@ public final class GrocySync {
 		JsonArray barcodes   = array(client.get("objects/product_barcodes"));
 		JsonArray conv       = array(client.get("objects/quantity_unit_conversions_resolved"));
 		JsonArray lastPrices = array(client.get("objects/products_last_purchased"));
+		JsonArray groups     = array(client.get("objects/product_groups"));
+		JsonArray stockRows  = array(client.get("objects/stock"));
 
 		GrocyData data = new GrocyData();
 
@@ -155,6 +206,15 @@ public final class GrocySync {
 			v.put("id", id);
 			v.put("name", asString(o, "name"));
 			data.shops.add(v);
+		}
+
+		Map<Long, String> groupNames = new HashMap<>();
+		for (JsonElement e : groups) {
+			JsonObject o = e.getAsJsonObject();
+			Long id = asLong(o, "id");
+			if (id != null) {
+				groupNames.put(id, asString(o, "name"));
+			}
 		}
 
 		// Umrechnungsfaktoren je Produkt: Menge in "von"-Einheit mal Faktor = Menge in "nach"-Einheit
@@ -194,6 +254,16 @@ public final class GrocySync {
 			v.put("stock_to_price", factor(factors, id, stock, priceUnit));
 			v.put("stock_unit", unitNames.get(stock));
 			v.put("price_unit", unitNames.get(priceUnit));
+			Long days = asLong(o, "default_best_before_days");
+			if (days != null) {
+				v.put("best_before_days", days);
+			}
+			Long tare = asLong(o, "enable_tare_weight_handling");
+			v.put("tare", tare != null && tare != 0 ? 1 : 0);
+			Long group = asLong(o, "product_group_id");
+			if (group != null && groupNames.get(group) != null) {
+				v.put("group_name", groupNames.get(group));
+			}
 			data.products.add(v);
 		}
 
@@ -215,11 +285,30 @@ public final class GrocySync {
 			v.put("barcode", code);
 			v.put("product_id", product);
 			v.put("stock_per_scan", perScan);
+			v.put("exact", amount != null && amount > 0 ? 1 : 0);
 			Long shop = asLong(o, "shopping_location_id");
 			if (shop != null) {
 				v.put("shop_id", shop);
 			}
 			data.barcodes.add(v);
+		}
+
+		// Bestand: Grocy liefert einzelne Bestandseinträge (Chargen), die hier je Produkt addiert werden
+		Map<Long, Double> stockSums = new HashMap<>();
+		for (JsonElement e : stockRows) {
+			JsonObject o = e.getAsJsonObject();
+			Long product = asLong(o, "product_id");
+			Double amount = asDouble(o, "amount");
+			if (product != null && amount != null) {
+				Double sum = stockSums.get(product);
+				stockSums.put(product, (sum == null ? 0 : sum) + amount);
+			}
+		}
+		for (Map.Entry<Long, Double> entry : stockSums.entrySet()) {
+			ContentValues v = new ContentValues();
+			v.put("product_id", entry.getKey());
+			v.put("amount", entry.getValue());
+			data.stock.add(v);
 		}
 
 		for (JsonElement e : lastPrices) {

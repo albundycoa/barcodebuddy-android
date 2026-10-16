@@ -40,6 +40,19 @@ public class ShoppingItem {
 	public String  priceUnitName;
 	/** Letzter Einkaufspreis je Lagereinheit */
 	public Double  lastPrice;
+	/** Aktueller Bestand in Lagereinheiten */
+	public Double  stock;
+	/** Standard-Haltbarkeit in Tagen, -1 = unbegrenzt, null = unbekannt */
+	public Integer bestBeforeDays;
+	/** Produkt mit Tara-Gewicht: braucht eine Gewichtseingabe, das macht Barcode Buddy */
+	public boolean tare;
+	/** Der Barcode hat in Grocy eine eigene Menge, die App kennt also die gebuchte Menge sicher */
+	public boolean exactAmount;
+
+	/** Darf die App dieses Produkt direkt in Grocy buchen (statt über Barcode Buddy)? */
+	public boolean canBookDirectly() {
+		return known && productId != null && !tare && exactAmount;
+	}
 
 	public ShoppingItem copy() {
 		ShoppingItem c = new ShoppingItem();
@@ -54,6 +67,7 @@ public class ShoppingItem {
 		c.error     = error;
 		c.price     = price;
 		c.scanPrice = scanPrice;
+		c.shopName  = shopName;
 		return c;
 	}
 

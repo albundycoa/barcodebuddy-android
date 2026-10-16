@@ -73,16 +73,17 @@ public final class ShoppingRepository {
 
 	private static final String[] ITEM_COLUMNS = {
 			"id", "trip_id", "barcode", "name", "quantity", "scanned_at", "sent_count", "message", "error",
-			"price", "scan_price"
+			"price", "scan_price", "shop_name"
 	};
 
 	/** Offene Artikel mit den passenden Grocy-Daten (Name, Geschäft, Einheiten, Letztpreis). */
 	private static final String OPEN_ITEMS_SQL =
 			"SELECT i.id, i.trip_id, i.barcode, i.name, i.quantity, i.scanned_at, i.sent_count, i.message, "
-					+ "i.error, i.price, i.scan_price, "
+					+ "i.error, i.price, i.scan_price, i.shop_name, "
 					+ "b.product_id AS g_product_id, b.stock_per_scan AS g_stock_per_scan, "
 					+ "p.name AS g_name, p.stock_to_price AS g_stock_to_price, p.stock_unit AS g_stock_unit, "
-					+ "p.price_unit AS g_price_unit, "
+					+ "p.price_unit AS g_price_unit, p.best_before_days AS g_bb_days, p.tare AS g_tare, "
+					+ "b.exact AS g_exact, st.amount AS g_stock, "
 					+ "COALESCE(b.shop_id, p.shop_id) AS g_shop_id, s.name AS g_shop_name, "
 					+ "lp.price AS g_last_price "
 					+ "FROM items i "
@@ -91,6 +92,7 @@ public final class ShoppingRepository {
 					+ "LEFT JOIN g_products p ON p.id = b.product_id "
 					+ "LEFT JOIN g_shops s ON s.id = COALESCE(b.shop_id, p.shop_id) "
 					+ "LEFT JOIN g_lastprice lp ON lp.product_id = p.id "
+					+ "LEFT JOIN g_stock st ON st.product_id = p.id "
 					+ "WHERE i.trip_id = 0 ORDER BY i.scanned_at DESC";
 
 	private static ShoppingRepository instance;
@@ -250,7 +252,7 @@ public final class ShoppingRepository {
 	 * Liste beim Senden nicht ständig neu lädt.
 	 */
 	public void updateProgress(final long itemId, final int sentCount, final String message, final String error,
-							   final String name, final Double price, final Double scanPrice) {
+							   final String name, final Double price, final Double scanPrice, final String shopName) {
 		read(() -> {
 			ContentValues v = new ContentValues();
 			v.put("sent_count", sentCount);
@@ -264,6 +266,9 @@ public final class ShoppingRepository {
 			}
 			if (scanPrice != null) {
 				v.put("scan_price", scanPrice);
+			}
+			if (shopName != null) {
+				v.put("shop_name", shopName);
 			}
 			return dbHelper.getWritableDatabase().update(ShoppingDb.T_ITEMS, v, "id = ?",
 					new String[]{String.valueOf(itemId)});
@@ -405,6 +410,10 @@ public final class ShoppingRepository {
 				db.delete(ShoppingDb.T_PRODUCTS, null, null);
 				db.delete(ShoppingDb.T_BARCODES, null, null);
 				db.delete(ShoppingDb.T_LASTPRICE, null, null);
+				db.delete(ShoppingDb.T_STOCK, null, null);
+				for (ContentValues v : data.stock) {
+					db.insertWithOnConflict(ShoppingDb.T_STOCK, null, v, SQLiteDatabase.CONFLICT_REPLACE);
+				}
 				for (ContentValues v : data.shops) {
 					db.insert(ShoppingDb.T_SHOPS, null, v);
 				}
@@ -470,6 +479,87 @@ public final class ShoppingRepository {
 		}, null);
 	}
 
+	// ---------------------------------------------------------------- Produktdatenbank
+
+	/** Ein Produkt aus der lokalen Kopie der Grocy-Daten. */
+	public static final class ProductRow {
+		public long   id;
+		public String name;
+		public String group;
+		public String shop;
+		public String stockUnit;
+		public String priceUnit;
+		public Double stock;
+		/** Letzter Preis je Preiseinheit (z. B. je Pack) */
+		public Double lastPrice;
+		public int    barcodes;
+	}
+
+	/** Produkte, deren Name oder Barcode den Suchtext enthält (leer = alle), nach Name sortiert. */
+	public void getProducts(final String query, Callback<List<ProductRow>> callback) {
+		read(() -> {
+			String like = "%" + (query == null ? "" : query.trim().replace("%", "").replace("_", "")) + "%";
+			String sql = "SELECT p.id, p.name, p.group_name, p.stock_unit, p.price_unit, p.stock_to_price, "
+					+ "(SELECT name FROM g_shops WHERE id = p.shop_id) AS shop, st.amount AS stock, lp.price AS last_price, "
+					+ "(SELECT COUNT(*) FROM g_barcodes b WHERE b.product_id = p.id) AS barcodes "
+					+ "FROM g_products p LEFT JOIN g_stock st ON st.product_id = p.id "
+					+ "LEFT JOIN g_lastprice lp ON lp.product_id = p.id "
+					+ "WHERE p.name LIKE ? OR p.id IN (SELECT product_id FROM g_barcodes WHERE barcode LIKE ?) "
+					+ "ORDER BY p.name COLLATE NOCASE";
+			List<ProductRow> rows = new ArrayList<>();
+			try (Cursor c = dbHelper.getReadableDatabase().rawQuery(sql, new String[]{like, like})) {
+				while (c.moveToNext()) {
+					ProductRow row = new ProductRow();
+					row.id        = c.getLong(c.getColumnIndexOrThrow("id"));
+					row.name      = c.getString(c.getColumnIndexOrThrow("name"));
+					row.group     = c.getString(c.getColumnIndexOrThrow("group_name"));
+					row.shop      = c.getString(c.getColumnIndexOrThrow("shop"));
+					row.stockUnit = c.getString(c.getColumnIndexOrThrow("stock_unit"));
+					row.priceUnit = c.getString(c.getColumnIndexOrThrow("price_unit"));
+					row.stock     = getDouble(c, "stock");
+					Double price  = getDouble(c, "last_price");
+					double factor = c.getDouble(c.getColumnIndexOrThrow("stock_to_price"));
+					row.lastPrice = price == null || factor <= 0 ? null : price / factor;
+					row.barcodes  = c.getInt(c.getColumnIndexOrThrow("barcodes"));
+					rows.add(row);
+				}
+			}
+			return rows;
+		}, callback);
+	}
+
+	/** Die Barcodes eines Produkts als lesbare Zeilen: Barcode, Geschäft, Menge je Scan. */
+	public void getProductBarcodes(final long productId, Callback<List<String>> callback) {
+		read(() -> {
+			List<String> lines = new ArrayList<>();
+			String sql = "SELECT b.barcode, b.stock_per_scan, b.exact, p.stock_unit, "
+					+ "(SELECT name FROM g_shops WHERE id = COALESCE(b.shop_id, p.shop_id)) AS shop "
+					+ "FROM g_barcodes b JOIN g_products p ON p.id = b.product_id WHERE b.product_id = ? ORDER BY b.barcode";
+			try (Cursor c = dbHelper.getReadableDatabase().rawQuery(sql, new String[]{String.valueOf(productId)})) {
+				while (c.moveToNext()) {
+					StringBuilder line = new StringBuilder(c.getString(0));
+					String shop = c.getString(c.getColumnIndexOrThrow("shop"));
+					if (shop != null) {
+						line.append(" · ").append(shop);
+					}
+					if (c.getInt(c.getColumnIndexOrThrow("exact")) != 0) {
+						double perScan = c.getDouble(1);
+						String unit = c.getString(c.getColumnIndexOrThrow("stock_unit"));
+						line.append(" · ").append(perScan == Math.rint(perScan)
+								? String.valueOf((long) perScan) : String.valueOf(perScan).replace('.', ','))
+								.append(unit == null ? "" : " " + unit).append("/Scan");
+					}
+					lines.add(line.toString());
+				}
+			}
+			return lines;
+		}, callback);
+	}
+
+	public void getProductCount(Callback<Integer> callback) {
+		read(() -> (int) DatabaseUtils.queryNumEntries(dbHelper.getReadableDatabase(), ShoppingDb.T_PRODUCTS), callback);
+	}
+
 	// ---------------------------------------------------------------- Helfer
 
 	private static Map<Long, Integer> readShopPositions(SQLiteDatabase db) {
@@ -507,6 +597,7 @@ public final class ShoppingRepository {
 		item.error     = c.getString(c.getColumnIndexOrThrow("error"));
 		item.price     = getDouble(c, "price");
 		item.scanPrice = getDouble(c, "scan_price");
+		item.shopName  = c.getString(c.getColumnIndexOrThrow("shop_name"));
 		return item;
 	}
 
@@ -523,10 +614,17 @@ public final class ShoppingRepository {
 			item.stockUnitName = c.getString(c.getColumnIndexOrThrow("g_stock_unit"));
 			item.priceUnitName = c.getString(c.getColumnIndexOrThrow("g_price_unit"));
 			item.lastPrice     = getDouble(c, "g_last_price");
+			item.stock         = getDouble(c, "g_stock");
+			Double days        = getDouble(c, "g_bb_days");
+			item.bestBeforeDays = days == null ? null : (int) Math.round(days);
+			item.tare          = c.getInt(c.getColumnIndexOrThrow("g_tare")) != 0;
+			item.exactAmount   = c.getInt(c.getColumnIndexOrThrow("g_exact")) != 0;
 			int shopCol = c.getColumnIndexOrThrow("g_shop_id");
 			if (!c.isNull(shopCol)) {
 				item.shopId   = c.getLong(shopCol);
 				item.shopName = c.getString(c.getColumnIndexOrThrow("g_shop_name"));
+			} else {
+				item.shopName = null;
 			}
 		}
 		return item;
@@ -552,6 +650,7 @@ public final class ShoppingRepository {
 		v.put("error", item.error);
 		v.put("price", item.price);
 		v.put("scan_price", item.scanPrice);
+		v.put("shop_name", item.shopName);
 		return v;
 	}
 

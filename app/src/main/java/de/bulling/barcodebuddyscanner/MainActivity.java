@@ -1,6 +1,7 @@
 package de.bulling.barcodebuddyscanner;
 
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.text.InputType;
 import android.view.KeyEvent;
@@ -12,7 +13,10 @@ import android.view.WindowManager;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
@@ -27,14 +31,22 @@ import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 
+import java.io.IOException;
+import java.io.OutputStream;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
+import de.bulling.barcodebuddyscanner.Api.GrocyClient;
 import de.bulling.barcodebuddyscanner.Api.GrocySync;
+import de.bulling.barcodebuddyscanner.Api.SyncScheduler;
 import de.bulling.barcodebuddyscanner.Data.ShoppingItem;
 import de.bulling.barcodebuddyscanner.Data.ShoppingRepository;
 import de.bulling.barcodebuddyscanner.Helper.EdgeToEdgeHelper;
 import de.bulling.barcodebuddyscanner.Helper.Money;
+import de.bulling.barcodebuddyscanner.Helper.ReceiptPdf;
 import de.bulling.barcodebuddyscanner.Helper.PermissionHelper;
 import de.bulling.barcodebuddyscanner.Helper.PurchaseSender;
 import de.bulling.barcodebuddyscanner.Helper.ScanFeedback;
@@ -56,6 +68,7 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
     private RecyclerView itemList;
     private TextView emptyView;
     private TextView btHint;
+    private TextView totalBar;
     private TextView progressText;
     private LinearProgressIndicator progress;
     private MaterialButton sendButton;
@@ -93,6 +106,7 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
         refreshList();
         // Geschäfte, Namen und Preise aus Grocy auffrischen (ohne Verbindung bleibt die letzte Kopie)
         GrocySync.startIfStale(this);
+        SyncScheduler.apply(this);
         if (activeSender != null) {
             activeSender.attach(senderListener);
         }
@@ -142,7 +156,9 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
         boolean useCamera = SharedPrefHelper.isCameraScannerEnabled(this);
         boolean useSpp = SharedPrefHelper.isSppScannerEnabled(this);
         btHint.setVisibility(useBarcodeScanner || useSpp ? View.VISIBLE : View.GONE);
-        btHint.setText(useSpp ? ScannerService.getStatusText() : getString(R.string.bt_scanner_active));
+        String sppStatus = ScannerService.getStatusText();
+        btHint.setText(useSpp ? (sppStatus.isEmpty() ? getString(R.string.scanner_standby_idle) : sppStatus)
+                : getString(R.string.bt_scanner_active));
         cameraButton.setVisibility(useCamera ? View.VISIBLE : View.GONE);
         ensureSppService();
         if (useCamera && useBarcodeScanner) {
@@ -202,8 +218,8 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
     }
 
     private final ScannerService.StatusListener sppStatusListener = (text, connected) -> {
-        if (SharedPrefHelper.isSppScannerEnabled(this) && !text.isEmpty()) {
-            btHint.setText(text);
+        if (SharedPrefHelper.isSppScannerEnabled(this)) {
+            btHint.setText(text.isEmpty() ? getString(R.string.scanner_standby_idle) : text);
         }
     };
 
@@ -226,6 +242,13 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
         itemList = findViewById(R.id.item_list);
         emptyView = findViewById(R.id.empty_view);
         btHint = findViewById(R.id.bt_hint);
+        totalBar = findViewById(R.id.total_bar);
+        // Antippen der Statuszeile startet die Scannersuche neu, falls der Dienst ruht
+        btHint.setOnClickListener(v -> {
+            if (SharedPrefHelper.isSppScannerEnabled(this) && !ScannerService.isRunning()) {
+                ensureSppService();
+            }
+        });
         progressText = findViewById(R.id.progress_text);
         progress = findViewById(R.id.progress);
         sendButton = findViewById(R.id.button_send);
@@ -283,9 +306,52 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
         boolean empty = currentItems.isEmpty();
         emptyView.setVisibility(empty ? View.VISIBLE : View.GONE);
         itemList.setVisibility(empty ? View.INVISIBLE : View.VISIBLE);
+        updateTotalBar();
         sendButton.setEnabled(!empty && !sending);
         sendButton.setText(empty ? getString(R.string.button_send)
                 : getString(R.string.button_send_count, openUnits()));
+    }
+
+    /** Gesamtbetrag oben: was der Einkauf voraussichtlich kostet. */
+    private void updateTotalBar() {
+        if (currentItems.isEmpty()) {
+            totalBar.setVisibility(View.GONE);
+            return;
+        }
+        ReceiptPdf.Totals totals = ReceiptPdf.totals(currentItems);
+        String text = getString(R.string.total_estimate, Money.format(totals.sum));
+        if (totals.withoutPrice > 0) {
+            text += "  ·  " + getString(R.string.total_missing, totals.withoutPrice);
+        }
+        totalBar.setText(text);
+        totalBar.setVisibility(View.VISIBLE);
+    }
+
+    // ---------------------------------------------------------------- Kassenbon
+
+    private final ActivityResultLauncher<String> receiptLauncher = registerForActivityResult(
+            new ActivityResultContracts.CreateDocument("application/pdf"), uri -> {
+                if (uri != null) {
+                    writeReceipt(uri);
+                }
+            });
+
+    private void exportReceipt() {
+        if (currentItems.isEmpty()) {
+            Toast.makeText(this, R.string.receipt_empty, Toast.LENGTH_SHORT).show();
+            return;
+        }
+        receiptLauncher.launch("Einkaufsbeleg_"
+                + new SimpleDateFormat("yyyy-MM-dd_HH-mm", Locale.GERMANY).format(new Date()) + ".pdf");
+    }
+
+    private void writeReceipt(Uri uri) {
+        try (OutputStream out = getContentResolver().openOutputStream(uri)) {
+            ReceiptPdf.write(this, out, currentItems, System.currentTimeMillis());
+            Toast.makeText(this, R.string.receipt_saved, Toast.LENGTH_LONG).show();
+        } catch (IOException | RuntimeException e) {
+            Toast.makeText(this, R.string.receipt_failed, Toast.LENGTH_LONG).show();
+        }
     }
 
     @Override
@@ -422,7 +488,10 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
     }
 
     private void startSend() {
-        activeSender = new PurchaseSender(new SharedPrefHelper(this).initBBApi(), repo);
+        SharedPrefHelper prefs = new SharedPrefHelper(this);
+        // Bekannte Produkte direkt in Grocy buchen, wenn Grocy gekoppelt und die Einstellung aktiv ist
+        GrocyClient grocy = SharedPrefHelper.isDirectBookingEnabled(this) ? prefs.initGrocyClient() : null;
+        activeSender = new PurchaseSender(prefs.initBBApi(), grocy, repo);
         setSending(true);
         activeSender.attach(senderListener);
         activeSender.start();
@@ -514,6 +583,12 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
             return true;
         } else if (itemId == R.id.action_history) {
             startActivity(new Intent(this, HistoryActivity.class));
+            return true;
+        } else if (itemId == R.id.action_products) {
+            startActivity(new Intent(this, ProductsActivity.class));
+            return true;
+        } else if (itemId == R.id.action_receipt) {
+            exportReceipt();
             return true;
         } else if (itemId == R.id.action_clear) {
             confirmClearList();

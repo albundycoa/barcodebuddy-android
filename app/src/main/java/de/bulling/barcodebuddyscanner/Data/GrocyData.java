@@ -13,4 +13,5 @@ public final class GrocyData {
 	public final List<ContentValues> products   = new ArrayList<>();
 	public final List<ContentValues> barcodes   = new ArrayList<>();
 	public final List<ContentValues> lastPrices = new ArrayList<>();
+	public final List<ContentValues> stock      = new ArrayList<>();
 }

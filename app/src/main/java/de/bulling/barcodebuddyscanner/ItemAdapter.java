@@ -110,7 +110,18 @@ public class ItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 				String title = key == GROUP_NEW ? context.getString(R.string.section_new)
 						: key == GROUP_NONE ? context.getString(R.string.section_none)
 						: shopNames.get(key);
-				rows.add(new Row(context.getString(R.string.section_title, title, group.size()), null));
+				double sum = 0;
+				boolean anyPrice = false;
+				for (ShoppingItem item : group) {
+					Double scan = item.effectiveScanPrice();
+					if (scan != null) {
+						sum += scan * item.quantity;
+						anyPrice = true;
+					}
+				}
+				rows.add(new Row(anyPrice
+						? context.getString(R.string.section_title_sum, title, group.size(), Money.format(sum))
+						: context.getString(R.string.section_title, title, group.size()), null));
 				for (ShoppingItem item : group) {
 					rows.add(new Row(null, item));
 				}
@@ -180,6 +191,9 @@ public class ItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 		}
 		if (item.known && item.stockPerScan > 1 && item.stockUnitName != null) {
 			append(subtitle, context.getString(R.string.item_per_scan, trim(item.stockPerScan), item.stockUnitName));
+		}
+		if (item.known && item.stock != null && item.stockUnitName != null) {
+			append(subtitle, context.getString(R.string.item_stock, trim(item.stock), item.stockUnitName));
 		}
 		if (item.sentCount > 0 && item.sentCount < item.quantity) {
 			append(subtitle, context.getString(R.string.item_partly_sent, item.sentCount));

@@ -1,28 +1,40 @@
 package de.bulling.barcodebuddyscanner.Helper;
 
+import android.os.Handler;
+import android.os.Looper;
 import android.text.Html;
 
+import com.google.gson.JsonObject;
+
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
+import java.util.Locale;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import de.bulling.barcodebuddyscanner.Api.BBApi;
 import de.bulling.barcodebuddyscanner.Api.BBApiCallback;
+import de.bulling.barcodebuddyscanner.Api.GrocyClient;
 import de.bulling.barcodebuddyscanner.Data.ShoppingItem;
 import de.bulling.barcodebuddyscanner.Data.ShoppingRepository;
 
 /**
- * Schickt die offene Einkaufsliste als Einkauf an Barcode Buddy: Modus auf
- * "Einkauf" stellen, jeden Barcode so oft senden wie die Stückzahl vorgibt,
- * danach den vorherigen Modus wiederherstellen und die gesendeten Artikel in
- * den Verlauf verschieben.
+ * Schickt die offene Einkaufsliste als Einkauf los. Produkte, die Grocy kennt und deren
+ * Menge die App sicher weiß, werden direkt in Grocy gebucht. Alles andere (unbekannte
+ * Barcodes, Tara-Produkte, Barcodes ohne eigene Menge) geht über Barcode Buddy: Modus auf
+ * "Einkauf" stellen, jeden Barcode so oft senden wie die Stückzahl vorgibt, danach den
+ * vorherigen Modus wiederherstellen.
  * <p>
- * Der Fortschritt wird pro Stück gespeichert. Bricht das Senden ab, wird beim
- * nächsten Versuch nur der Rest gesendet, nichts wird doppelt gebucht.
+ * Der Fortschritt wird gespeichert. Bricht das Senden ab, wird beim nächsten Versuch nur der
+ * Rest gesendet, nichts wird doppelt gebucht. Gesendete Artikel wandern in den Verlauf.
  * <p>
- * Die Instanz hält keine Activity fest und überlebt eine Drehung des Geräts;
- * eine neue Activity hängt sich mit {@link #attach(Listener)} wieder an.
+ * Die Instanz hält keine Activity fest und überlebt eine Drehung des Geräts; eine neue
+ * Activity hängt sich mit {@link #attach(Listener)} wieder an.
  */
 public class PurchaseSender {
 
@@ -35,6 +47,8 @@ public class PurchaseSender {
 	public static class Result {
 		public int    unitsTotal;
 		public int    unitsSent;
+		/** Davon direkt in Grocy gebucht */
+		public int    directUnits;
 		/** null = es gab keinen Abbruch */
 		public String error;
 		/** Hinweis, z. B. wenn der Modus nicht zurückgesetzt werden konnte */
@@ -47,39 +61,53 @@ public class PurchaseSender {
 
 	private static class Job {
 		final ShoppingItem item;
-		/** Preis je Lagereinheit für Barcode Buddy, null = kein Preis bekannt */
-		final String       priceParam;
+		/** Preis je Lagereinheit, null = kein Preis bekannt */
+		final Double       pricePerStock;
 		int                remaining;
 		int                sent;
 		boolean            isNew;
 
 		Job(ShoppingItem item, int remaining) {
-			this.item      = item;
-			this.remaining = remaining;
-			Double perStock = item.effectivePricePerStockUnit();
-			this.priceParam = perStock == null ? null
-					: new BigDecimal(perStock).setScale(5, RoundingMode.HALF_UP).stripTrailingZeros().toPlainString();
+			this.item          = item;
+			this.remaining     = remaining;
+			this.pricePerStock = item.effectivePricePerStockUnit();
+		}
+
+		/** Preis für Barcode Buddy als Text mit Punkt */
+		String priceParam() {
+			return pricePerStock == null ? null
+					: new BigDecimal(pricePerStock).setScale(5, RoundingMode.HALF_UP).stripTrailingZeros().toPlainString();
 		}
 	}
 
 	private static final int MODE_PURCHASE = 2;
 
-	private final BBApi              api;
-	private final ShoppingRepository repo;
-	private final Result             result = new Result();
-	private final List<Job>          jobs   = new ArrayList<>();
+	private static final ExecutorService GROCY_IO = Executors.newSingleThreadExecutor();
+
+	private final BBApi               api;
+	private final GrocyClient         grocy;
+	private final ShoppingRepository  repo;
+	private final Handler             main   = new Handler(Looper.getMainLooper());
+	private final Result              result = new Result();
+	private final List<Job>           directJobs = new ArrayList<>();
+	private final List<Job>           bbJobs     = new ArrayList<>();
 
 	private Listener listener;
 	private Result   finishedResult;
 	private boolean  running;
 	private int      done;
-	private int      jobIndex;
+	private int      directIndex;
+	private int      bbIndex;
 	private Integer  previousMode;
 	private boolean  modeChanged;
 
-	public PurchaseSender(BBApi api, ShoppingRepository repo) {
-		this.api  = api;
-		this.repo = repo;
+	/**
+	 * @param grocy Zugriff auf Grocy für direkte Buchungen, oder null: dann läuft alles über Barcode Buddy
+	 */
+	public PurchaseSender(BBApi api, GrocyClient grocy, ShoppingRepository repo) {
+		this.api   = api;
+		this.grocy = grocy;
+		this.repo  = repo;
 	}
 
 	public boolean isRunning() {
@@ -113,17 +141,127 @@ public class PurchaseSender {
 		repo.getOpenList(openList -> {
 			for (ShoppingItem item : openList.items) {
 				int remaining = item.quantity - item.sentCount;
-				if (remaining > 0) {
-					jobs.add(new Job(item, remaining));
-					result.unitsTotal += remaining;
+				if (remaining <= 0) {
+					continue;
 				}
+				Job job = new Job(item, remaining);
+				if (grocy != null && item.canBookDirectly()) {
+					directJobs.add(job);
+				} else {
+					bbJobs.add(job);
+				}
+				result.unitsTotal += remaining;
 			}
-			if (jobs.isEmpty()) {
+			if (directJobs.isEmpty() && bbJobs.isEmpty()) {
 				finish();
 				return;
 			}
-			readMode();
+			bookDirectNext();
 		});
+	}
+
+	// ---------------------------------------------------------------- Direkt in Grocy
+
+	private void bookDirectNext() {
+		while (directIndex < directJobs.size() && directJobs.get(directIndex).remaining <= 0) {
+			directIndex++;
+		}
+		if (directIndex >= directJobs.size()) {
+			startBarcodeBuddy();
+			return;
+		}
+		final Job job = directJobs.get(directIndex);
+		final ShoppingItem item = job.item;
+		final double amount = item.stockPerScan * job.remaining;
+		final JsonObject body = new JsonObject();
+		body.addProperty("amount", amount);
+		body.addProperty("transaction_type", "purchase");
+		body.addProperty("best_before_date", bestBeforeDate(item.bestBeforeDays));
+		if (job.pricePerStock != null) {
+			body.addProperty("price", new BigDecimal(job.pricePerStock).setScale(5, RoundingMode.HALF_UP));
+		}
+		if (item.shopId != null) {
+			body.addProperty("shopping_location_id", item.shopId);
+		}
+		GROCY_IO.execute(() -> {
+			IOException failure = null;
+			try {
+				grocy.post("stock/products/" + item.productId + "/add", body.toString());
+				removeFromShoppingList(item.productId, amount);
+			} catch (IOException e) {
+				failure = e;
+			}
+			final IOException error = failure;
+			main.post(() -> onDirectResult(job, amount, error));
+		});
+	}
+
+	/** Wie Barcode Buddy: heute plus Standard-Haltbarkeit, -1 bedeutet unbegrenzt. */
+	private static String bestBeforeDate(Integer days) {
+		if (days != null && days == -1) {
+			return "2999-12-31";
+		}
+		Calendar calendar = Calendar.getInstance();
+		calendar.add(Calendar.DAY_OF_YEAR, days == null ? 0 : days);
+		return new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(calendar.getTime());
+	}
+
+	/** Wie Barcode Buddy: gekaufte Menge von der Einkaufsliste in Grocy abziehen; Fehler sind unwichtig. */
+	private void removeFromShoppingList(long productId, double amount) {
+		JsonObject body = new JsonObject();
+		body.addProperty("product_id", productId);
+		body.addProperty("product_amount", amount);
+		try {
+			grocy.post("stock/shoppinglist/remove-product", body.toString());
+		} catch (IOException ignored) {
+			// Das Produkt stand nicht auf der Einkaufsliste
+		}
+	}
+
+	private void onDirectResult(Job job, double amount, IOException error) {
+		ShoppingItem item = job.item;
+		if (error == null) {
+			int count = job.remaining;
+			job.sent += count;
+			job.remaining = 0;
+			done += count;
+			result.unitsSent += count;
+			result.directUnits += count;
+			String text = "In Grocy gebucht: " + trim(amount) + " "
+					+ (item.stockUnitName != null ? item.stockUnitName : "") + " " + item.displayName();
+			repo.updateProgress(item.id, item.sentCount + job.sent, text.replaceAll("\\s+", " ").trim(), null,
+					item.displayName(), item.effectivePrice(), item.effectiveScanPrice(), item.shopName);
+			reportProgress();
+			bookDirectNext();
+			return;
+		}
+		int status = error instanceof GrocyClient.HttpException ? ((GrocyClient.HttpException) error).statusCode : 0;
+		if (status == 401 || status == 403) {
+			abortAll(item, job, "Ungültiger Grocy-API-Schlüssel");
+		} else if (status == 0) {
+			abortAll(item, job, "Grocy nicht erreichbar");
+		} else {
+			// Grocy hat diese Buchung abgelehnt, die übrigen Artikel werden trotzdem gebucht
+			skipRest(job, "Grocy hat die Buchung abgelehnt (Fehler " + status + ")");
+			bookDirectNext();
+		}
+	}
+
+	/** Grocy nicht erreichbar oder Schlüssel ungültig: weitere Buchungen würden ebenfalls scheitern. */
+	private void abortAll(ShoppingItem item, Job job, String reason) {
+		repo.updateProgress(item.id, item.sentCount + job.sent, item.message, reason, null, null, null, null);
+		result.error = reason;
+		archive();
+	}
+
+	// ---------------------------------------------------------------- Über Barcode Buddy
+
+	private void startBarcodeBuddy() {
+		if (bbJobs.isEmpty()) {
+			archive();
+			return;
+		}
+		readMode();
 	}
 
 	private void readMode() {
@@ -138,7 +276,8 @@ public class PurchaseSender {
 
 			@Override
 			public void onError(int errorCode, String errorMessage, Integer statusCode) {
-				abortBeforeSending(errorCode, errorMessage);
+				result.error = describe(errorCode, errorMessage);
+				archive();
 			}
 		});
 	}
@@ -157,26 +296,22 @@ public class PurchaseSender {
 
 			@Override
 			public void onError(int errorCode, String errorMessage, Integer statusCode) {
-				abortBeforeSending(errorCode, errorMessage);
+				result.error = describe(errorCode, errorMessage);
+				archive();
 			}
 		});
 	}
 
-	private void abortBeforeSending(int errorCode, String errorMessage) {
-		result.error = describe(errorCode, errorMessage);
-		finish();
-	}
-
 	private void sendNext() {
-		while (jobIndex < jobs.size() && jobs.get(jobIndex).remaining <= 0) {
-			jobIndex++;
+		while (bbIndex < bbJobs.size() && bbJobs.get(bbIndex).remaining <= 0) {
+			bbIndex++;
 		}
-		if (jobIndex >= jobs.size()) {
+		if (bbIndex >= bbJobs.size()) {
 			restoreMode();
 			return;
 		}
-		final Job job = jobs.get(jobIndex);
-		api.postBarcode(job.item.barcode, job.priceParam, new BBApiCallback() {
+		final Job job = bbJobs.get(bbIndex);
+		api.postBarcode(job.item.barcode, job.priceParam(), new BBApiCallback() {
 			@Override
 			public void onResult(Object value) {
 				if (!(value instanceof String)) {
@@ -195,7 +330,8 @@ public class PurchaseSender {
 					result.newProducts++;
 				}
 				repo.updateProgress(job.item.id, job.item.sentCount + job.sent, text, null,
-						job.item.displayName(), job.item.effectivePrice(), job.item.effectiveScanPrice());
+						job.item.displayName(), job.item.effectivePrice(), job.item.effectiveScanPrice(),
+						job.item.shopName);
 				reportProgress();
 				sendNext();
 			}
@@ -206,7 +342,7 @@ public class PurchaseSender {
 				if (errorCode == BBApiCallback.ERROR_NETWORK || errorCode == BBApiCallback.ERROR_UNAUTHORIZED) {
 					// Der Server ist nicht erreichbar oder lehnt uns ab: alles Weitere würde auch scheitern
 					repo.updateProgress(job.item.id, job.item.sentCount + job.sent, job.item.message, text,
-							null, null, null);
+							null, null, null, null);
 					result.error = text;
 					restoreMode();
 				} else {
@@ -215,14 +351,6 @@ public class PurchaseSender {
 				}
 			}
 		});
-	}
-
-	/** Überspringt die restlichen Stücke dieses Artikels, die anderen Artikel werden weiter gesendet. */
-	private void skipRest(Job job, String error) {
-		repo.updateProgress(job.item.id, job.item.sentCount + job.sent, job.item.message, error, null, null, null);
-		done += job.remaining;
-		job.remaining = 0;
-		reportProgress();
 	}
 
 	private void restoreMode() {
@@ -242,6 +370,17 @@ public class PurchaseSender {
 				archive();
 			}
 		});
+	}
+
+	// ---------------------------------------------------------------- Abschluss
+
+	/** Überspringt die restlichen Stücke dieses Artikels, die anderen Artikel werden weiter gesendet. */
+	private void skipRest(Job job, String error) {
+		repo.updateProgress(job.item.id, job.item.sentCount + job.sent, job.item.message, error,
+				null, null, null, null);
+		done += job.remaining;
+		job.remaining = 0;
+		reportProgress();
 	}
 
 	private void archive() {
@@ -276,6 +415,11 @@ public class PurchaseSender {
 			default:
 				return detail.isEmpty() ? "Unbekannter Fehler" : detail;
 		}
+	}
+
+	/** 8.0 -> "8", 0.5 -> "0,5" */
+	private static String trim(double value) {
+		return value == Math.rint(value) ? String.valueOf((long) value) : String.valueOf(value).replace('.', ',');
 	}
 
 	/**
