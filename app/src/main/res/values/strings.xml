@@ -185,6 +185,10 @@
     <string name="scanner_standby">Scanner-Dienst</string>
     <string name="scanner_standby_connected">Nur aktiv, solange der Scanner verbunden ist (spart Akku)</string>
     <string name="scanner_standby_always">Immer aktiv halten und Scanner suchen</string>
+    <string name="scanner_battery_menu">Akku des Scanners prüfen</string>
+    <string name="scanner_battery_dialog_title">Akku des Scanners</string>
+    <string name="scanner_battery_dialog_text">Scanne diesen Code mit dem Barcode-Scanner. Er sendet dann seinen Akkustand, der in der Statuszeile erscheint.</string>
+    <string name="scanner_battery_close">Schließen</string>
     <string name="products_title">Produkte</string>
     <string name="products_pref_summary">Die lokale Produktdatenbank aus Grocy ansehen</string>
     <string name="products_search_hint">Name oder Barcode suchen</string>

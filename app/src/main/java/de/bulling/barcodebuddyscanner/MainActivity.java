@@ -788,6 +788,9 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
             GrocySync.start(this, (ok, message) -> Toast.makeText(this,
                     ok ? getString(R.string.shopping_updated) : message, Toast.LENGTH_LONG).show());
             return true;
+        } else if (itemId == R.id.action_scanner_battery) {
+            showScannerBatteryCode();
+            return true;
         } else if (itemId == R.id.action_products) {
             startActivity(new Intent(this, ProductsActivity.class));
             return true;
@@ -818,6 +821,25 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
                 keycode == KeyEvent.KEYCODE_ENTER ||
                 keycode == KeyEvent.KEYCODE_MINUS ||
                 keycode == KeyEvent.KEYCODE_SEMICOLON);
+    }
+
+    /** Zeigt den Einstellungscode des Scanners für "Verbleibender Akku" (Handbuch) zum Abscannen vom Display. */
+    private void showScannerBatteryCode() {
+        android.widget.ImageView image = new android.widget.ImageView(this);
+        image.setImageResource(R.drawable.scanner_battery_code);
+        image.setAdjustViewBounds(true);
+        image.setBackgroundColor(android.graphics.Color.WHITE);
+        int pad = (int) (16 * getResources().getDisplayMetrics().density);
+        android.widget.LinearLayout box = new android.widget.LinearLayout(this);
+        box.setPadding(pad, pad, pad, 0);
+        box.addView(image, new android.widget.LinearLayout.LayoutParams(
+                android.view.ViewGroup.LayoutParams.MATCH_PARENT, android.view.ViewGroup.LayoutParams.WRAP_CONTENT));
+        new com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.scanner_battery_dialog_title)
+                .setMessage(R.string.scanner_battery_dialog_text)
+                .setView(box)
+                .setPositiveButton(R.string.scanner_battery_close, null)
+                .show();
     }
 
     private void processKeypress(final KeyEvent event, final int keycode) {
