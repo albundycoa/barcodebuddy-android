@@ -23,7 +23,9 @@ import de.bulling.barcodebuddyscanner.ScanActionReceiver;
  */
 public final class ScanNotifier {
 
-	private static final String CHANNEL_ID      = "scan_info";
+	/** Neuer Kanalname: die Einstellungen eines bestehenden Kanals lassen sich nicht mehr ändern. */
+	private static final String CHANNEL_ID      = "scan_info_alert";
+	private static final String OLD_CHANNEL_ID  = "scan_info";
 	private static final int    NOTIFICATION_ID = 3;
 
 	private ScanNotifier() {
@@ -116,13 +118,17 @@ public final class ScanNotifier {
 
 	private static void ensureChannel(Context app) {
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+			NotificationManager manager = (NotificationManager) app.getSystemService(Context.NOTIFICATION_SERVICE);
+			manager.deleteNotificationChannel(OLD_CHANNEL_ID);
 			NotificationChannel channel = new NotificationChannel(CHANNEL_ID,
 					app.getString(R.string.notif_channel_scan), NotificationManager.IMPORTANCE_DEFAULT);
 			channel.setDescription(app.getString(R.string.notif_channel_scan_description));
-			// Die App piept und vibriert beim Scannen schon selbst; die Uhr meldet sich von sich aus
+			// Ohne Ton, aber mit kurzer Vibration: Stumme Benachrichtigungen zeigt die Samsung-Uhr nur leise
+			// in der Liste an. Eine Vibration macht daraus einen Alarm, der auch auf der Uhr auffällt.
 			channel.setSound(null, null);
-			channel.enableVibration(false);
-			((NotificationManager) app.getSystemService(Context.NOTIFICATION_SERVICE)).createNotificationChannel(channel);
+			channel.enableVibration(true);
+			channel.setVibrationPattern(new long[]{0, 120});
+			manager.createNotificationChannel(channel);
 		}
 	}
 
