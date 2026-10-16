@@ -172,11 +172,6 @@ public class SharedPrefHelper {
 		PreferenceManager.getDefaultSharedPreferences(context).edit().putInt("grocy_cache_version", version).apply();
 	}
 
-	/** Einkaufsliste nach Geschäft und darin nach Produktgruppe ("shop_group", Standard) oder nur nach Produktgruppe. */
-	public static boolean isShoppingGroupedByShop(Context context) {
-		return !"group".equals(PreferenceManager.getDefaultSharedPreferences(context).getString("shopping_grouping", "shop_group"));
-	}
-
 	/** Von Hand abgehakte Produkte beim Senden einbuchen ("book", Standard) oder nur in Grocy abhaken ("mark"). */
 	public static boolean isManualDoneBooked(Context context) {
 		return !"mark".equals(PreferenceManager.getDefaultSharedPreferences(context).getString("manual_done_mode", "book"));

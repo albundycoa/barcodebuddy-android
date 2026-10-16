@@ -19,7 +19,6 @@ import de.bulling.barcodebuddyscanner.Data.ShoppingItem;
 import de.bulling.barcodebuddyscanner.Data.ShoppingRepository;
 import de.bulling.barcodebuddyscanner.Helper.Money;
 import de.bulling.barcodebuddyscanner.Helper.ReceiptPdf;
-import de.bulling.barcodebuddyscanner.Helper.SharedPrefHelper;
 
 /**
  * Schickt den aktuellen Stand (Einkaufsliste aus Grocy und gescannte Artikel) an die Wear-OS-Uhr.
@@ -59,14 +58,13 @@ public final class WearSync {
 	private static void send(Context app, ShoppingRepository.OpenList list, ShoppingRepository.ShoppingData shopping) {
 		JsonObject root = new JsonObject();
 
-		// Einkaufsliste wie auf dem Handy: offene Einträge nach Geschäft/Produktgruppe, erledigte unten
-		final boolean byShop = SharedPrefHelper.isShoppingGroupedByShop(app);
+		// Einkaufsliste wie auf dem Handy: offene Einträge nach Produktgruppe, erledigte unten
 		List<ShoppingRepository.ShoppingEntry> entries = new ArrayList<>();
 		List<ShoppingRepository.ShoppingEntry> doneEntries = new ArrayList<>();
 		for (ShoppingRepository.ShoppingEntry e : shopping.entries) {
 			(e.isDone() ? doneEntries : entries).add(e);
 		}
-		Collections.sort(entries, shopping.openOrder(byShop));
+		Collections.sort(entries, shopping.openOrder());
 		Collections.sort(doneEntries, (a, b) -> a.name.compareToIgnoreCase(b.name));
 		entries.addAll(doneEntries);
 		JsonArray shop = new JsonArray();
@@ -77,9 +75,6 @@ public final class WearSync {
 			o.addProperty("a", amountText(e));
 			o.addProperty("d", e.isDone());
 			o.addProperty("c", e.isCoveredByScans());
-			if (byShop && e.shopName != null && !e.isNote) {
-				o.addProperty("s", e.shopName);
-			}
 			if (e.group != null && !e.isNote) {
 				o.addProperty("g", e.group);
 			}

@@ -40,16 +40,6 @@
         <item>mark</item>
     </string-array>
 
-    <string-array name="shopping_grouping">
-        <item>@string/shopping_grouping_shop_group</item>
-        <item>@string/shopping_grouping_group</item>
-    </string-array>
-
-    <string-array name="shopping_grouping_val">
-        <item>shop_group</item>
-        <item>group</item>
-    </string-array>
-
     <string-array name="sync_mode">
         <item>@string/sync_mode_manual</item>
         <item>@string/sync_mode_open</item>

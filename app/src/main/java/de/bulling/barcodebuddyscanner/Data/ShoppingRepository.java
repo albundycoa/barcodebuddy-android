@@ -624,14 +624,6 @@ public final class ShoppingRepository {
 			this.groupPosition = groupPosition;
 		}
 
-		private int shopRank(ShoppingEntry e) {
-			if (e.isNote || e.shopId == null) {
-				return Integer.MAX_VALUE;
-			}
-			Integer p = shopPosition.get(e.shopId);
-			return p != null ? p : Integer.MAX_VALUE - 1;
-		}
-
 		private int groupRank(ShoppingEntry e) {
 			if (e.isNote || e.group == null) {
 				return Integer.MAX_VALUE;
@@ -640,22 +632,9 @@ public final class ShoppingRepository {
 			return p != null ? p : Integer.MAX_VALUE - 1;
 		}
 
-		/**
-		 * Reihenfolge der offenen Einträge: nach Geschäft (in der gewählten Reihenfolge, falls gewünscht),
-		 * darin nach Produktgruppe (in der gewählten Reihenfolge) und zuletzt nach Name.
-		 */
-		public java.util.Comparator<ShoppingEntry> openOrder(final boolean byShop) {
+		/** Reihenfolge der offenen Einträge: nach Produktgruppe (in der gewählten Reihenfolge), dann nach Name. */
+		public java.util.Comparator<ShoppingEntry> openOrder() {
 			return (a, b) -> {
-				if (byShop) {
-					int c = Integer.compare(shopRank(a), shopRank(b));
-					if (c != 0) {
-						return c;
-					}
-					c = String.valueOf(a.shopName).compareToIgnoreCase(String.valueOf(b.shopName));
-					if (c != 0) {
-						return c;
-					}
-				}
 				int c = Integer.compare(groupRank(a), groupRank(b));
 				if (c != 0) {
 					return c;

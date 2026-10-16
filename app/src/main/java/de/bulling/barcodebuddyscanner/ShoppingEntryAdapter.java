@@ -21,7 +21,6 @@ import java.util.Map;
 import de.bulling.barcodebuddyscanner.Data.ShoppingRepository.ShoppingData;
 import de.bulling.barcodebuddyscanner.Data.ShoppingRepository.ShoppingEntry;
 import de.bulling.barcodebuddyscanner.Helper.Money;
-import de.bulling.barcodebuddyscanner.Helper.SharedPrefHelper;
 
 /**
  * Einkaufsmodus: Die Einkaufsliste aus Grocy mit großen Karten, nach Geschäften gruppiert. Erledigte
@@ -35,17 +34,14 @@ public class ShoppingEntryAdapter extends RecyclerView.Adapter<RecyclerView.View
 
 	private static final int TYPE_HEADER = 0;
 	private static final int TYPE_ENTRY  = 1;
-	private static final int TYPE_SUB    = 2;
 
 	private static class Row {
 		final String        header;
 		final ShoppingEntry entry;
-		final boolean       sub;
 
-		Row(String header, ShoppingEntry entry, boolean sub) {
+		Row(String header, ShoppingEntry entry) {
 			this.header = header;
 			this.entry  = entry;
-			this.sub    = sub;
 		}
 	}
 
@@ -72,7 +68,6 @@ public class ShoppingEntryAdapter extends RecyclerView.Adapter<RecyclerView.View
 		rows.clear();
 		doneCount = 0;
 		totalCount = data.entries.size();
-		final boolean byShop = SharedPrefHelper.isShoppingGroupedByShop(context);
 
 		List<ShoppingEntry> open = new ArrayList<>();
 		List<ShoppingEntry> done = new ArrayList<>();
@@ -84,47 +79,33 @@ public class ShoppingEntryAdapter extends RecyclerView.Adapter<RecyclerView.View
 				open.add(e);
 			}
 		}
-		Collections.sort(open, data.openOrder(byShop));
+		Collections.sort(open, data.openOrder());
 
-		// Zähler je Abschnitt für die Überschriften
+		// Zähler je Produktgruppe für die Überschriften
 		final Map<String, Integer> counts = new HashMap<>();
 		for (ShoppingEntry e : open) {
-			String key = byShop ? shopTitle(e) : groupTitle(e);
+			String key = groupTitle(e);
 			Integer n = counts.get(key);
 			counts.put(key, n == null ? 1 : n + 1);
 		}
 
-		String lastTop = null;
 		String lastGroup = null;
 		for (ShoppingEntry e : open) {
-			String top = byShop ? shopTitle(e) : groupTitle(e);
-			if (!top.equals(lastTop)) {
-				rows.add(new Row(context.getString(R.string.section_title, top, counts.get(top)), null, false));
-				lastTop = top;
-				lastGroup = null;
+			String group = groupTitle(e);
+			if (!group.equals(lastGroup)) {
+				rows.add(new Row(context.getString(R.string.section_title, group, counts.get(group)), null));
+				lastGroup = group;
 			}
-			if (byShop) {
-				// Innerhalb des Geschäfts eine Zwischenüberschrift je Produktgruppe
-				String group = groupTitle(e);
-				if (!group.equals(lastGroup)) {
-					rows.add(new Row(group, null, true));
-					lastGroup = group;
-				}
-			}
-			rows.add(new Row(null, e, false));
+			rows.add(new Row(null, e));
 		}
 		if (!done.isEmpty()) {
 			Collections.sort(done, (a, b) -> a.name.compareToIgnoreCase(b.name));
-			rows.add(new Row(context.getString(R.string.section_title, context.getString(R.string.section_done), done.size()), null, false));
+			rows.add(new Row(context.getString(R.string.section_title, context.getString(R.string.section_done), done.size()), null));
 			for (ShoppingEntry e : done) {
-				rows.add(new Row(null, e, false));
+				rows.add(new Row(null, e));
 			}
 		}
 		notifyDataSetChanged();
-	}
-
-	private String shopTitle(ShoppingEntry e) {
-		return e.shopId != null && !e.isNote && e.shopName != null ? e.shopName : context.getString(R.string.section_none);
 	}
 
 	private String groupTitle(ShoppingEntry e) {
@@ -133,8 +114,7 @@ public class ShoppingEntryAdapter extends RecyclerView.Adapter<RecyclerView.View
 
 	@Override
 	public int getItemViewType(int position) {
-		Row row = rows.get(position);
-		return row.entry != null ? TYPE_ENTRY : row.sub ? TYPE_SUB : TYPE_HEADER;
+		return rows.get(position).entry == null ? TYPE_HEADER : TYPE_ENTRY;
 	}
 
 	@Override
@@ -148,9 +128,6 @@ public class ShoppingEntryAdapter extends RecyclerView.Adapter<RecyclerView.View
 		LayoutInflater inflater = LayoutInflater.from(parent.getContext());
 		if (viewType == TYPE_HEADER) {
 			return new HeaderHolder(inflater.inflate(R.layout.item_section, parent, false));
-		}
-		if (viewType == TYPE_SUB) {
-			return new HeaderHolder(inflater.inflate(R.layout.item_subsection, parent, false));
 		}
 		return new EntryHolder(inflater.inflate(R.layout.item_entry, parent, false));
 	}
