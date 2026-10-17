@@ -82,6 +82,7 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
 
     private RecyclerView itemList;
     private SwipeRefreshLayout refresh;
+    private TextView syncInfo;
     private TextView emptyView;
     private TextView btHint;
     private TextView totalBar;
@@ -302,6 +303,7 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
         emptyView = findViewById(R.id.empty_view);
         btHint = findViewById(R.id.bt_hint);
         totalBar = findViewById(R.id.total_bar);
+        syncInfo = findViewById(R.id.sync_info);
         // Antippen der Statuszeile startet die Scannersuche neu, falls der Dienst ruht
         btHint.setOnClickListener(v -> {
             if (SharedPrefHelper.isSppScannerEnabled(this) && !ScannerService.isRunning()) {
@@ -484,7 +486,32 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
         return units;
     }
 
+    /** Zeigt, wann die Daten zuletzt aus Grocy geholt wurden; veraltete Stände (über 12 Stunden) fallen auf. */
+    private void updateSyncInfo() {
+        if (!SharedPrefHelper.hasGrocy(this)) {
+            syncInfo.setVisibility(View.GONE);
+            return;
+        }
+        long last = SharedPrefHelper.getGrocyLastSync(this);
+        boolean stale = last == 0 || System.currentTimeMillis() - last > 12L * 60 * 60 * 1000;
+        if (last == 0) {
+            syncInfo.setText(R.string.sync_info_never);
+        } else {
+            String time = android.text.format.DateUtils.formatDateTime(this, last,
+                    android.text.format.DateUtils.FORMAT_SHOW_TIME);
+            String when = android.text.format.DateUtils.isToday(last) ? getString(R.string.sync_info_today, time)
+                    : android.text.format.DateUtils.formatDateTime(this, last,
+                    android.text.format.DateUtils.FORMAT_SHOW_DATE | android.text.format.DateUtils.FORMAT_SHOW_TIME
+                            | android.text.format.DateUtils.FORMAT_ABBREV_MONTH);
+            syncInfo.setText(getString(R.string.sync_info, when));
+        }
+        syncInfo.setTextColor(stale ? getColor(R.color.md_error_text)
+                : MaterialColors.getColor(this, com.google.android.material.R.attr.colorOnSurfaceVariant, 0));
+        syncInfo.setVisibility(View.VISIBLE);
+    }
+
     private void updateListState() {
+        updateSyncInfo();
         boolean grocyTab = currentTab == 0 && SharedPrefHelper.hasGrocy(this);
         boolean empty = grocyTab ? (shoppingData == null || shoppingData.entries.isEmpty()) : currentItems.isEmpty();
         emptyView.setVisibility(empty ? View.VISIBLE : View.GONE);

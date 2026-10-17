@@ -153,6 +153,9 @@
     <string name="tab_shopping_count">Einkaufsliste (%1$d)</string>
     <string name="tab_scanned_count">Gescannt (%1$d)</string>
     <string name="shopping_empty">Keine Einträge auf der Einkaufsliste in Grocy.</string>
+    <string name="sync_info">Zuletzt synchronisiert: %1$s</string>
+    <string name="sync_info_today">heute, %1$s Uhr</string>
+    <string name="sync_info_never">Noch nicht mit Grocy synchronisiert</string>
     <string name="shopping_value">Gesamtwert %1$s</string>
     <string name="shopping_progress">%1$d von %2$d erledigt</string>
     <string name="shopping_unsynced">%1$d noch nicht übertragen</string>
