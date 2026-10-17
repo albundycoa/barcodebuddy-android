@@ -184,7 +184,62 @@ public class PurchaseSender {
 			finish();
 			return;
 		}
-		bookDirectNext();
+		preflight();
+	}
+
+	// ---------------------------------------------------------------- Vorabprüfung
+
+	/**
+	 * Prüft vor der ersten Buchung, ob Grocy und Barcode Buddy antworten, damit der Einkauf nicht halb
+	 * gesendet wird. Fällt die Prüfung durch, bleibt alles unverändert in der Liste.
+	 */
+	private void preflight() {
+		final boolean needGrocy = grocy != null && (!directJobs.isEmpty() || !manualJobs.isEmpty());
+		if (!needGrocy) {
+			preflightBarcodeBuddy();
+			return;
+		}
+		GROCY_IO.execute(() -> {
+			IOException failure = null;
+			try {
+				grocy.get("system/info");
+			} catch (IOException e) {
+				failure = e;
+			}
+			final IOException error = failure;
+			main.post(() -> {
+				if (error == null) {
+					preflightBarcodeBuddy();
+					return;
+				}
+				int status = error instanceof GrocyClient.HttpException ? ((GrocyClient.HttpException) error).statusCode : 0;
+				abortBeforeStart(status == 401 || status == 403 ? "Ungültiger Grocy-API-Schlüssel"
+						: status == 0 ? "Grocy nicht erreichbar" : "Grocy antwortet nicht richtig (Fehler " + status + ")");
+			});
+		});
+	}
+
+	private void preflightBarcodeBuddy() {
+		if (bbJobs.isEmpty()) {
+			bookDirectNext();
+			return;
+		}
+		api.getMode(new BBApiCallback() {
+			@Override
+			public void onResult(Object value) {
+				bookDirectNext();
+			}
+
+			@Override
+			public void onError(int errorCode, String errorMessage, Integer statusCode) {
+				abortBeforeStart("Barcode Buddy: " + describe(errorCode, errorMessage));
+			}
+		});
+	}
+
+	private void abortBeforeStart(String reason) {
+		result.error = reason;
+		finish();
 	}
 
 	// ---------------------------------------------------------------- Direkt in Grocy
