@@ -6,7 +6,7 @@
     android:layout_marginTop="3dp"
     android:layout_marginEnd="14dp"
     android:layout_marginBottom="3dp"
-    android:background="#262626"
+    android:background="#2E2E2E"
     android:orientation="vertical"
     android:padding="10dp">
 
@@ -14,14 +14,16 @@
         android:id="@+id/name"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textSize="15sp" />
+        android:textColor="#FFFFFF"
+        android:textSize="18sp"
+        android:textStyle="bold" />
 
     <TextView
         android:id="@+id/sub"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textColor="#A0A0A0"
-        android:textSize="12sp" />
+        android:textColor="#E0E0E0"
+        android:textSize="15sp" />
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -38,7 +40,7 @@
             android:minWidth="0dp"
             android:padding="0dp"
             android:text="−"
-            android:textSize="20sp" />
+            android:textSize="24sp" />
 
         <Button
             android:id="@+id/plus"
@@ -49,7 +51,7 @@
             android:minWidth="0dp"
             android:padding="0dp"
             android:text="+"
-            android:textSize="20sp" />
+            android:textSize="24sp" />
 
         <Button
             android:id="@+id/remove"
@@ -59,6 +61,6 @@
             android:minWidth="0dp"
             android:padding="0dp"
             android:text="✕"
-            android:textSize="18sp" />
+            android:textSize="22sp" />
     </LinearLayout>
 </LinearLayout>

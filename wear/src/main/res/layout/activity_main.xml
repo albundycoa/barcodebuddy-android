@@ -18,33 +18,38 @@
             android:id="@+id/button_shopping"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/shopping_list" />
+            android:text="@string/shopping_list"
+            android:textSize="17sp" />
 
         <TextView
             android:id="@+id/text_shopping"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
-            android:textSize="12sp" />
+            android:layout_marginBottom="10dp"
+            android:textColor="#FFFFFF"
+            android:textSize="16sp" />
 
         <Button
             android:id="@+id/button_scans"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/scans" />
+            android:text="@string/scans"
+            android:textSize="17sp" />
 
         <TextView
             android:id="@+id/text_scans"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textSize="12sp" />
+            android:textColor="#FFFFFF"
+            android:textSize="16sp" />
 
         <TextView
             android:id="@+id/text_battery"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:textSize="13sp" />
+            android:layout_marginTop="12dp"
+            android:textSize="16sp"
+            android:textStyle="bold" />
 
         <TextView
             android:id="@+id/text_hint"
@@ -52,6 +57,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:gravity="center"
-            android:textSize="12sp" />
+            android:textColor="#FFFFFF"
+            android:textSize="15sp" />
     </LinearLayout>
 </ScrollView>

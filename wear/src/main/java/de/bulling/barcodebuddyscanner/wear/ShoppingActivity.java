@@ -72,8 +72,8 @@ public class ShoppingActivity extends Activity implements State.Listener {
 				if (row.header != null) {
 					TextView t = (TextView) holder.itemView;
 					t.setText(row.header);
-					t.setTextSize(row.sub ? 11 : 13);
-					t.setTextColor(row.sub ? 0xFFA0A0A0 : 0xFF80CBC4);
+					t.setTextSize(row.sub ? 14 : 16);
+					t.setTextColor(row.sub ? 0xFFE0E0E0 : 0xFF80CBC4);
 					return;
 				}
 				bindEntry(holder.itemView, row.entry);
@@ -96,7 +96,7 @@ public class ShoppingActivity extends Activity implements State.Listener {
 		name.setText(entry.get("n").getAsString());
 		name.setPaintFlags(done ? name.getPaintFlags() | android.graphics.Paint.STRIKE_THRU_TEXT_FLAG
 				: name.getPaintFlags() & ~android.graphics.Paint.STRIKE_THRU_TEXT_FLAG);
-		name.setAlpha(done ? 0.5f : 1f);
+		name.setAlpha(done ? 0.7f : 1f);
 		sub.setText(covered ? getString(R.string.done_by_scan) : entry.get("a").getAsString());
 		check.setText(done ? "☑" : "☐");
 		check.setTextColor(done ? 0xFF80CBC4 : 0xFFFFFFFF);
