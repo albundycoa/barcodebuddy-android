@@ -183,7 +183,7 @@
     <string name="sync_mode_bg6">Beim Öffnen und alle 6 Stunden im Hintergrund (WLAN)</string>
     <string name="sync_mode_bg24">Beim Öffnen und täglich im Hintergrund (WLAN)</string>
     <string name="scanner_auto_control">Scanner automatisch steuern</string>
-    <string name="scanner_auto_control_summary">Beim Verbinden nie von selbst ausschalten; nach dem Senden des Einkaufs auf 30 Sekunden stellen und in den Ruhezustand schicken</string>
+    <string name="scanner_auto_control_summary">Beim Verbinden die Ausschaltzeit auf 30 Minuten stellen; nach dem Senden des Einkaufs auf 30 Sekunden stellen und in den Ruhezustand schicken</string>
     <string name="battery_interval">Akkustand des Scanners prüfen</string>
     <string name="battery_interval_hint">Abstand in Minuten. 0 schaltet die automatische Abfrage aus; über das Menü lässt sich der Akkustand jederzeit abfragen.</string>
     <string name="battery_interval_summary">Alle %1$d Minuten</string>
@@ -191,6 +191,43 @@
     <string name="scanner_standby">Scanner-Dienst</string>
     <string name="scanner_standby_connected">Nur aktiv, solange der Scanner verbunden ist (spart Akku)</string>
     <string name="scanner_standby_always">Immer aktiv halten und Scanner suchen</string>
+    <!-- Unbekannten Barcode zuordnen / Produkt anlegen -->
+    <string name="item_assign">Anlegen / zuordnen</string>
+    <string name="assign_new">Neues Produkt anlegen</string>
+    <string name="assign_existing">Zu vorhandenem Produkt zuordnen</string>
+    <string name="assign_to">Barcode zu „%1$s“ – Geschäft wählen</string>
+    <string name="assign_button">Zuordnen</string>
+    <string name="assign_no_shops">Keine Geschäfte in Grocy gefunden. Der Barcode wird ohne Geschäft zugeordnet.</string>
+    <string name="assign_done">Barcode zugeordnet</string>
+    <string name="product_pick_title">Produkt wählen</string>
+    <string name="product_create_title">Produkt anlegen</string>
+    <string name="product_create_button">Produkt anlegen</string>
+    <string name="product_create_barcode">Barcode: %1$s</string>
+    <string name="product_name">Name</string>
+    <string name="product_location">Standardort</string>
+    <string name="product_shop">Standardgeschäft</string>
+    <string name="product_group">Produktgruppe</string>
+    <string name="product_unit_stock">Bestandsmengeneinheit</string>
+    <string name="product_unit_purchase">Standardeinkaufsmengeneinheit</string>
+    <string name="product_unit_consume">Standardverbrauchsmengeneinheit</string>
+    <string name="product_unit_price">Mengeneinheit für Preise</string>
+    <string name="product_price">Einkaufspreis je Preiseinheit (optional)</string>
+    <string name="product_price_invalid">Bitte einen gültigen Preis eingeben</string>
+    <string name="product_required">Pflichtfeld</string>
+    <string name="product_no_grocy">Grocy ist nicht verbunden</string>
+    <string name="product_created">Produkt angelegt</string>
+    <string name="product_create_failed_title">Anlegen nicht möglich</string>
+    <string name="product_create_failed">Grocy meldet: %1$s</string>
+    <string name="conversions_title">Produktspezifische ME-Umrechnungen</string>
+    <string name="conversions_hint">Optional, z. B. 1 Pack = 8 Stück. Grocy rechnet die Gegenrichtung selbst aus.</string>
+    <string name="conversion_add">Umrechnung hinzufügen</string>
+    <string name="conversion_remove">Umrechnung entfernen</string>
+    <string name="conversion_one">1</string>
+    <string name="conversion_equals">=</string>
+    <string name="conversion_factor">Faktor</string>
+    <string name="conversion_from">Einheit</string>
+    <string name="conversion_to">entspricht</string>
+    <string name="conversion_invalid">Zwei verschiedene Einheiten und ein Faktor größer 0 nötig</string>
     <string name="scanner_control_title">Scanner-Einstellungen</string>
     <string name="scanner_control_auto_off">Automatisch ausschalten nach</string>
     <string name="scanner_control_volume">Lautstärke des Signaltons</string>

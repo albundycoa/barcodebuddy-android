@@ -17,6 +17,8 @@ public final class GrocyData {
 	public final List<ContentValues> units      = new ArrayList<>();
 	/** Produktgruppen */
 	public final List<ContentValues> groups     = new ArrayList<>();
+	/** Lagerorte */
+	public final List<ContentValues> locations  = new ArrayList<>();
 	/** Einträge der Grocy-Einkaufsliste */
 	public final List<ContentValues> shopping   = new ArrayList<>();
 }

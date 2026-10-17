@@ -36,6 +36,14 @@ import de.bulling.barcodebuddyscanner.Helper.SharedPrefHelper;
  */
 public class ProductsActivity extends AppCompatActivity implements ShoppingRepository.Listener {
 
+	/** Auswahlmodus: ein Antippen gibt das Produkt zurück, statt seine Barcodes zu zeigen. */
+	public static final String EXTRA_PICK         = "pick";
+	public static final String EXTRA_PRODUCT_ID   = "product_id";
+	public static final String EXTRA_PRODUCT_NAME = "product_name";
+	public static final String EXTRA_PRODUCT_SHOP = "product_shop";
+
+	private boolean pickMode;
+
 	private ShoppingRepository                       repo;
 	private final List<ShoppingRepository.ProductRow> products = new ArrayList<>();
 	private ProductAdapter                           adapter;
@@ -56,6 +64,11 @@ public class ProductsActivity extends AppCompatActivity implements ShoppingRepos
 		}
 		EdgeToEdgeHelper.applyInsetsAsPadding(findViewById(R.id.app_bar), false, true, false, false);
 
+		pickMode = getIntent().getBooleanExtra(EXTRA_PICK, false);
+		if (pickMode) {
+			setTitle(R.string.product_pick_title);
+			toolbar.setTitle(R.string.product_pick_title);
+		}
 		header = findViewById(R.id.products_header);
 		emptyView = findViewById(R.id.empty_view);
 		search = findViewById(R.id.search);
@@ -195,7 +208,19 @@ public class ProductsActivity extends AppCompatActivity implements ShoppingRepos
 			}
 			line2.append(getResources().getQuantityString(R.plurals.products_detail_barcodes, p.barcodes, p.barcodes));
 			holder.detail.setText(line2);
-			holder.itemView.setOnClickListener(v -> showBarcodes(p));
+			holder.itemView.setOnClickListener(v -> {
+				if (pickMode) {
+					// Auswahlmodus: das gewählte Produkt an die aufrufende Seite zurückgeben
+					android.content.Intent result = new android.content.Intent()
+							.putExtra(EXTRA_PRODUCT_ID, p.id)
+							.putExtra(EXTRA_PRODUCT_NAME, p.name)
+							.putExtra(EXTRA_PRODUCT_SHOP, p.shopId == null ? -1L : p.shopId);
+					setResult(RESULT_OK, result);
+					finish();
+				} else {
+					showBarcodes(p);
+				}
+			});
 		}
 
 		@Override

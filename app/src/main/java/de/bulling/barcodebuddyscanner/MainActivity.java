@@ -6,7 +6,9 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.text.InputType;
+import android.view.GestureDetector;
 import android.view.KeyEvent;
+import android.view.MotionEvent;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -22,7 +24,6 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
-import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
@@ -45,6 +46,7 @@ import java.util.List;
 import java.util.Locale;
 
 import de.bulling.barcodebuddyscanner.Api.GrocyClient;
+import de.bulling.barcodebuddyscanner.Api.GrocyProducts;
 import de.bulling.barcodebuddyscanner.Api.GrocySync;
 import de.bulling.barcodebuddyscanner.Api.SyncScheduler;
 import de.bulling.barcodebuddyscanner.Data.ShoppingItem;
@@ -333,32 +335,8 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
             public void onTabReselected(TabLayout.Tab tab) {
             }
         });
-        new ItemTouchHelper(new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) {
-            @Override
-            public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder,
-                                  @NonNull RecyclerView.ViewHolder target) {
-                return false;
-            }
 
-            @Override
-            public int getSwipeDirs(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder) {
-                if (itemList.getAdapter() != adapter) {
-                    return 0;
-                }
-                int position = viewHolder.getBindingAdapterPosition();
-                boolean isHeader = position == RecyclerView.NO_POSITION || adapter.getItem(position) == null;
-                return sending || isHeader ? 0 : super.getSwipeDirs(recyclerView, viewHolder);
-            }
-
-            @Override
-            public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
-                int position = viewHolder.getBindingAdapterPosition();
-                if (position != RecyclerView.NO_POSITION && adapter.getItem(position) != null) {
-                    onDelete(adapter.getItem(position));
-                }
-            }
-        }).attachToRecyclerView(itemList);
-
+        setupTabSwipe();
         cameraButton.setOnClickListener(v -> startActivity(new Intent(this, ContinuousCaptureActivity.class)));
         sendButton.setOnClickListener(v -> confirmSend());
         // Mit Grocy startet die App in der Einkaufsliste, sonst bei den gescannten Artikeln
@@ -428,6 +406,39 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
         if (scanned != null) {
             scanned.setText(getString(R.string.tab_scanned_count, currentItems.size()));
         }
+    }
+
+    // ---------------------------------------------------------------- Wischen zwischen den Tabs
+
+    private GestureDetector tabSwipe;
+
+    /** Nach links oder rechts wischen wechselt zwischen Einkaufsliste und Gescannt (in beide Richtungen im Kreis). */
+    private void setupTabSwipe() {
+        final float density = getResources().getDisplayMetrics().density;
+        tabSwipe = new GestureDetector(this, new GestureDetector.SimpleOnGestureListener() {
+            @Override
+            public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
+                if (e1 == null || e2 == null || sending) {
+                    return false;
+                }
+                float dx = e2.getX() - e1.getX();
+                float dy = e2.getY() - e1.getY();
+                if (Math.abs(dx) > 90 * density && Math.abs(dx) > 1.6f * Math.abs(dy)
+                        && Math.abs(velocityX) > 300 * density) {
+                    showTab(currentTab == 0 ? 1 : 0);
+                    return true;
+                }
+                return false;
+            }
+        });
+    }
+
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent ev) {
+        if (tabSwipe != null) {
+            tabSwipe.onTouchEvent(ev);
+        }
+        return super.dispatchTouchEvent(ev);
     }
 
     private void showTab(int tab) {
@@ -597,6 +608,97 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
                 })
                 .setNegativeButton(android.R.string.cancel, null)
                 .show();
+    }
+
+    // ---------------------------------------------------------------- Unbekannten Barcode zuordnen
+
+    private ShoppingItem assignItem;
+
+    private final ActivityResultLauncher<Intent> pickProductLauncher = registerForActivityResult(
+            new androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult(), result -> {
+                Intent data = result.getData();
+                if (result.getResultCode() == RESULT_OK && data != null && assignItem != null) {
+                    linkBarcodeToProduct(assignItem, data.getLongExtra(ProductsActivity.EXTRA_PRODUCT_ID, -1),
+                            data.getStringExtra(ProductsActivity.EXTRA_PRODUCT_NAME),
+                            data.getLongExtra(ProductsActivity.EXTRA_PRODUCT_SHOP, -1));
+                }
+            });
+
+    @Override
+    public void onAssign(ShoppingItem item) {
+        if (new SharedPrefHelper(this).initGrocyClient() == null) {
+            Toast.makeText(this, R.string.product_no_grocy, Toast.LENGTH_LONG).show();
+            return;
+        }
+        assignItem = item;
+        String[] choices = {getString(R.string.assign_new), getString(R.string.assign_existing)};
+        new com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+                .setTitle(item.displayName() != null ? item.displayName() : item.barcode)
+                .setItems(choices, (d, which) -> {
+                    if (which == 0) {
+                        startActivity(new Intent(this, ProductCreateActivity.class)
+                                .putExtra(ProductCreateActivity.EXTRA_BARCODE, item.barcode)
+                                .putExtra(ProductCreateActivity.EXTRA_ITEM_ID, item.id)
+                                .putExtra(ProductCreateActivity.EXTRA_NAME, item.displayName()));
+                    } else {
+                        pickProductLauncher.launch(new Intent(this, ProductsActivity.class)
+                                .putExtra(ProductsActivity.EXTRA_PICK, true));
+                    }
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
+    /** Fragt, in welchem Geschäft der Barcode gescannt wurde, und hängt ihn dann an das Produkt in Grocy. */
+    private void linkBarcodeToProduct(final ShoppingItem item, final long productId, final String productName,
+                                      final long defaultShopId) {
+        repo.getOptions("shops", shops -> {
+            final String[] names = new String[shops.size()];
+            int checked = 0;
+            for (int i = 0; i < shops.size(); i++) {
+                names[i] = shops.get(i).name;
+                if (shops.get(i).id == defaultShopId) {
+                    checked = i;
+                }
+            }
+            final int[] selected = {checked};
+            com.google.android.material.dialog.MaterialAlertDialogBuilder builder =
+                    new com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+                            .setTitle(getString(R.string.assign_to, productName))
+                            .setNegativeButton(android.R.string.cancel, null);
+            if (names.length == 0) {
+                builder.setMessage(R.string.assign_no_shops);
+            } else {
+                builder.setSingleChoiceItems(names, checked, (d, which) -> selected[0] = which);
+            }
+            builder.setPositiveButton(R.string.assign_button, (d, w) -> {
+                Long shopId = names.length == 0 ? null : shops.get(selected[0]).id;
+                runLink(item, productId, shopId);
+            }).show();
+        });
+    }
+
+    private void runLink(final ShoppingItem item, final long productId, final Long shopId) {
+        final GrocyClient client = new SharedPrefHelper(this).initGrocyClient();
+        if (client == null) {
+            return;
+        }
+        new Thread(() -> {
+            try {
+                GrocyProducts.linkBarcode(client, productId, item.barcode, shopId);
+                runOnUiThread(() -> {
+                    Toast.makeText(this, R.string.assign_done, Toast.LENGTH_LONG).show();
+                    // Stammdaten neu holen: danach ist der Barcode in der Scan-Liste bekannt
+                    GrocySync.start(MainActivity.this, null);
+                });
+            } catch (java.io.IOException e) {
+                runOnUiThread(() -> new com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+                        .setTitle(R.string.product_create_failed_title)
+                        .setMessage(getString(R.string.product_create_failed, String.valueOf(e.getMessage())))
+                        .setPositiveButton(android.R.string.ok, null)
+                        .show());
+            }
+        }, "barcode-link").start();
     }
 
     @Override

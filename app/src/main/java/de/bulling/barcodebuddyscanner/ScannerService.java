@@ -267,7 +267,7 @@ public class ScannerService extends Service {
 		});
 	}
 
-	private static final String CMD_AUTO_OFF_NEVER  = "^&040&^";
+	private static final String CMD_AUTO_OFF_30MIN  = "^&048&^";
 	private static final String CMD_AUTO_OFF_30S    = "^&043&^";
 	private static final String CMD_SLEEP_NOW       = "^&041&^";
 
@@ -439,8 +439,8 @@ public class ScannerService extends Service {
 				publish(getString(R.string.scanner_status_connected, name), true);
 				out = s.getOutputStream();
 				if (SharedPrefHelper.isScannerAutoControl(this)) {
-					// Beim Einkaufen soll sich der Scanner nicht von selbst ausschalten
-					write(CMD_AUTO_OFF_NEVER);
+					// Beim Einkaufen soll sich der Scanner nicht gleich ausschalten: 30 Minuten Ruhezeit
+					write(CMD_AUTO_OFF_30MIN);
 				}
 				main.removeCallbacks(batteryPoll);
 				if (SharedPrefHelper.getBatteryIntervalMs(this) > 0) {

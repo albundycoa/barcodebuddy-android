@@ -71,6 +71,11 @@
             android:label="@string/shop_order_title"
             android:theme="@style/AppTheme.NoActionBar" />
         <activity
+            android:name=".ProductCreateActivity"
+            android:label="@string/product_create_title"
+            android:theme="@style/AppTheme.NoActionBar"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
             android:name=".ScannerControlActivity"
             android:label="@string/scanner_control_title"
             android:theme="@style/AppTheme.NoActionBar" />

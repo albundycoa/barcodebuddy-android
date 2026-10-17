@@ -7,7 +7,7 @@ import android.database.sqlite.SQLiteOpenHelper;
 class ShoppingDb extends SQLiteOpenHelper {
 
 	private static final String DB_NAME    = "shopping.db";
-	private static final int    DB_VERSION = 6;
+	private static final int    DB_VERSION = 7;
 
 	static final String T_ITEMS      = "items";
 	static final String T_TRIPS      = "trips";
@@ -20,6 +20,7 @@ class ShoppingDb extends SQLiteOpenHelper {
 	static final String T_SHOPPING   = "g_shopping";
 	static final String T_UNITS      = "g_units";
 	static final String T_GROUPS      = "g_groups";
+	static final String T_LOCATIONS   = "g_locations";
 	static final String T_GROUP_ORDER = "group_order";
 
 	ShoppingDb(Context context) {
@@ -68,6 +69,10 @@ class ShoppingDb extends SQLiteOpenHelper {
 		if (oldVersion >= 2 && oldVersion < 6) {
 			// Produktgruppen kommen mit der nächsten Synchronisierung aus Grocy
 			createGroupTables(db);
+		}
+		if (oldVersion >= 2 && oldVersion < 7) {
+			// Lagerorte kommen mit der nächsten Synchronisierung aus Grocy
+			createLocationTable(db);
 		}
 		if (oldVersion >= 2 && oldVersion < 3) {
 			db.execSQL("ALTER TABLE " + T_ITEMS + " ADD COLUMN shop_name TEXT");
@@ -138,6 +143,14 @@ class ShoppingDb extends SQLiteOpenHelper {
 				+ "shop_id INTEGER PRIMARY KEY, "
 				+ "position INTEGER NOT NULL)");
 		createGroupTables(db);
+		createLocationTable(db);
+	}
+
+	/** Lagerorte aus Grocy (Auswahl beim Anlegen eines Produkts). */
+	private static void createLocationTable(SQLiteDatabase db) {
+		db.execSQL("CREATE TABLE IF NOT EXISTS " + T_LOCATIONS + " ("
+				+ "id INTEGER PRIMARY KEY, "
+				+ "name TEXT NOT NULL)");
 	}
 
 	/** Produktgruppen aus Grocy und die vom Nutzer gewählte Reihenfolge (nach Name, die Namen sind eindeutig). */

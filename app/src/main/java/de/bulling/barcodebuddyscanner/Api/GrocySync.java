@@ -36,7 +36,7 @@ public final class GrocySync {
 	private static final long FRESH_MS = 10 * 60 * 1000L;
 
 	/** Version der gespeicherten Datenfelder; bei einer Änderung wird einmal neu synchronisiert. */
-	private static final int CACHE_VERSION = 6;
+	private static final int CACHE_VERSION = 7;
 
 	public interface Callback {
 		/** ok = false: Verbindung oder Daten fehlerhaft, die bisherige Kopie bleibt erhalten */
@@ -231,6 +231,7 @@ public final class GrocySync {
 		JsonArray conv       = array(client.get("objects/quantity_unit_conversions_resolved"));
 		JsonArray lastPrices = array(client.get("objects/products_last_purchased"));
 		JsonArray groups     = array(client.get("objects/product_groups"));
+		JsonArray locations  = array(client.get("objects/locations"));
 		JsonArray stockRows  = array(client.get("objects/stock"));
 		JsonArray shoppingRows = array(client.get("objects/shopping_list"));
 
@@ -260,6 +261,19 @@ public final class GrocySync {
 			v.put("id", id);
 			v.put("name", asString(o, "name"));
 			data.shops.add(v);
+		}
+
+		for (JsonElement e : locations) {
+			JsonObject o = e.getAsJsonObject();
+			Long id = asLong(o, "id");
+			Long active = asLong(o, "active");
+			if (id == null || asString(o, "name") == null || (active != null && active == 0)) {
+				continue;
+			}
+			ContentValues lv = new ContentValues();
+			lv.put("id", id);
+			lv.put("name", asString(o, "name"));
+			data.locations.add(lv);
 		}
 
 		Map<Long, String> groupNames = new HashMap<>();

@@ -419,6 +419,10 @@ public final class ShoppingRepository {
 				db.delete(ShoppingDb.T_STOCK, null, null);
 				db.delete(ShoppingDb.T_UNITS, null, null);
 				db.delete(ShoppingDb.T_GROUPS, null, null);
+				db.delete(ShoppingDb.T_LOCATIONS, null, null);
+				for (ContentValues v : data.locations) {
+					db.insertWithOnConflict(ShoppingDb.T_LOCATIONS, null, v, SQLiteDatabase.CONFLICT_REPLACE);
+				}
 				for (ContentValues v : data.groups) {
 					db.insertWithOnConflict(ShoppingDb.T_GROUPS, null, v, SQLiteDatabase.CONFLICT_REPLACE);
 				}
@@ -460,7 +464,7 @@ public final class ShoppingRepository {
 			db.beginTransaction();
 			try {
 				for (String table : new String[]{ShoppingDb.T_SHOPS, ShoppingDb.T_PRODUCTS, ShoppingDb.T_BARCODES,
-						ShoppingDb.T_LASTPRICE, ShoppingDb.T_STOCK, ShoppingDb.T_SHOPPING, ShoppingDb.T_UNITS, ShoppingDb.T_GROUPS}) {
+						ShoppingDb.T_LASTPRICE, ShoppingDb.T_STOCK, ShoppingDb.T_SHOPPING, ShoppingDb.T_UNITS, ShoppingDb.T_GROUPS, ShoppingDb.T_LOCATIONS}) {
 					db.delete(table, null, null);
 				}
 				db.setTransactionSuccessful();
@@ -493,6 +497,43 @@ public final class ShoppingRepository {
 				return a.name.compareToIgnoreCase(b.name);
 			});
 			return shops;
+		}, callback);
+	}
+
+	/** Ein Eintrag einer Auswahlliste aus den Grocy-Stammdaten. */
+	public static final class Option {
+		public final long   id;
+		public final String name;
+
+		Option(long id, String name) {
+			this.id   = id;
+			this.name = name;
+		}
+
+		@Override
+		public String toString() {
+			return name;
+		}
+	}
+
+	/** Orte, Geschäfte, Produktgruppen oder Mengeneinheiten für die Auswahlfelder, nach Name sortiert. */
+	public void getOptions(final String kind, Callback<List<Option>> callback) {
+		final String table;
+		switch (kind) {
+			case "locations": table = ShoppingDb.T_LOCATIONS; break;
+			case "shops":     table = ShoppingDb.T_SHOPS; break;
+			case "groups":    table = ShoppingDb.T_GROUPS; break;
+			default:          table = ShoppingDb.T_UNITS; break;
+		}
+		read(() -> {
+			List<Option> options = new ArrayList<>();
+			try (Cursor c = dbHelper.getReadableDatabase().query(table, new String[]{"id", "name"}, null, null,
+					null, null, "name COLLATE NOCASE")) {
+				while (c.moveToNext()) {
+					options.add(new Option(c.getLong(0), c.getString(1)));
+				}
+			}
+			return options;
 		}, callback);
 	}
 
@@ -766,6 +807,7 @@ public final class ShoppingRepository {
 	/** Ein Produkt aus der lokalen Kopie der Grocy-Daten. */
 	public static final class ProductRow {
 		public long   id;
+		public Long   shopId;
 		public String name;
 		public String group;
 		public String shop;
@@ -781,7 +823,7 @@ public final class ShoppingRepository {
 	public void getProducts(final String query, Callback<List<ProductRow>> callback) {
 		read(() -> {
 			String like = "%" + (query == null ? "" : query.trim().replace("%", "").replace("_", "")) + "%";
-			String sql = "SELECT p.id, p.name, p.group_name, p.stock_unit, p.price_unit, p.stock_to_price, "
+			String sql = "SELECT p.id, p.shop_id, p.name, p.group_name, p.stock_unit, p.price_unit, p.stock_to_price, "
 					+ "(SELECT name FROM g_shops WHERE id = p.shop_id) AS shop, st.amount AS stock, lp.price AS last_price, "
 					+ "(SELECT COUNT(*) FROM g_barcodes b WHERE b.product_id = p.id) AS barcodes "
 					+ "FROM g_products p LEFT JOIN g_stock st ON st.product_id = p.id "
@@ -794,6 +836,8 @@ public final class ShoppingRepository {
 					ProductRow row = new ProductRow();
 					row.id        = c.getLong(c.getColumnIndexOrThrow("id"));
 					row.name      = c.getString(c.getColumnIndexOrThrow("name"));
+					int shopIdCol = c.getColumnIndexOrThrow("shop_id");
+					row.shopId    = c.isNull(shopIdCol) ? null : c.getLong(shopIdCol);
 					row.group     = c.getString(c.getColumnIndexOrThrow("group_name"));
 					row.shop      = c.getString(c.getColumnIndexOrThrow("shop"));
 					row.stockUnit = c.getString(c.getColumnIndexOrThrow("stock_unit"));

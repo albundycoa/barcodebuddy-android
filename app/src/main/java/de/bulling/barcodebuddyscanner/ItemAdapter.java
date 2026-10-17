@@ -37,6 +37,9 @@ public class ItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 		void onEditPrice(ShoppingItem item);
 
 		void onDelete(ShoppingItem item);
+
+		/** Unbekannten Barcode einem Produkt zuordnen oder dafür ein neues Produkt anlegen. */
+		void onAssign(ShoppingItem item);
 	}
 
 	private static final int TYPE_HEADER = 0;
@@ -59,6 +62,7 @@ public class ItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 	private final Actions    actions;
 	private final List<Row>  rows     = new ArrayList<>();
 	private       boolean    editable = true;
+	private       boolean    cacheAvailable;
 
 	public ItemAdapter(Context context, Actions actions) {
 		this.context = context.getApplicationContext();
@@ -67,6 +71,7 @@ public class ItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
 	public void submit(ShoppingRepository.OpenList list) {
 		rows.clear();
+		cacheAvailable = list.cacheAvailable;
 		if (!list.cacheAvailable) {
 			// Ohne Grocy-Daten lässt sich nicht sagen, was neu ist und wo es gekauft wird
 			for (ShoppingItem item : list.items) {
@@ -210,6 +215,11 @@ public class ItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 					Money.format(item.effectiveScanPrice() * item.quantity)));
 		}
 
+		// Unbekannter Barcode: Produkt anlegen oder einem vorhandenen zuordnen
+		holder.assign.setVisibility(!item.known && cacheAvailable ? View.VISIBLE : View.GONE);
+		holder.assign.setEnabled(editable);
+		holder.assign.setOnClickListener(v -> actions.onAssign(item));
+
 		holder.error.setText(item.error);
 		holder.error.setVisibility(item.error != null ? View.VISIBLE : View.GONE);
 
@@ -258,6 +268,7 @@ public class ItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 		final View     minus;
 		final View     plus;
 		final View     delete;
+		final View     assign;
 
 		ItemHolder(View view) {
 			super(view);
@@ -269,6 +280,7 @@ public class ItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 			minus    = view.findViewById(R.id.item_minus);
 			plus     = view.findViewById(R.id.item_plus);
 			delete   = view.findViewById(R.id.item_delete);
+			assign   = view.findViewById(R.id.item_assign);
 		}
 	}
 }
