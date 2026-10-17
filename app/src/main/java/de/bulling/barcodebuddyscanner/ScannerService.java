@@ -240,20 +240,49 @@ public class ScannerService extends Service {
 		write(BATTERY_COMMAND);
 	}
 
+	/** Alle Befehle laufen nacheinander, mit Pause dazwischen: Der Scanner braucht Zeit, um einen Code zu verarbeiten. */
+	private final java.util.concurrent.ExecutorService commands = java.util.concurrent.Executors.newSingleThreadExecutor();
+	private static final long COMMAND_GAP_MS = 800;
+
 	private void write(final String command) {
+		write(command, COMMAND_GAP_MS);
+	}
+
+	private void write(final String command, final long pauseAfterMs) {
 		final java.io.OutputStream o = out;
 		if (o == null) {
 			return;
 		}
 		// Eine eventuelle Antwort (Akku: "61%") kommt als normaler Scan und wird in handleCode erkannt
-		new Thread(() -> {
+		commands.execute(() -> {
 			try {
 				o.write(command.getBytes(java.nio.charset.StandardCharsets.US_ASCII));
 				o.flush();
+				Thread.sleep(pauseAfterMs);
 			} catch (IOException e) {
 				Log.i(TAG, "Befehl an den Scanner nicht möglich: " + e.getMessage());
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
 			}
-		}, "scanner-command").start();
+		});
+	}
+
+	private static final String CMD_AUTO_OFF_NEVER  = "^&040&^";
+	private static final String CMD_AUTO_OFF_30S    = "^&043&^";
+	private static final String CMD_SLEEP_NOW       = "^&041&^";
+
+	/**
+	 * Einkauf ist gesendet: Scanner auf 30 Sekunden Ausschaltzeit stellen und danach sofort in den
+	 * Ruhezustand schicken, damit er nicht bis zur nächsten Nutzung Akku verbraucht. Nur, wenn die
+	 * automatische Steuerung in den Einstellungen aktiv und der Scanner verbunden ist.
+	 */
+	public static void finishShopping(Context context) {
+		ScannerService service = current;
+		if (service == null || !connected || service.out == null || !SharedPrefHelper.isScannerAutoControl(context)) {
+			return;
+		}
+		service.write(CMD_AUTO_OFF_30S, 1500);
+		service.write(CMD_SLEEP_NOW, 0);
 	}
 
 	/** Fragt den Akkustand regelmäßig ab, solange der Scanner verbunden ist. */
@@ -346,6 +375,7 @@ public class ScannerService extends Service {
 	public void onDestroy() {
 		current = null;
 		main.removeCallbacks(batteryPoll);
+		commands.shutdown();
 		stopping = true;
 		running = false;
 		if (aclReceiverRegistered) {
@@ -408,6 +438,10 @@ public class ScannerService extends Service {
 				wasConnected = true;
 				publish(getString(R.string.scanner_status_connected, name), true);
 				out = s.getOutputStream();
+				if (SharedPrefHelper.isScannerAutoControl(this)) {
+					// Beim Einkaufen soll sich der Scanner nicht von selbst ausschalten
+					write(CMD_AUTO_OFF_NEVER);
+				}
 				main.removeCallbacks(batteryPoll);
 				if (SharedPrefHelper.getBatteryIntervalMs(this) > 0) {
 					main.postDelayed(batteryPoll, 3000);

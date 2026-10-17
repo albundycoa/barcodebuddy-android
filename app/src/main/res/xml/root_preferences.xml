@@ -133,6 +133,12 @@
             app:key="scanner_standby"
             app:title="@string/scanner_standby" />
 
+        <SwitchPreferenceCompat
+            app:defaultValue="true"
+            app:key="scanner_auto_control"
+            app:summary="@string/scanner_auto_control_summary"
+            app:title="@string/scanner_auto_control" />
+
         <EditTextPreference
             android:defaultValue="5"
             android:dialogMessage="@string/battery_interval_hint"

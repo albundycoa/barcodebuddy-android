@@ -739,6 +739,10 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
             activeSender = null;
             setSending(false);
             showSendResult(result);
+            if (result.error == null && result.unitsSent == result.unitsTotal) {
+                // Alles gesendet: Scanner auf 30 Sekunden stellen und ausschalten (falls aktiviert)
+                ScannerService.finishShopping(MainActivity.this);
+            }
             // Einkaufsliste, Bestand und Preise neu aus Grocy laden
             GrocySync.start(MainActivity.this, null);
         }

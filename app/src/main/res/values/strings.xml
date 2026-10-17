@@ -182,6 +182,8 @@
     <string name="sync_mode_bg1">Beim Öffnen und stündlich im Hintergrund (WLAN)</string>
     <string name="sync_mode_bg6">Beim Öffnen und alle 6 Stunden im Hintergrund (WLAN)</string>
     <string name="sync_mode_bg24">Beim Öffnen und täglich im Hintergrund (WLAN)</string>
+    <string name="scanner_auto_control">Scanner automatisch steuern</string>
+    <string name="scanner_auto_control_summary">Beim Verbinden nie von selbst ausschalten; nach dem Senden des Einkaufs auf 30 Sekunden stellen und in den Ruhezustand schicken</string>
     <string name="battery_interval">Akkustand des Scanners prüfen</string>
     <string name="battery_interval_hint">Abstand in Minuten. 0 schaltet die automatische Abfrage aus; über das Menü lässt sich der Akkustand jederzeit abfragen.</string>
     <string name="battery_interval_summary">Alle %1$d Minuten</string>

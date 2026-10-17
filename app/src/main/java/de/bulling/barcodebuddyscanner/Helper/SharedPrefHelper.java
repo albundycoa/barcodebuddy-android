@@ -74,6 +74,14 @@ public class SharedPrefHelper {
 		return PreferenceManager.getDefaultSharedPreferences(context).getBoolean("scan_notification", true);
 	}
 
+	/**
+	 * Scanner automatisch steuern (Standard an): beim Verbinden "Nie ausschalten", nach dem Senden des
+	 * Einkaufs "30 Sekunden" und Ruhezustand.
+	 */
+	public static boolean isScannerAutoControl(Context context) {
+		return PreferenceManager.getDefaultSharedPreferences(context).getBoolean("scanner_auto_control", true);
+	}
+
 	/** Abstand der Akku-Abfrage beim Scanner in Millisekunden (Standard 5 Minuten), 0 = nie automatisch. */
 	public static long getBatteryIntervalMs(Context context) {
 		String value = PreferenceManager.getDefaultSharedPreferences(context).getString("battery_interval", "5");
