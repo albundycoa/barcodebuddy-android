@@ -24,6 +24,8 @@ public class ScanFeedback {
 	}
 
 	public void beep() {
+		// Einstellungen bei jedem Scan neu lesen, damit Änderungen sofort gelten (der Scanner-Dienst läuft dauerhaft)
+		reloadPrefs();
 		beepManager.playBeepSoundAndVibrate();
 	}
 }
