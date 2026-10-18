@@ -898,6 +898,8 @@ public final class ShoppingRepository {
 		public double  stock;
 		/** Lagereinheiten je Scan dieses Barcodes */
 		public double  stockPerScan = 1;
+		/** Einheit des Barcodes, z. B. "Pack" (kann fehlen) */
+		public String  scanUnit;
 		public Integer bestBeforeDays;
 	}
 
@@ -905,7 +907,7 @@ public final class ShoppingRepository {
 	public void findInventoryProduct(final String barcode, Callback<InventoryProduct> callback) {
 		read(() -> {
 			String sql = "SELECT p.id, p.name, p.group_name, p.stock_unit, p.best_before_days, "
-					+ "COALESCE(st.amount, 0) AS stock, b.stock_per_scan "
+					+ "COALESCE(st.amount, 0) AS stock, b.stock_per_scan, b.scan_unit "
 					+ "FROM g_barcodes b JOIN g_products p ON p.id = b.product_id "
 					+ "LEFT JOIN g_stock st ON st.product_id = p.id WHERE b.barcode = ?";
 			try (Cursor c = dbHelper.getReadableDatabase().rawQuery(sql, new String[]{barcode})) {
@@ -919,6 +921,7 @@ public final class ShoppingRepository {
 				p.stockUnit      = c.getString(c.getColumnIndexOrThrow("stock_unit"));
 				p.stock          = c.getDouble(c.getColumnIndexOrThrow("stock"));
 				p.stockPerScan   = c.getDouble(c.getColumnIndexOrThrow("stock_per_scan"));
+				p.scanUnit       = c.getString(c.getColumnIndexOrThrow("scan_unit"));
 				Double days      = getDouble(c, "best_before_days");
 				p.bestBeforeDays = days == null ? null : (int) Math.round(days);
 				return p;

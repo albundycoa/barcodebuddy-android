@@ -36,7 +36,7 @@ public final class GrocySync {
 	private static final long FRESH_MS = 10 * 60 * 1000L;
 
 	/** Version der gespeicherten Datenfelder; bei einer Änderung wird einmal neu synchronisiert. */
-	private static final int CACHE_VERSION = 7;
+	private static final int CACHE_VERSION = 8;
 
 	public interface Callback {
 		/** ok = false: Verbindung oder Daten fehlerhaft, die bisherige Kopie bleibt erhalten */
@@ -360,6 +360,9 @@ public final class GrocySync {
 			v.put("product_id", product);
 			v.put("stock_per_scan", perScan);
 			v.put("exact", amount != null && amount > 0 ? 1 : 0);
+			if (unitNames.get(unit) != null) {
+				v.put("scan_unit", unitNames.get(unit));
+			}
 			Long shop = asLong(o, "shopping_location_id");
 			if (shop != null) {
 				v.put("shop_id", shop);

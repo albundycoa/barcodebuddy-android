@@ -7,7 +7,7 @@ import android.database.sqlite.SQLiteOpenHelper;
 class ShoppingDb extends SQLiteOpenHelper {
 
 	private static final String DB_NAME    = "shopping.db";
-	private static final int    DB_VERSION = 7;
+	private static final int    DB_VERSION = 8;
 
 	static final String T_ITEMS      = "items";
 	static final String T_TRIPS      = "trips";
@@ -74,6 +74,10 @@ class ShoppingDb extends SQLiteOpenHelper {
 			// Lagerorte kommen mit der nächsten Synchronisierung aus Grocy
 			createLocationTable(db);
 		}
+		if (oldVersion >= 2 && oldVersion < 8) {
+			// Name der Einheit, in der ein Barcode gezählt wird (z. B. Pack), kommt mit der nächsten Synchronisierung
+			db.execSQL("ALTER TABLE " + T_BARCODES + " ADD COLUMN scan_unit TEXT");
+		}
 		if (oldVersion >= 2 && oldVersion < 3) {
 			db.execSQL("ALTER TABLE " + T_ITEMS + " ADD COLUMN shop_name TEXT");
 			// Die Kopie der Grocy-Daten wird bei der nächsten Synchronisierung vollständig neu gefüllt
@@ -130,7 +134,8 @@ class ShoppingDb extends SQLiteOpenHelper {
 				+ "product_id INTEGER NOT NULL, "
 				+ "stock_per_scan REAL NOT NULL DEFAULT 1, "
 				+ "exact INTEGER NOT NULL DEFAULT 0, "
-				+ "shop_id INTEGER)");
+				+ "shop_id INTEGER, "
+				+ "scan_unit TEXT)");
 		// Aktueller Bestand je Produkt in Lagereinheiten
 		db.execSQL("CREATE TABLE " + T_STOCK + " ("
 				+ "product_id INTEGER PRIMARY KEY, "

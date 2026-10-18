@@ -48,6 +48,12 @@ public final class InventorySession {
 		public double  stock;
 		/** Gezählte Menge in Lagereinheiten */
 		public double  counted;
+		/** Lagereinheiten, die ein Scan des zuletzt gescannten Barcodes zählt (z. B. 1 Pack = 3 Portion) */
+		public double  perScan;
+		/** Einheit dieses Barcodes, z. B. "Pack" */
+		public String  scanUnit;
+		/** Was der letzte Scan gerade zur Zählung beiträgt (nach dem Anpassen von Hand abweichend von perScan) */
+		public double  lastAmount;
 		public boolean known;
 		public Integer bestBeforeDays;
 		public long    lastScan;
@@ -139,6 +145,9 @@ public final class InventorySession {
 		e.stock          = p.stock;
 		e.bestBeforeDays = p.bestBeforeDays;
 		e.counted       += p.stockPerScan;
+		e.perScan        = p.stockPerScan;
+		e.scanUnit       = p.scanUnit;
+		e.lastAmount     = p.stockPerScan;
 		touch(e);
 		return e;
 	}
@@ -179,6 +188,20 @@ public final class InventorySession {
 		} else {
 			e.counted = counted;
 		}
+		save();
+	}
+
+	/**
+	 * Korrigiert den letzten Scan: Die Packung war nicht voll, es sind nur actual Lagereinheiten darin
+	 * (z. B. 2 von 3 Portionen). Der Rest der Zählung bleibt unverändert.
+	 */
+	public synchronized void adjustLastScan(String key, double actual) {
+		Entry e = entries.get(key);
+		if (e == null) {
+			return;
+		}
+		e.counted = Math.max(0, e.counted - e.lastAmount + Math.max(0, actual));
+		e.lastAmount = Math.max(0, actual);
 		save();
 	}
 

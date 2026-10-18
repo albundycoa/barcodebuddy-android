@@ -33,6 +33,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
+import com.google.android.material.snackbar.Snackbar;
 import com.google.zxing.ResultPoint;
 import com.journeyapps.barcodescanner.BarcodeCallback;
 import com.journeyapps.barcodescanner.BarcodeResult;
@@ -97,6 +98,7 @@ public class InventoryActivity extends AppCompatActivity {
 	private AlertDialog busy;
 	/** Der unbekannte Barcode, der gerade in Grocy angelegt oder zugeordnet wird */
 	private String  assignBarcode;
+	private Snackbar packHint;
 
 	// ---------------------------------------------------------------- Lebenszyklus
 
@@ -280,6 +282,14 @@ public class InventoryActivity extends AppCompatActivity {
 			Entry entry = product == null ? session.recordUnknown(code) : session.recordProduct(product);
 			showLast(entry);
 			render();
+			if (packHint != null) {
+				packHint.dismiss();
+				packHint = null;
+			}
+			// Eine Packung mit mehreren Einheiten ist vielleicht angebrochen: Gelegenheit, die Menge anzupassen
+			if (product != null && product.stockPerScan > 1.0001) {
+				showPackHint(entry);
+			}
 		});
 	}
 
@@ -677,7 +687,7 @@ public class InventoryActivity extends AppCompatActivity {
 		box.addView(input);
 		new MaterialAlertDialogBuilder(this)
 				.setTitle(e.name)
-				.setMessage(R.string.inventory_edit_title)
+				.setMessage(editMessage(e))
 				.setView(box)
 				.setPositiveButton(R.string.inventory_edit_save, (d, w) -> {
 					try {
@@ -814,6 +824,96 @@ public class InventoryActivity extends AppCompatActivity {
 		});
 	}
 
+	// ---------------------------------------------------------------- Packungen mit mehreren Einheiten
+
+	private String unitOf(Entry e) {
+		return e.unit == null ? "" : e.unit;
+	}
+
+	private String packName(Entry e) {
+		// Zählt der Barcode in der Lagereinheit selbst (z. B. 8 Stück), ist "Stück" kein Name für die Packung
+		return e.scanUnit == null || e.scanUnit.equals(e.unit) ? getString(R.string.inventory_pack_default) : e.scanUnit;
+	}
+
+	/** Meldung unten nach dem Scan einer Packung, die mehr als eine Einheit enthält. */
+	private void showPackHint(final Entry e) {
+		String text = getString(R.string.inventory_pack_counted, packName(e),
+				InventorySession.format(e.lastAmount), unitOf(e)).trim();
+		packHint = Snackbar.make(findViewById(android.R.id.content), text, 8000)
+				.setAnchorView(R.id.button_finish)
+				.setAction(R.string.inventory_pack_adjust, v -> showAdjust(e));
+		packHint.show();
+	}
+
+	/** Fragt, wie viel in der gerade gescannten Packung tatsächlich noch drin ist. */
+	private void showAdjust(final Entry e) {
+		final double full = e.perScan;
+		if (full != Math.rint(full) || full < 2 || full > 12) {
+			showAdjustInput(e);
+			return;
+		}
+		final int n = (int) full;
+		final String[] labels = new String[n + 2];
+		for (int i = 0; i <= n; i++) {
+			int value = n - i;
+			labels[i] = value + " " + unitOf(e)
+					+ (value == n ? " " + getString(R.string.inventory_pack_full)
+					: value == 0 ? " " + getString(R.string.inventory_pack_empty) : "");
+		}
+		labels[n + 1] = getString(R.string.inventory_pack_other);
+		new MaterialAlertDialogBuilder(this)
+				.setTitle(getString(R.string.inventory_pack_question, e.name, packName(e)))
+				.setItems(labels, (d, which) -> {
+					if (which == n + 1) {
+						showAdjustInput(e);
+					} else {
+						applyAdjust(e, n - which);
+					}
+				})
+				.setNegativeButton(android.R.string.cancel, null)
+				.show();
+	}
+
+	private void showAdjustInput(final Entry e) {
+		final EditText input = new EditText(this);
+		input.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
+		input.setText(InventorySession.format(e.lastAmount));
+		input.setSelectAllOnFocus(true);
+		FrameLayout box = new FrameLayout(this);
+		int pad = (int) (20 * getResources().getDisplayMetrics().density);
+		box.setPadding(pad, pad / 2, pad, 0);
+		box.addView(input);
+		new MaterialAlertDialogBuilder(this)
+				.setTitle(getString(R.string.inventory_pack_question, e.name, packName(e)))
+				.setMessage(getString(R.string.inventory_edit_message, unitOf(e)))
+				.setView(box)
+				.setPositiveButton(R.string.inventory_edit_save, (d, w) -> {
+					try {
+						applyAdjust(e, Double.parseDouble(input.getText().toString().trim().replace(',', '.')));
+					} catch (NumberFormatException ignored) {
+						// ungültige Eingabe: Menge bleibt wie sie war
+					}
+				})
+				.setNegativeButton(android.R.string.cancel, null)
+				.show();
+	}
+
+	private void applyAdjust(Entry e, double actual) {
+		session.adjustLastScan(e.key, actual);
+		showLast(e);
+		render();
+	}
+
+	/** Text im Dialog zum Ändern der Menge: Einheit und, falls vorhanden, die Umrechnung der Packung. */
+	private String editMessage(Entry e) {
+		String text = getString(R.string.inventory_edit_message, unitOf(e));
+		if (e.perScan > 1.0001) {
+			text += "\n" + getString(R.string.inventory_pack_hint, packName(e),
+					InventorySession.format(e.perScan), unitOf(e));
+		}
+		return text;
+	}
+
 	private void resetLastCard() {
 		lastName.setText(R.string.inventory_title);
 		lastStatus.setText(R.string.inventory_ready);
@@ -899,8 +999,13 @@ public class InventoryActivity extends AppCompatActivity {
 					holder.badge.setText(getString(R.string.scan_status, "", (int) Math.round(e.counted)).trim());
 					break;
 				default:
-					holder.detail.setText(getString(R.string.inventory_detail, InventorySession.format(e.stock),
-							e.unit == null ? "" : e.unit).trim());
+					String detail = getString(R.string.inventory_detail, InventorySession.format(e.counted),
+							InventorySession.format(e.stock), unitOf(e)).trim();
+					if (e.perScan > 1.0001) {
+						detail += "\n" + getString(R.string.inventory_pack_hint, packName(e),
+								InventorySession.format(e.perScan), unitOf(e));
+					}
+					holder.detail.setText(detail);
 					holder.badge.setText(InventorySession.format(e.counted) + " / " + InventorySession.format(e.stock));
 					break;
 			}
