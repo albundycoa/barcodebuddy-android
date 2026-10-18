@@ -4,6 +4,7 @@ on:
   push:
     branches: [master, inventur]
   pull_request:
+  workflow_dispatch:
 
 jobs:
   build:
@@ -18,12 +19,21 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
-      - name: Android SDK
-        uses: android-actions/setup-android@v3
+      # Der Runner bringt das Android-SDK schon mit; es fehlt höchstens die neueste Plattform
+      - name: Android-Plattform bereitstellen
+        run: |
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKMANAGER" --licenses > /dev/null || true
+          "$SDKMANAGER" "platforms;android-37.0" "build-tools;36.0.0"
+
+      - name: Gradle ausführbar machen
+        run: chmod +x gradlew
 
       - name: Unit-Tests
         run: ./gradlew :app:testDebugUnitTest --console=plain
 
+      # Ohne Schlüssel (der liegt nur auf dem PC) signiert Gradle mit dem Debug-Schlüssel: gut zum Prüfen, aber diese
+      # APK lässt sich nicht über die installierte App spielen.
       - name: Debug-APK bauen
         run: ./gradlew :app:assembleDebugPublic --console=plain
 
