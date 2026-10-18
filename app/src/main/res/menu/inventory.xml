@@ -2,10 +2,6 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <item
-        android:id="@+id/action_camera"
-        android:title="@string/inventory_camera_toggle"
-        app:showAsAction="never" />
-    <item
         android:id="@+id/action_reload_stock"
         android:title="@string/inventory_reload_stock"
         app:showAsAction="never" />

@@ -334,7 +334,6 @@
     <string name="inventory_empty">Scanne einfach alles durch, was du zu Hause findest.
 Die App zählt mit und vergleicht am Ende mit Grocy.</string>
     <string name="inventory_finish">Inventur abschließen</string>
-    <string name="inventory_camera_toggle">Kamera ein/aus</string>
     <string name="inventory_reload_stock">Bestand neu laden</string>
     <string name="inventory_restart">Neu beginnen</string>
     <string name="inventory_no_grocy">Für die Inventur muss Grocy verbunden sein.</string>

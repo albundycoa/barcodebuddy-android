@@ -64,8 +64,6 @@ public class InventoryActivity extends AppCompatActivity {
 
 	private static final ExecutorService GROCY_IO = Executors.newSingleThreadExecutor();
 
-	private static final String PREFS_UI     = "inventory_ui";
-	private static final String PREF_CAMERA  = "camera";
 	/** Solange ein Barcode ohne Pause im Bild bleibt, zählt er nur einmal */
 	private static final long   CAMERA_GAP_MS = 1000;
 
@@ -137,7 +135,8 @@ public class InventoryActivity extends AppCompatActivity {
 		list.setAdapter(adapter);
 		findViewById(R.id.button_finish).setOnClickListener(v -> startReview());
 
-		cameraEnabled = getSharedPreferences(PREFS_UI, MODE_PRIVATE).getBoolean(PREF_CAMERA, true);
+		// Die Kamera gibt es nur, wenn die Scan-Methode in den Einstellungen die Handy-Kamera vorsieht
+		cameraEnabled = SharedPrefHelper.isCameraScannerEnabled(this);
 		applyCameraVisibility();
 
 		lastName.setText(R.string.inventory_title);
@@ -225,19 +224,9 @@ public class InventoryActivity extends AppCompatActivity {
 			} else {
 				// Mit einem Handscanner geht es auch ohne Kamera
 				Toast.makeText(this, R.string.error_camera_permission_denied, Toast.LENGTH_LONG).show();
-				setCameraEnabled(false);
+				cameraEnabled = false;
+				applyCameraVisibility();
 			}
-		}
-	}
-
-	private void setCameraEnabled(boolean enabled) {
-		cameraEnabled = enabled;
-		getSharedPreferences(PREFS_UI, MODE_PRIVATE).edit().putBoolean(PREF_CAMERA, enabled).apply();
-		applyCameraVisibility();
-		if (enabled) {
-			startCameraIfWanted();
-		} else {
-			barcodeView.pause();
 		}
 	}
 
@@ -694,9 +683,6 @@ public class InventoryActivity extends AppCompatActivity {
 		int id = item.getItemId();
 		if (id == android.R.id.home) {
 			finish();
-			return true;
-		} else if (id == R.id.action_camera) {
-			setCameraEnabled(!cameraEnabled);
 			return true;
 		} else if (id == R.id.action_reload_stock) {
 			reloadStock();

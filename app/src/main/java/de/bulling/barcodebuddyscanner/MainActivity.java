@@ -36,6 +36,10 @@ import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
+import com.google.zxing.ResultPoint;
+import com.journeyapps.barcodescanner.BarcodeCallback;
+import com.journeyapps.barcodescanner.BarcodeResult;
+import com.journeyapps.barcodescanner.DecoratedBarcodeView;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -77,8 +81,23 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
     private ShoppingEntryAdapter entryAdapter;
     private TabLayout tabs;
     private ShoppingData shoppingData;
-    /** 0 = Einkaufsliste aus Grocy, 1 = gescannte Artikel */
-    private int currentTab = 1;
+    private static final int TAB_SHOPPING = 0;
+    private static final int TAB_SCANNED = 1;
+    private static final int TAB_CAMERA = 2;
+    /** Solange ein Barcode ohne Pause im Bild bleibt, zählt er nur einmal */
+    private static final long CAMERA_GAP_MS = 1000;
+
+    /** TAB_SHOPPING = Einkaufsliste aus Grocy, TAB_SCANNED = gescannte Artikel, TAB_CAMERA = Kamera-Scanner */
+    private int currentTab = TAB_SCANNED;
+    /** Welche Reiter es gerade gibt, in der Reihenfolge der Anzeige */
+    private final List<Integer> tabIds = new ArrayList<>();
+    private boolean rebuildingTabs = false;
+
+    private DecoratedBarcodeView cameraView;
+    private boolean resumed = false;
+    private boolean cameraPermissionAsked = false;
+    private String lastCameraCode;
+    private long lastCameraSeen;
 
     private RecyclerView itemList;
     private SwipeRefreshLayout refresh;
@@ -206,6 +225,7 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
             setBannerColors(R.attr.colorSecondaryContainer, R.attr.colorOnSecondaryContainer);
         }
         cameraButton.setVisibility(useCamera ? View.VISIBLE : View.GONE);
+        rebuildTabs();
         ensureSppService();
         updateEmptyText();
         if (useBarcodeScanner) {
@@ -254,6 +274,13 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == PermissionHelper.REQUEST_CODE_BLUETOOTH) {
             ensureSppService();
+        } else if (requestCode == PermissionHelper.REQUEST_CODE_CAMERA) {
+            if (grantResults.length > 0 && grantResults[0] == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                updateCameraState();
+            } else {
+                Toast.makeText(this, R.string.error_camera_permission_denied, Toast.LENGTH_LONG).show();
+                showTab(TAB_SCANNED);
+            }
         }
     }
 
@@ -320,13 +347,18 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
         itemList.setLayoutManager(new LinearLayoutManager(this));
         itemList.setAdapter(adapter);
 
+        cameraView = findViewById(R.id.camera_view);
+        cameraView.setStatusText("");
+        cameraView.decodeContinuous(cameraCallback);
+
         tabs = findViewById(R.id.tabs);
-        tabs.addTab(tabs.newTab().setText(R.string.tab_shopping));
-        tabs.addTab(tabs.newTab().setText(R.string.tab_scanned));
+        rebuildTabs();
         tabs.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
             @Override
             public void onTabSelected(TabLayout.Tab tab) {
-                showTab(tab.getPosition());
+                if (!rebuildingTabs && tab.getPosition() < tabIds.size()) {
+                    showTab(tabIds.get(tab.getPosition()));
+                }
             }
 
             @Override
@@ -342,7 +374,7 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
         cameraButton.setOnClickListener(v -> startActivity(new Intent(this, ContinuousCaptureActivity.class)));
         sendButton.setOnClickListener(v -> confirmSend());
         // Mit Grocy startet die App in der Einkaufsliste, sonst bei den gescannten Artikeln
-        showTab(SharedPrefHelper.hasGrocy(this) ? 0 : 1);
+        showTab(SharedPrefHelper.hasGrocy(this) ? TAB_SHOPPING : TAB_SCANNED);
     }
 
     // ---------------------------------------------------------------- Liste
@@ -384,12 +416,9 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
 
     /** Reiter nur zeigen, wenn Grocy gekoppelt ist; Titel mit Anzahl der offenen Einträge. */
     private void updateTabs() {
+        rebuildTabs();
         boolean grocy = SharedPrefHelper.hasGrocy(this);
-        tabs.setVisibility(grocy ? View.VISIBLE : View.GONE);
         if (!grocy) {
-            if (currentTab != 1) {
-                showTab(1);
-            }
             return;
         }
         int open = 0;
@@ -400,8 +429,8 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
                 }
             }
         }
-        TabLayout.Tab shopping = tabs.getTabAt(0);
-        TabLayout.Tab scanned = tabs.getTabAt(1);
+        TabLayout.Tab shopping = tabs.getTabAt(tabIds.indexOf(TAB_SHOPPING));
+        TabLayout.Tab scanned = tabs.getTabAt(tabIds.indexOf(TAB_SCANNED));
         if (shopping != null) {
             shopping.setText(getString(R.string.tab_shopping_count, open));
         }
@@ -414,7 +443,7 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
 
     private GestureDetector tabSwipe;
 
-    /** Nach links oder rechts wischen wechselt zwischen Einkaufsliste und Gescannt (in beide Richtungen im Kreis). */
+    /** Nach links oder rechts wischen wechselt zwischen den Reitern (in beide Richtungen im Kreis). */
     private void setupTabSwipe() {
         final float density = getResources().getDisplayMetrics().density;
         tabSwipe = new GestureDetector(this, new GestureDetector.SimpleOnGestureListener() {
@@ -427,7 +456,9 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
                 float dy = e2.getY() - e1.getY();
                 if (Math.abs(dx) > 90 * density && Math.abs(dx) > 1.6f * Math.abs(dy)
                         && Math.abs(velocityX) > 300 * density) {
-                    showTab(currentTab == 0 ? 1 : 0);
+                    // Nach links wischen = nächster Reiter, nach rechts = vorheriger, jeweils im Kreis
+                    int index = tabIds.indexOf(currentTab) + (dx < 0 ? 1 : -1);
+                    showTab(tabIds.get((index + tabIds.size()) % tabIds.size()));
                     return true;
                 }
                 return false;
@@ -445,12 +476,112 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
 
     private void showTab(int tab) {
         currentTab = tab;
-        itemList.setAdapter(tab == 0 ? entryAdapter : adapter);
-        TabLayout.Tab selected = tabs.getTabAt(tab);
-        if (selected != null && !selected.isSelected()) {
-            selected.select();
+        if (tab != TAB_CAMERA) {
+            itemList.setAdapter(tab == TAB_SHOPPING ? entryAdapter : adapter);
         }
+        TabLayout.Tab selected = tabs.getTabAt(tabIds.indexOf(tab));
+        if (selected != null && !selected.isSelected()) {
+            rebuildingTabs = true;
+            selected.select();
+            rebuildingTabs = false;
+        }
+        updateCameraState();
         updateListState();
+    }
+
+    /**
+     * Legt die Reiter an: Einkaufsliste nur mit Grocy, Kamera nur, wenn die Scan-Methode in den Einstellungen die
+     * Handy-Kamera vorsieht, Gescannt immer. Mit nur einem Reiter bleibt die Leiste weg.
+     */
+    private void rebuildTabs() {
+        List<Integer> wanted = new ArrayList<>();
+        if (SharedPrefHelper.hasGrocy(this)) {
+            wanted.add(TAB_SHOPPING);
+        }
+        if (SharedPrefHelper.isCameraScannerEnabled(this)) {
+            wanted.add(TAB_CAMERA);
+        }
+        wanted.add(TAB_SCANNED);
+        if (!wanted.equals(tabIds) || tabs.getTabCount() != wanted.size()) {
+            tabIds.clear();
+            tabIds.addAll(wanted);
+            rebuildingTabs = true;
+            tabs.removeAllTabs();
+            for (int id : tabIds) {
+                tabs.addTab(tabs.newTab().setText(id == TAB_SHOPPING ? R.string.tab_shopping
+                        : id == TAB_CAMERA ? R.string.button_camera : R.string.tab_scanned));
+            }
+            rebuildingTabs = false;
+            if (!tabIds.contains(currentTab)) {
+                currentTab = tabIds.get(0);
+            }
+            TabLayout.Tab selected = tabs.getTabAt(tabIds.indexOf(currentTab));
+            if (selected != null) {
+                rebuildingTabs = true;
+                selected.select();
+                rebuildingTabs = false;
+            }
+            if (cameraView != null) {
+                updateCameraState();
+            }
+        }
+        tabs.setVisibility(tabIds.size() > 1 ? View.VISIBLE : View.GONE);
+    }
+
+    // ---------------------------------------------------------------- Kamera-Reiter
+
+    private final BarcodeCallback cameraCallback = new BarcodeCallback() {
+        @Override
+        public void barcodeResult(BarcodeResult result) {
+            final String text = result.getText();
+            if (text == null || text.isEmpty()) {
+                return;
+            }
+            long now = android.os.SystemClock.elapsedRealtime();
+            boolean stillInView = text.equals(lastCameraCode) && now - lastCameraSeen < CAMERA_GAP_MS;
+            lastCameraCode = text;
+            lastCameraSeen = now;
+            if (stillInView) {
+                return;
+            }
+            feedback.beep();
+            repo.addScan(text, item -> {
+                cameraView.setStatusText(getString(R.string.scan_status, item.displayName(), item.quantity));
+                ScanNotifier.show(MainActivity.this);
+            });
+        }
+
+        @Override
+        public void possibleResultPoints(List<ResultPoint> resultPoints) {
+        }
+    };
+
+    /** Die Kamera läuft nur, solange der Kamera-Reiter offen und die App im Vordergrund ist. */
+    private void updateCameraState() {
+        if (currentTab == TAB_CAMERA && resumed) {
+            if (PermissionHelper.hasCameraPermission(this)) {
+                cameraView.resume();
+            } else if (!cameraPermissionAsked) {
+                cameraPermissionAsked = true;
+                PermissionHelper.requestCameraPermission(this);
+            }
+        } else {
+            cameraView.pause();
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        resumed = true;
+        updateCameraState();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        resumed = false;
+        cameraView.pause();
     }
 
     /** Eintrag von Hand abhaken oder wieder öffnen. */
@@ -512,10 +643,15 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
 
     private void updateListState() {
         updateSyncInfo();
-        boolean grocyTab = currentTab == 0 && SharedPrefHelper.hasGrocy(this);
+        boolean cameraTab = currentTab == TAB_CAMERA;
+        refresh.setVisibility(cameraTab ? View.GONE : View.VISIBLE);
+        cameraView.setVisibility(cameraTab ? View.VISIBLE : View.GONE);
+        boolean grocyTab = currentTab == TAB_SHOPPING && SharedPrefHelper.hasGrocy(this);
         boolean empty = grocyTab ? (shoppingData == null || shoppingData.entries.isEmpty()) : currentItems.isEmpty();
-        emptyView.setVisibility(empty ? View.VISIBLE : View.GONE);
-        if (grocyTab) {
+        emptyView.setVisibility(empty && !cameraTab ? View.VISIBLE : View.GONE);
+        if (cameraTab) {
+            totalBar.setVisibility(View.GONE);
+        } else if (grocyTab) {
             emptyView.setText(R.string.shopping_empty);
             if (!empty) {
                 int unsynced = 0;
