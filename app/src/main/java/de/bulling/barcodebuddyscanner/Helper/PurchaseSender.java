@@ -1,5 +1,6 @@
 package de.bulling.barcodebuddyscanner.Helper;
 
+import de.bulling.barcodebuddyscanner.R;
 import android.os.Handler;
 import android.os.Looper;
 import android.text.Html;
@@ -213,8 +214,8 @@ public class PurchaseSender {
 					return;
 				}
 				int status = error instanceof GrocyClient.HttpException ? ((GrocyClient.HttpException) error).statusCode : 0;
-				abortBeforeStart(status == 401 || status == 403 ? "Ungültiger Grocy-API-Schlüssel"
-						: status == 0 ? "Grocy nicht erreichbar" : "Grocy antwortet nicht richtig (Fehler " + status + ")");
+				abortBeforeStart(status == 401 || status == 403 ? Texts.get(R.string.grocy_err_key)
+						: status == 0 ? Texts.get(R.string.grocy_err_unreachable) : Texts.get(R.string.grocy_err_bad_answer, status));
 			});
 		});
 	}
@@ -232,7 +233,7 @@ public class PurchaseSender {
 
 			@Override
 			public void onError(int errorCode, String errorMessage, Integer statusCode) {
-				abortBeforeStart("Barcode Buddy: " + describe(errorCode, errorMessage));
+				abortBeforeStart(Texts.get(R.string.send_err_barcode_buddy, describe(errorCode, errorMessage)));
 			}
 		});
 	}
@@ -314,8 +315,8 @@ public class PurchaseSender {
 			done += count;
 			result.unitsSent += count;
 			result.directUnits += count;
-			String text = "In Grocy gebucht: " + trim(amount) + " "
-					+ (item.stockUnitName != null ? item.stockUnitName : "") + " " + item.displayName();
+			String text = Texts.get(R.string.send_grocy_booked, trim(amount),
+					item.stockUnitName != null ? item.stockUnitName : "", item.displayName());
 			repo.updateProgress(item.id, item.sentCount + job.sent, text.replaceAll("\\s+", " ").trim(), null,
 					item.displayName(), item.effectivePrice(), item.effectiveScanPrice(), item.shopName);
 			reportProgress();
@@ -324,12 +325,12 @@ public class PurchaseSender {
 		}
 		int status = error instanceof GrocyClient.HttpException ? ((GrocyClient.HttpException) error).statusCode : 0;
 		if (status == 401 || status == 403) {
-			abortAll(item, job, "Ungültiger Grocy-API-Schlüssel");
+			abortAll(item, job, Texts.get(R.string.grocy_err_key));
 		} else if (status == 0) {
-			abortAll(item, job, "Grocy nicht erreichbar");
+			abortAll(item, job, Texts.get(R.string.grocy_err_unreachable));
 		} else {
 			// Grocy hat diese Buchung abgelehnt, die übrigen Artikel werden trotzdem gebucht
-			skipRest(job, "Grocy hat die Buchung abgelehnt (Fehler " + status + ")");
+			skipRest(job, Texts.get(R.string.grocy_err_rejected, status));
 			bookDirectNext();
 		}
 	}
@@ -401,15 +402,15 @@ public class PurchaseSender {
 		}
 		int status = error instanceof GrocyClient.HttpException ? ((GrocyClient.HttpException) error).statusCode : 0;
 		if (status == 401 || status == 403) {
-			result.error = "Ungültiger Grocy-API-Schlüssel";
+			result.error = Texts.get(R.string.grocy_err_key);
 			archive();
 		} else if (status == 0) {
-			result.error = "Grocy nicht erreichbar";
+			result.error = Texts.get(R.string.grocy_err_unreachable);
 			archive();
 		} else {
 			// Dieser Eintrag ging nicht durch, die übrigen werden trotzdem übertragen
 			done++;
-			result.warning = "Eintrag „" + entry.name + "“ konnte nicht übertragen werden (Fehler " + status + ").";
+			result.warning = Texts.get(R.string.send_err_entry_failed, entry.name, status);
 			reportProgress();
 			transferManualNext();
 		}
@@ -466,7 +467,7 @@ public class PurchaseSender {
 			@Override
 			public void onResult(Object value) {
 				if (!(value instanceof String)) {
-					skipRest(job, "Unerwartete Antwort vom Server");
+					skipRest(job, Texts.get(R.string.send_err_unexpected_server));
 					sendNext();
 					return;
 				}
@@ -517,7 +518,7 @@ public class PurchaseSender {
 
 			@Override
 			public void onError(int errorCode, String errorMessage, Integer statusCode) {
-				result.warning = "Der vorherige Barcode-Buddy-Modus konnte nicht wiederhergestellt werden.";
+				result.warning = Texts.get(R.string.send_warn_mode_restore);
 				afterBarcodeBuddy();
 			}
 		});
@@ -560,11 +561,11 @@ public class PurchaseSender {
 		String detail = errorMessage == null ? "" : errorMessage;
 		switch (errorCode) {
 			case BBApiCallback.ERROR_NETWORK:
-				return "Server nicht erreichbar" + (detail.isEmpty() ? "" : " (" + detail + ")");
+				return detail.isEmpty() ? Texts.get(R.string.bb_err_server_unreachable) : Texts.get(R.string.bb_err_server_unreachable_detail, detail);
 			case BBApiCallback.ERROR_UNAUTHORIZED:
-				return "Ungültiger API-Schlüssel";
+				return Texts.get(R.string.bb_err_key);
 			default:
-				return detail.isEmpty() ? "Unbekannter Fehler" : detail;
+				return detail.isEmpty() ? Texts.get(R.string.bb_err_unknown) : detail;
 		}
 	}
 

@@ -1,5 +1,7 @@
 package de.bulling.barcodebuddyscanner.Api;
 
+import de.bulling.barcodebuddyscanner.R;
+import de.bulling.barcodebuddyscanner.Helper.Texts;
 import android.content.ContentValues;
 import android.content.Context;
 import android.os.Handler;
@@ -93,7 +95,7 @@ public final class GrocySync {
 				return false;
 			}
 			SharedPrefHelper.saveGrocySync(appContext, System.currentTimeMillis(),
-					data.products.size() + " Produkte, " + data.shops.size() + " Geschäfte");
+					Texts.get(R.string.sync_summary, data.products.size(), data.shops.size()));
 			SharedPrefHelper.setGrocyCacheVersion(appContext, CACHE_VERSION);
 			return true;
 		} catch (IOException | RuntimeException e) {
@@ -111,18 +113,18 @@ public final class GrocySync {
 		final Context appContext = context.getApplicationContext();
 		final GrocyClient client = new SharedPrefHelper(appContext).initGrocyClient();
 		if (client == null) {
-			deliver(callback, false, "Grocy ist nicht verbunden.");
+			deliver(callback, false, Texts.get(R.string.sync_not_connected));
 			return;
 		}
 		if (!running.compareAndSet(false, true)) {
-			deliver(callback, false, "Es läuft bereits eine Synchronisierung.");
+			deliver(callback, false, Texts.get(R.string.sync_already_running));
 			return;
 		}
 		executor.execute(() -> {
 			try {
 				final GrocyData data = load(client);
 				ShoppingRepository.get(appContext).replaceGrocyCache(data, stored -> {
-					String summary = data.products.size() + " Produkte, " + data.shops.size() + " Geschäfte";
+					String summary = Texts.get(R.string.sync_summary, data.products.size(), data.shops.size());
 					SharedPrefHelper.saveGrocySync(appContext, System.currentTimeMillis(), summary);
 					SharedPrefHelper.setGrocyCacheVersion(appContext, CACHE_VERSION);
 					running.set(false);
@@ -139,7 +141,7 @@ public final class GrocySync {
 			} catch (RuntimeException e) {
 				Log.e(TAG, "Unerwartete Grocy-Daten", e);
 				running.set(false);
-				deliver(callback, false, "Unerwartete Antwort von Grocy.");
+				deliver(callback, false, Texts.get(R.string.err_grocy_unexpected_response));
 			}
 		});
 	}
@@ -154,14 +156,14 @@ public final class GrocySync {
 		if (e instanceof GrocyClient.HttpException) {
 			int code = ((GrocyClient.HttpException) e).statusCode;
 			if (code == 401 || code == 403) {
-				return "Ungültiger Grocy-API-Schlüssel.";
+				return Texts.get(R.string.grocy_err_key);
 			}
 			if (code == 404) {
-				return "Grocy nicht gefunden. Bitte prüfe die Adresse.";
+				return Texts.get(R.string.sync_err_not_found);
 			}
-			return "Grocy antwortet mit Fehler " + code + ".";
+			return Texts.get(R.string.sync_err_http, code);
 		}
-		return "Grocy nicht erreichbar.";
+		return Texts.get(R.string.grocy_err_unreachable);
 	}
 
 	/**
@@ -453,7 +455,7 @@ public final class GrocySync {
 
 	private static JsonArray array(JsonElement element) throws IOException {
 		if (element == null || !element.isJsonArray()) {
-			throw new IOException("Unerwartete Antwort");
+			throw new IOException(Texts.get(R.string.err_unexpected_response));
 		}
 		return element.getAsJsonArray();
 	}

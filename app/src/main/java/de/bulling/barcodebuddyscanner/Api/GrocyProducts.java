@@ -1,5 +1,7 @@
 package de.bulling.barcodebuddyscanner.Api;
 
+import de.bulling.barcodebuddyscanner.R;
+import de.bulling.barcodebuddyscanner.Helper.Texts;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
@@ -83,7 +85,7 @@ public final class GrocyProducts {
 			try {
 				saveConversion(client, productId, c);
 			} catch (IOException e) {
-				warning = "Produkt angelegt, aber die Umrechnung konnte nicht gespeichert werden: " + e.getMessage();
+				warning = Texts.get(R.string.product_created_conversion_failed, e.getMessage());
 			}
 		}
 		return new Result(productId, warning);
@@ -143,7 +145,7 @@ public final class GrocyProducts {
 		try {
 			return response.getAsJsonObject().get("created_object_id").getAsLong();
 		} catch (RuntimeException e) {
-			throw new IOException("Grocy hat keine Nummer für das neue Objekt geliefert");
+			throw new IOException(Texts.get(R.string.err_grocy_no_id));
 		}
 	}
 }

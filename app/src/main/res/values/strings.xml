@@ -392,7 +392,44 @@ Die App zählt mit und vergleicht am Ende mit Grocy.</string>
     <string name="inventory_done_accuracy">Trefferquote: %1$d %%</string>
     <string name="inventory_restart_title">Neu beginnen?</string>
     <string name="inventory_restart_text">Die bisherige Zählung wird verworfen. In Grocy ändert sich nichts.</string>
-    <string name="inventory_grocy_key_invalid">Ungültiger Grocy-API-Schlüssel</string>
-    <string name="inventory_grocy_unreachable">Grocy nicht erreichbar</string>
-    <string name="inventory_grocy_rejected">Grocy hat die Buchung abgelehnt (Fehler %1$d)</string>
+
+    <!-- Meldungen aus Netzwerk- und Buchungslogik -->
+    <string name="err_unexpected_response">Unerwartete Antwort</string>
+    <string name="err_grocy_unexpected_response">Unerwartete Antwort von Grocy.</string>
+    <string name="err_grocy_no_id">Grocy hat keine Nummer für das neue Objekt geliefert</string>
+    <string name="grocy_err_key">Ungültiger Grocy-API-Schlüssel</string>
+    <string name="grocy_err_unreachable">Grocy nicht erreichbar</string>
+    <string name="grocy_err_rejected">Grocy hat die Buchung abgelehnt (Fehler %1$d)</string>
+    <string name="grocy_err_bad_answer">Grocy antwortet nicht richtig (Fehler %1$d)</string>
+    <string name="sync_not_connected">Grocy ist nicht verbunden.</string>
+    <string name="sync_already_running">Es läuft bereits eine Synchronisierung.</string>
+    <string name="sync_summary">%1$d Produkte, %2$d Geschäfte</string>
+    <string name="sync_err_not_found">Grocy nicht gefunden. Bitte prüfe die Adresse.</string>
+    <string name="sync_err_http">Grocy antwortet mit Fehler %1$d.</string>
+    <string name="product_created_conversion_failed">Produkt angelegt, aber die Umrechnung konnte nicht gespeichert werden: %1$s</string>
+    <string name="send_grocy_booked">In Grocy gebucht: %1$s %2$s %3$s</string>
+    <string name="send_err_barcode_buddy">Barcode Buddy: %1$s</string>
+    <string name="send_err_entry_failed">Eintrag „%1$s“ konnte nicht übertragen werden (Fehler %2$d).</string>
+    <string name="send_err_unexpected_server">Unerwartete Antwort vom Server</string>
+    <string name="send_warn_mode_restore">Der vorherige Barcode-Buddy-Modus konnte nicht wiederhergestellt werden.</string>
+    <string name="bb_err_server_unreachable">Server nicht erreichbar</string>
+    <string name="bb_err_server_unreachable_detail">Server nicht erreichbar (%1$s)</string>
+    <string name="bb_err_key">Ungültiger API-Schlüssel</string>
+    <string name="bb_err_unknown">Unbekannter Fehler</string>
+    <string name="bb_err_param">Ungültiger API-Parameter</string>
+    <string name="bb_err_url">Ungültige URL oder falsche Antwort. Bitte prüfe die URL und ob URL-Rewriting aktiviert ist.</string>
+    <string name="bb_err_server">Serverfehler</string>
+    <string name="bb_err_unknown_url">Unbekannter Fehler. Bitte prüfe die URL.</string>
+    <string name="scanner_connection_closed">Verbindung geschlossen</string>
+    <string name="sc_30_seconds">30 Sekunden</string>
+    <string name="sc_2_minutes">2 Minuten</string>
+    <string name="sc_5_minutes">5 Minuten</string>
+    <string name="sc_10_minutes">10 Minuten</string>
+    <string name="sc_30_minutes">30 Minuten</string>
+    <string name="sc_never">Nie</string>
+    <string name="sc_off">Aus</string>
+    <string name="sc_on">An</string>
+    <string name="sc_low">Niedrig</string>
+    <string name="sc_medium">Mittel</string>
+    <string name="sc_high">Hoch</string>
 </resources>

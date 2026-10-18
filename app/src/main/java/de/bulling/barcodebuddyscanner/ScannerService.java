@@ -501,7 +501,7 @@ public class ScannerService extends Service {
 			while (!stopping) {
 				int n = in.read(chunk);
 				if (n < 0) {
-					throw new IOException("Verbindung geschlossen");
+					throw new IOException(getString(R.string.scanner_connection_closed));
 				}
 				synchronized (buffer) {
 					for (int i = 0; i < n; i++) {

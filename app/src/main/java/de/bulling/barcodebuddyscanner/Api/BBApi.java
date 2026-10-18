@@ -1,5 +1,7 @@
 package de.bulling.barcodebuddyscanner.Api;
 
+import de.bulling.barcodebuddyscanner.R;
+import de.bulling.barcodebuddyscanner.Helper.Texts;
 import android.os.Handler;
 import android.os.Looper;
 
@@ -127,19 +129,19 @@ public class BBApi {
 					mainHandler.post(() -> {
 						switch (statusCode) {
 							case 400:
-								callback.onError(BBApiCallback.ERROR_OTHER, "Ungültiger API-Parameter", statusCode);
+								callback.onError(BBApiCallback.ERROR_OTHER, Texts.get(R.string.bb_err_param), statusCode);
 								break;
 							case 401:
-								callback.onError(BBApiCallback.ERROR_UNAUTHORIZED, "Ungültiger API-Schlüssel", statusCode);
+								callback.onError(BBApiCallback.ERROR_UNAUTHORIZED, Texts.get(R.string.bb_err_key), statusCode);
 								break;
 							case 404:
-								callback.onError(BBApiCallback.ERROR_OTHER, "Ungültige URL oder falsche Antwort. Bitte prüfe die URL und ob URL-Rewriting aktiviert ist.", statusCode);
+								callback.onError(BBApiCallback.ERROR_OTHER, Texts.get(R.string.bb_err_url), statusCode);
 								break;
 							case 500:
-								callback.onError(BBApiCallback.ERROR_OTHER, "Serverfehler", statusCode);
+								callback.onError(BBApiCallback.ERROR_OTHER, Texts.get(R.string.bb_err_server), statusCode);
 								break;
 							default:
-								callback.onError(BBApiCallback.ERROR_OTHER, "Unbekannter Fehler. Bitte prüfe die URL.", statusCode);
+								callback.onError(BBApiCallback.ERROR_OTHER, Texts.get(R.string.bb_err_unknown_url), statusCode);
 								break;
 						}
 					});

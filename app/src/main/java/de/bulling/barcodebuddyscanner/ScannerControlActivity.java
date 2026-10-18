@@ -26,13 +26,14 @@ public class ScannerControlActivity extends AppCompatActivity {
 	private static final String CMD_BATTERY = "^&037&^";
 	private static final String CMD_SLEEP_NOW = "^&041&^";
 
-	private static final String[][] AUTO_OFF = {
-			{"30 Sekunden", "^&043&^"}, {"2 Minuten", "^&045&^"}, {"5 Minuten", "^&046&^"},
-			{"10 Minuten", "^&047&^"}, {"30 Minuten", "^&048&^"}, {"Nie", "^&040&^"}};
-	private static final String[][] VOLUME = {
-			{"Aus", "^&03A&^"}, {"Niedrig", "^&03D&^"}, {"Mittel", "^&03C&^"}, {"Hoch", "^&03B&^"}};
-	private static final String[][] VIBRATION = {
-			{"An", "^&039&^"}, {"Aus", "^&038&^"}};
+	/** Je Eintrag: Textressource der Beschriftung und der Befehl */
+	private static final Object[][] AUTO_OFF = {
+			{R.string.sc_30_seconds, "^&043&^"}, {R.string.sc_2_minutes, "^&045&^"}, {R.string.sc_5_minutes, "^&046&^"},
+			{R.string.sc_10_minutes, "^&047&^"}, {R.string.sc_30_minutes, "^&048&^"}, {R.string.sc_never, "^&040&^"}};
+	private static final Object[][] VOLUME = {
+			{R.string.sc_off, "^&03A&^"}, {R.string.sc_low, "^&03D&^"}, {R.string.sc_medium, "^&03C&^"}, {R.string.sc_high, "^&03B&^"}};
+	private static final Object[][] VIBRATION = {
+			{R.string.sc_on, "^&039&^"}, {R.string.sc_off, "^&038&^"}};
 
 	private TextView status;
 
@@ -81,11 +82,11 @@ public class ScannerControlActivity extends AppCompatActivity {
 		container.addView(t, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 	}
 
-	private void addSection(LinearLayout container, int title, String[][] options) {
+	private void addSection(LinearLayout container, int title, Object[][] options) {
 		addTitle(container, title);
 		ChipGroup group = new ChipGroup(this);
-		for (String[] option : options) {
-			group.addView(chip(option[0], option[1]));
+		for (Object[] option : options) {
+			group.addView(chip(getString((Integer) option[0]), (String) option[1]));
 		}
 		container.addView(group);
 	}

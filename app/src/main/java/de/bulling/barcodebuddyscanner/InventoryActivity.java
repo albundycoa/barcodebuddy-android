@@ -602,9 +602,9 @@ public class InventoryActivity extends AppCompatActivity {
 				} catch (IOException e) {
 					int status = e instanceof GrocyClient.HttpException ? ((GrocyClient.HttpException) e).statusCode : 0;
 					if (status == 401 || status == 403) {
-						outcome.error = getString(R.string.inventory_grocy_key_invalid);
+						outcome.error = getString(R.string.grocy_err_key);
 					} else if (status == 0) {
-						outcome.error = getString(R.string.inventory_grocy_unreachable);
+						outcome.error = getString(R.string.grocy_err_unreachable);
 					} else {
 						outcome.failed.add(c);
 						continue;

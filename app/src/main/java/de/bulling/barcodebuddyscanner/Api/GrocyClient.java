@@ -1,5 +1,7 @@
 package de.bulling.barcodebuddyscanner.Api;
 
+import de.bulling.barcodebuddyscanner.R;
+import de.bulling.barcodebuddyscanner.Helper.Texts;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 
@@ -107,7 +109,7 @@ public class GrocyClient {
 			throw e;
 		} catch (RuntimeException e) {
 			// Kaputtes JSON, z. B. weil unter der Adresse gar kein Grocy antwortet
-			throw new IOException("Unerwartete Antwort", e);
+			throw new IOException(Texts.get(R.string.err_unexpected_response), e);
 		} finally {
 			if (connection != null) {
 				connection.disconnect();

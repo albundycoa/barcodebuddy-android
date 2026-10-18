@@ -1,5 +1,7 @@
 package de.bulling.barcodebuddyscanner.Api;
 
+import de.bulling.barcodebuddyscanner.R;
+import de.bulling.barcodebuddyscanner.Helper.Texts;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
@@ -22,7 +24,7 @@ public final class GrocyInventory {
 	public static Map<Long, Double> loadStock(GrocyClient client) throws IOException {
 		JsonElement response = client.get("objects/stock");
 		if (response == null || !response.isJsonArray()) {
-			throw new IOException("Unerwartete Antwort");
+			throw new IOException(Texts.get(R.string.err_unexpected_response));
 		}
 		Map<Long, Double> stock = new HashMap<>();
 		try {
@@ -34,7 +36,7 @@ public final class GrocyInventory {
 				stock.put(product, (sum == null ? 0 : sum) + amount);
 			}
 		} catch (RuntimeException e) {
-			throw new IOException("Unerwartete Antwort", e);
+			throw new IOException(Texts.get(R.string.err_unexpected_response), e);
 		}
 		return stock;
 	}
