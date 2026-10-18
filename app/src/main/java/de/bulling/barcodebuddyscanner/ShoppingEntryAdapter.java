@@ -198,7 +198,10 @@ public class ShoppingEntryAdapter extends RecyclerView.Adapter<RecyclerView.View
 		h.check.setChecked(done);
 		h.itemView.setAlpha(done ? 0.55f : 1f);
 		View.OnClickListener toggle = v -> actions.onToggle(e);
-		h.itemView.setOnClickListener(toggle);
+		// Abhaken nur über das Kästchen oder den Namen; die Fläche darunter gehört den Mengen-Knöpfen
+		h.itemView.setOnClickListener(null);
+		h.itemView.setClickable(false);
+		h.title.setOnClickListener(toggle);
 		h.check.setOnClickListener(toggle);
 	}
 
