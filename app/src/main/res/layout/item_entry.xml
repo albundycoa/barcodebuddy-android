@@ -44,10 +44,18 @@
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/entry_minus"
                     style="@style/Widget.Material3.Button.IconButton.Filled.Tonal"
-                    android:layout_width="36dp"
-                    android:layout_height="36dp"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
                     android:contentDescription="@string/item_decrease"
-                    app:icon="@drawable/ic_remove" />
+                    android:insetLeft="0dp"
+                    android:insetTop="0dp"
+                    android:insetRight="0dp"
+                    android:insetBottom="0dp"
+                    android:paddingStart="0dp"
+                    android:paddingEnd="0dp"
+                    app:icon="@drawable/ic_remove"
+                    app:iconGravity="textStart"
+                    app:iconPadding="0dp" />
 
                 <TextView
                     android:id="@+id/entry_amount"
@@ -64,10 +72,18 @@
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/entry_plus"
                     style="@style/Widget.Material3.Button.IconButton.Filled.Tonal"
-                    android:layout_width="36dp"
-                    android:layout_height="36dp"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
                     android:contentDescription="@string/item_increase"
-                    app:icon="@drawable/ic_add" />
+                    android:insetLeft="0dp"
+                    android:insetTop="0dp"
+                    android:insetRight="0dp"
+                    android:insetBottom="0dp"
+                    android:paddingStart="0dp"
+                    android:paddingEnd="0dp"
+                    app:icon="@drawable/ic_add"
+                    app:iconGravity="textStart"
+                    app:iconPadding="0dp" />
 
                 <TextView
                     android:id="@+id/entry_price"
