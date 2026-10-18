@@ -1,5 +1,6 @@
 package de.bulling.barcodebuddyscanner;
 
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
 import android.os.Bundle;
@@ -20,6 +21,8 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
@@ -46,6 +49,7 @@ import java.util.concurrent.Executors;
 
 import de.bulling.barcodebuddyscanner.Api.GrocyClient;
 import de.bulling.barcodebuddyscanner.Api.GrocyInventory;
+import de.bulling.barcodebuddyscanner.Api.GrocyProducts;
 import de.bulling.barcodebuddyscanner.Api.GrocySync;
 import de.bulling.barcodebuddyscanner.Data.ShoppingRepository;
 import de.bulling.barcodebuddyscanner.Helper.EdgeToEdgeHelper;
@@ -91,6 +95,8 @@ public class InventoryActivity extends AppCompatActivity {
 	private long    lastCameraSeen;
 	private String  keyboardBuffer = "";
 	private AlertDialog busy;
+	/** Der unbekannte Barcode, der gerade in Grocy angelegt oder zugeordnet wird */
+	private String  assignBarcode;
 
 	// ---------------------------------------------------------------- Lebenszyklus
 
@@ -322,6 +328,8 @@ public class InventoryActivity extends AppCompatActivity {
 	private void render() {
 		shown.clear();
 		shown.addAll(session.snapshot());
+		// Unbekannte Barcodes brauchen Aufmerksamkeit und stehen deshalb ganz oben
+		java.util.Collections.sort(shown, (a, b) -> Boolean.compare(a.known, b.known));
 		adapter.notifyDataSetChanged();
 		emptyView.setVisibility(shown.isEmpty() ? View.VISIBLE : View.GONE);
 
@@ -448,6 +456,26 @@ public class InventoryActivity extends AppCompatActivity {
 			Toast.makeText(this, R.string.inventory_empty_finish, Toast.LENGTH_SHORT).show();
 			return;
 		}
+		int unknown = 0;
+		for (Entry e : session.snapshot()) {
+			if (!e.known) {
+				unknown++;
+			}
+		}
+		if (unknown == 0) {
+			loadAndShowPlan();
+			return;
+		}
+		// Vielleicht ist es ein Produkt, das in Grocy noch fehlt: Gelegenheit, es jetzt anzulegen
+		new MaterialAlertDialogBuilder(this)
+				.setTitle(R.string.inventory_unknown_title)
+				.setMessage(getString(R.string.inventory_unknown_text, unknown))
+				.setPositiveButton(R.string.inventory_unknown_assign, null)
+				.setNegativeButton(R.string.inventory_unknown_ignore, (d, w) -> loadAndShowPlan())
+				.show();
+	}
+
+	private void loadAndShowPlan() {
 		showBusy(R.string.inventory_checking);
 		GROCY_IO.execute(() -> {
 			Map<Long, Double> live = null;
@@ -507,6 +535,7 @@ public class InventoryActivity extends AppCompatActivity {
 							+ notesFor(plan))
 					.setPositiveButton(android.R.string.ok, (d, w) -> {
 						session.clear();
+						resetLastCard();
 						render();
 					})
 					.setNegativeButton(R.string.inventory_plan_back, null)
@@ -575,6 +604,9 @@ public class InventoryActivity extends AppCompatActivity {
 		// Erledigtes und Bestätigtes aus der Zählung nehmen; was nicht ging, bleibt zum erneuten Versuch
 		if (outcome.failed.isEmpty() && outcome.error == null) {
 			session.clear();
+			if (!isFinishing() && !isDestroyed()) {
+				resetLastCard();
+			}
 		} else {
 			Set<String> keep = new HashSet<>();
 			for (Change c : outcome.failed) {
@@ -632,15 +664,7 @@ public class InventoryActivity extends AppCompatActivity {
 
 	private void showEdit(final Entry e) {
 		if (!e.known) {
-			new MaterialAlertDialogBuilder(this)
-					.setTitle(e.barcode)
-					.setMessage(R.string.inventory_status_unknown)
-					.setPositiveButton(R.string.inventory_edit_remove, (d, w) -> {
-						session.remove(e.key);
-						render();
-					})
-					.setNegativeButton(android.R.string.cancel, null)
-					.show();
+			showAssign(e);
 			return;
 		}
 		final EditText input = new EditText(this);
@@ -672,6 +696,132 @@ public class InventoryActivity extends AppCompatActivity {
 				.show();
 	}
 
+	// ---------------------------------------------------------------- Unbekannte Barcodes
+
+	private final ActivityResultLauncher<Intent> createProductLauncher = registerForActivityResult(
+			new ActivityResultContracts.StartActivityForResult(), result -> {
+				if (result.getResultCode() == RESULT_OK && assignBarcode != null) {
+					resolveUnknown(assignBarcode, 0);
+				}
+			});
+
+	private final ActivityResultLauncher<Intent> pickProductLauncher = registerForActivityResult(
+			new ActivityResultContracts.StartActivityForResult(), result -> {
+				Intent data = result.getData();
+				if (result.getResultCode() == RESULT_OK && data != null && assignBarcode != null) {
+					long shop = data.getLongExtra(ProductsActivity.EXTRA_PRODUCT_SHOP, -1);
+					linkBarcode(assignBarcode, data.getLongExtra(ProductsActivity.EXTRA_PRODUCT_ID, -1),
+							shop < 0 ? null : shop);
+				}
+			});
+
+	/** Ein Barcode, den Grocy nicht kennt: als neues Produkt anlegen oder einem vorhandenen zuordnen. */
+	private void showAssign(final Entry e) {
+		String[] choices = {getString(R.string.assign_new), getString(R.string.assign_existing),
+				getString(R.string.inventory_edit_remove)};
+		new MaterialAlertDialogBuilder(this)
+				.setTitle(getString(R.string.inventory_unknown_name) + " " + e.barcode)
+				.setItems(choices, (d, which) -> {
+					if (which == 0) {
+						assignBarcode = e.barcode;
+						createProductLauncher.launch(new Intent(this, ProductCreateActivity.class)
+								.putExtra(ProductCreateActivity.EXTRA_BARCODE, e.barcode));
+					} else if (which == 1) {
+						assignBarcode = e.barcode;
+						pickProductLauncher.launch(new Intent(this, ProductsActivity.class)
+								.putExtra(ProductsActivity.EXTRA_PICK, true));
+					} else {
+						session.remove(e.key);
+						render();
+					}
+				})
+				.setNegativeButton(android.R.string.cancel, null)
+				.show();
+	}
+
+	/** Hängt den Barcode an ein vorhandenes Grocy-Produkt. */
+	private void linkBarcode(final String barcode, final long productId, final Long shopId) {
+		showBusy(R.string.inventory_assigning);
+		GROCY_IO.execute(() -> {
+			String error = null;
+			try {
+				GrocyProducts.linkBarcode(grocy, productId, barcode, shopId);
+			} catch (IOException e) {
+				error = String.valueOf(e.getMessage());
+			}
+			final String failure = error;
+			main.post(() -> {
+				dismissBusy();
+				if (isFinishing() || isDestroyed()) {
+					return;
+				}
+				if (failure != null) {
+					new MaterialAlertDialogBuilder(this)
+							.setTitle(R.string.product_create_failed_title)
+							.setMessage(getString(R.string.product_create_failed, failure))
+							.setPositiveButton(android.R.string.ok, null)
+							.show();
+					return;
+				}
+				resolveUnknown(barcode, 0);
+			});
+		});
+	}
+
+	/**
+	 * Der Barcode ist jetzt in Grocy bekannt: Stammdaten neu laden und die bisherigen Scans dem Produkt zuschlagen,
+	 * damit er in der Zählung nicht verloren geht.
+	 */
+	private void resolveUnknown(final String barcode, final int attempt) {
+		showBusy(R.string.inventory_assigning);
+		GrocySync.start(this, (ok, message) -> {
+			if (isFinishing() || isDestroyed()) {
+				return;
+			}
+			if (!ok) {
+				// Es läuft vielleicht noch die Synchronisierung, die das Anlegen gestartet hat
+				if (attempt < 4) {
+					main.postDelayed(() -> resolveUnknown(barcode, attempt + 1), 1500);
+				} else {
+					dismissBusy();
+					Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+				}
+				return;
+			}
+			repo.findInventoryProduct(barcode, product -> {
+				dismissBusy();
+				if (product == null) {
+					Toast.makeText(this, R.string.inventory_assign_not_found, Toast.LENGTH_LONG).show();
+					return;
+				}
+				int scans = 1;
+				for (Entry e : session.snapshot()) {
+					if (!e.known && barcode.equals(e.barcode)) {
+						scans = Math.max(1, (int) Math.round(e.counted));
+						session.remove(e.key);
+					}
+				}
+				Entry entry = null;
+				for (int i = 0; i < scans; i++) {
+					entry = session.recordProduct(product);
+				}
+				if (entry != null) {
+					showLast(entry);
+				}
+				refreshStockedCount();
+				render();
+			});
+		});
+	}
+
+	private void resetLastCard() {
+		lastName.setText(R.string.inventory_title);
+		lastStatus.setText(R.string.inventory_ready);
+		lastName.setTextColor(getColor(R.color.md_on_surface));
+		lastStatus.setTextColor(getColor(R.color.md_on_surface));
+		lastCard.setCardBackgroundColor(getColor(R.color.md_surface_container_highest));
+	}
+
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		getMenuInflater().inflate(R.menu.inventory, menu);
@@ -693,9 +843,7 @@ public class InventoryActivity extends AppCompatActivity {
 					.setMessage(R.string.inventory_restart_text)
 					.setPositiveButton(R.string.inventory_restart, (d, w) -> {
 						session.clear();
-						lastName.setText(R.string.inventory_title);
-						lastStatus.setText(R.string.inventory_ready);
-						lastCard.setCardBackgroundColor(getColor(R.color.md_surface_container_highest));
+						resetLastCard();
 						render();
 					})
 					.setNegativeButton(android.R.string.cancel, null)

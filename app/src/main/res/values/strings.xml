@@ -345,9 +345,9 @@ Die App zählt mit und vergleicht am Ende mit Grocy.</string>
     <string name="inventory_status_match">✓ Passt: %1$s von %2$s %3$s</string>
     <string name="inventory_status_more">▲ Mehr als im Bestand: %1$s gezählt, %2$s %3$s im Bestand</string>
     <string name="inventory_status_less">… Erst %1$s von %2$s %3$s gefunden</string>
-    <string name="inventory_status_unknown">Grocy kennt diesen Barcode nicht. Er wird nicht gezählt.</string>
+    <string name="inventory_status_unknown">Grocy kennt diesen Barcode nicht. Antippen zum Zuordnen.</string>
     <string name="inventory_detail">Bestand: %1$s %2$s</string>
-    <string name="inventory_detail_unknown">Unbekannt, wird ignoriert</string>
+    <string name="inventory_detail_unknown">Unbekannt – antippen zum Zuordnen</string>
     <string name="inventory_summary">%1$d von %2$d Produkten gezählt · %3$d passen · %4$d weichen ab</string>
     <string name="inventory_summary_unknown"> · %1$d unbekannt</string>
     <string name="inventory_edit_title">Gezählte Menge</string>
@@ -370,7 +370,13 @@ Die App zählt mit und vergleicht am Ende mit Grocy.</string>
     <string name="inventory_done_skipped">– %1$d Abweichungen übersprungen</string>
     <string name="inventory_done_failed">⚠ %1$d konnten nicht gesendet werden und bleiben in der Liste</string>
     <string name="inventory_done_error">Abbruch: %1$s</string>
-    <string name="inventory_done_unknown">%1$d unbekannte Barcodes ignoriert. Ordne sie in Barcode Buddy einem Produkt zu.</string>
+    <string name="inventory_done_unknown">%1$d unbekannte Barcodes wurden ignoriert und nicht gezählt.</string>
+    <string name="inventory_unknown_title">Unbekannte Barcodes</string>
+    <string name="inventory_unknown_text">%1$d Barcodes kennt Grocy nicht (rot, ganz oben in der Liste). Antippen: als neues Produkt anlegen oder einem vorhandenen zuordnen. Sie werden dann sofort mitgezählt.</string>
+    <string name="inventory_unknown_assign">Zuordnen</string>
+    <string name="inventory_unknown_ignore">Ohne sie abschließen</string>
+    <string name="inventory_assigning">Barcode wird zugeordnet …</string>
+    <string name="inventory_assign_not_found">Der Barcode ist noch nicht in der Produktliste. Bitte „Bestand neu laden“ im Menü versuchen.</string>
     <string name="inventory_done_not_scanned">%1$d Produkte im Bestand wurden nicht gescannt und bleiben unverändert.</string>
     <string name="inventory_done_accuracy">Trefferquote: %1$d %%</string>
     <string name="inventory_restart_title">Neu beginnen?</string>
