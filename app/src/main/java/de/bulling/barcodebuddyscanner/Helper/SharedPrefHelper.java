@@ -199,6 +199,16 @@ public class SharedPrefHelper {
 		return !"mark".equals(PreferenceManager.getDefaultSharedPreferences(context).getString("manual_done_mode", "book"));
 	}
 
+	/** Zeitpunkt der letzten Änderung der Grocy-Datenbank beim letzten vollständigen Laden */
+	public static String getGrocyChangedTime(Context context) {
+		return PreferenceManager.getDefaultSharedPreferences(context).getString("grocy_changed_time", "");
+	}
+
+	public static void setGrocyChangedTime(Context context, String time) {
+		PreferenceManager.getDefaultSharedPreferences(context).edit()
+				.putString("grocy_changed_time", time == null ? "" : time).apply();
+	}
+
 	public static boolean hasGrocy(Context context) {
 		SharedPreferences p = PreferenceManager.getDefaultSharedPreferences(context);
 		return !p.getString("grocy_url", "").isEmpty() && !p.getString("grocy_key", "").isEmpty();

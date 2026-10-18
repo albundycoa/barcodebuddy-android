@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/range_expired"
+        android:title="@string/expiry_range_expired"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/range_7"
+        android:title="@string/expiry_range_7"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/range_14"
+        android:title="@string/expiry_range_14"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/range_30"
+        android:title="@string/expiry_range_30"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/range_all"
+        android:title="@string/expiry_range_all"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_reload"
+        android:title="@string/expiry_reload"
+        app:showAsAction="never" />
+</menu>

@@ -7,7 +7,7 @@ import android.database.sqlite.SQLiteOpenHelper;
 class ShoppingDb extends SQLiteOpenHelper {
 
 	private static final String DB_NAME    = "shopping.db";
-	private static final int    DB_VERSION = 8;
+	private static final int    DB_VERSION = 9;
 
 	static final String T_ITEMS      = "items";
 	static final String T_TRIPS      = "trips";
@@ -78,6 +78,10 @@ class ShoppingDb extends SQLiteOpenHelper {
 			// Name der Einheit, in der ein Barcode gezählt wird (z. B. Pack), kommt mit der nächsten Synchronisierung
 			db.execSQL("ALTER TABLE " + T_BARCODES + " ADD COLUMN scan_unit TEXT");
 		}
+		if (oldVersion >= 2 && oldVersion < 9) {
+			// Schnellverbrauch-Menge je Produkt, kommt mit der nächsten Synchronisierung
+			db.execSQL("ALTER TABLE " + T_PRODUCTS + " ADD COLUMN consume_amount REAL");
+		}
 		if (oldVersion >= 2 && oldVersion < 3) {
 			db.execSQL("ALTER TABLE " + T_ITEMS + " ADD COLUMN shop_name TEXT");
 			// Die Kopie der Grocy-Daten wird bei der nächsten Synchronisierung vollständig neu gefüllt
@@ -126,7 +130,8 @@ class ShoppingDb extends SQLiteOpenHelper {
 				+ "price_unit TEXT, "
 				+ "best_before_days INTEGER, "
 				+ "tare INTEGER NOT NULL DEFAULT 0, "
-				+ "group_name TEXT)");
+				+ "group_name TEXT, "
+				+ "consume_amount REAL)");
 		// stock_per_scan: Wie viele Lagereinheiten ein Scan dieses Barcodes bucht;
 		// exact: Der Barcode hat in Grocy eine eigene Menge (sonst entscheidet Barcode Buddy)
 		db.execSQL("CREATE TABLE " + T_BARCODES + " ("

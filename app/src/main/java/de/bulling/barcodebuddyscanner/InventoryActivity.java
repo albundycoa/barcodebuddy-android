@@ -1,12 +1,10 @@
 package de.bulling.barcodebuddyscanner;
 
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.os.SystemClock;
 import android.text.InputType;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -34,10 +32,6 @@ import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
 import com.google.android.material.snackbar.Snackbar;
-import com.google.zxing.ResultPoint;
-import com.journeyapps.barcodescanner.BarcodeCallback;
-import com.journeyapps.barcodescanner.BarcodeResult;
-import com.journeyapps.barcodescanner.DecoratedBarcodeView;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -60,8 +54,8 @@ import de.bulling.barcodebuddyscanner.Helper.InventoryPlanner.Plan;
 import de.bulling.barcodebuddyscanner.Helper.InventorySession;
 import de.bulling.barcodebuddyscanner.Helper.InventorySession.Entry;
 import de.bulling.barcodebuddyscanner.Helper.InventorySession.Status;
-import de.bulling.barcodebuddyscanner.Helper.PermissionHelper;
 import de.bulling.barcodebuddyscanner.Helper.ScanFeedback;
+import de.bulling.barcodebuddyscanner.Helper.ScanInput;
 import de.bulling.barcodebuddyscanner.Helper.SharedPrefHelper;
 
 /**
@@ -72,8 +66,6 @@ public class InventoryActivity extends AppCompatActivity {
 
 	private static final ExecutorService GROCY_IO = Executors.newSingleThreadExecutor();
 
-	/** Solange ein Barcode ohne Pause im Bild bleibt, zählt er nur einmal */
-	private static final long   CAMERA_GAP_MS = 1000;
 
 	private final Handler main = new Handler(Looper.getMainLooper());
 
@@ -82,7 +74,6 @@ public class InventoryActivity extends AppCompatActivity {
 	private ScanFeedback       feedback;
 	private GrocyClient        grocy;
 
-	private DecoratedBarcodeView barcodeView;
 	private MaterialCardView     lastCard;
 	private TextView             lastName;
 	private TextView             lastStatus;
@@ -93,11 +84,8 @@ public class InventoryActivity extends AppCompatActivity {
 
 	private final List<Entry> shown = new ArrayList<>();
 
-	private boolean cameraEnabled;
+	private ScanInput scanInput;
 	private int     stockedProducts;
-	private String  lastCameraCode;
-	private long    lastCameraSeen;
-	private String  keyboardBuffer = "";
 	private AlertDialog busy;
 	/** Der unbekannte Barcode, der gerade in Grocy angelegt oder zugeordnet wird */
 	private String  assignBarcode;
@@ -131,10 +119,7 @@ public class InventoryActivity extends AppCompatActivity {
 		EdgeToEdgeHelper.applyInsetsAsPadding(findViewById(R.id.app_bar), false, true, false, false);
 		EdgeToEdgeHelper.applyInsetsAsPadding(findViewById(R.id.content), true, false, true, true);
 
-		barcodeView = findViewById(R.id.barcode_scanner);
-		barcodeView.setStatusText("");
-		barcodeView.initializeFromIntent(getIntent());
-		barcodeView.decodeContinuous(cameraCallback);
+		scanInput = new ScanInput(this, findViewById(R.id.barcode_scanner), this::handleBarcode);
 		lastCard   = findViewById(R.id.last_card);
 		lastCard.setOnClickListener(v -> {
 			if (lastEntry != null && lastEntry.known) {
@@ -153,10 +138,6 @@ public class InventoryActivity extends AppCompatActivity {
 		list.setAdapter(adapter);
 		findViewById(R.id.button_finish).setOnClickListener(v -> startReview());
 
-		// Die Kamera gibt es nur, wenn die Scan-Methode in den Einstellungen die Handy-Kamera vorsieht
-		cameraEnabled = SharedPrefHelper.isCameraScannerEnabled(this);
-		applyCameraVisibility();
-
 		lastName.setText(R.string.inventory_title);
 		lastStatus.setText(R.string.inventory_ready);
 		if (session.isEmpty()) {
@@ -174,9 +155,7 @@ public class InventoryActivity extends AppCompatActivity {
 		if (grocy == null) {
 			return;
 		}
-		// Auch der Bluetooth-Scanner-Dienst liefert seine Barcodes hierher, solange die Inventur offen ist
-		InventorySession.setScanSink(this::handleBarcode);
-		startCameraIfWanted();
+		scanInput.onResume();
 	}
 
 	@Override
@@ -185,8 +164,7 @@ public class InventoryActivity extends AppCompatActivity {
 		if (grocy == null) {
 			return;
 		}
-		InventorySession.setScanSink(null);
-		barcodeView.pause();
+		scanInput.onPause();
 	}
 
 	@Override
@@ -195,90 +173,20 @@ public class InventoryActivity extends AppCompatActivity {
 		dismissBusy();
 	}
 
-	// ---------------------------------------------------------------- Kamera und Scanner
-
-	private final BarcodeCallback cameraCallback = new BarcodeCallback() {
-		@Override
-		public void barcodeResult(BarcodeResult result) {
-			final String text = result.getText();
-			if (text == null || text.isEmpty()) {
-				return;
-			}
-			long now = SystemClock.elapsedRealtime();
-			boolean stillInView = text.equals(lastCameraCode) && now - lastCameraSeen < CAMERA_GAP_MS;
-			lastCameraCode = text;
-			lastCameraSeen = now;
-			if (!stillInView) {
-				handleBarcode(text);
-			}
-		}
-
-		@Override
-		public void possibleResultPoints(List<ResultPoint> resultPoints) {
-		}
-	};
-
-	private void applyCameraVisibility() {
-		barcodeView.setVisibility(cameraEnabled ? View.VISIBLE : View.GONE);
-	}
-
-	private void startCameraIfWanted() {
-		if (!cameraEnabled) {
-			return;
-		}
-		if (PermissionHelper.hasCameraPermission(this)) {
-			barcodeView.resume();
-		} else {
-			PermissionHelper.requestCameraPermission(this);
-		}
-	}
+	// ---------------------------------------------------------------- Scanner
 
 	@Override
 	public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
 		super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-		if (requestCode == PermissionHelper.REQUEST_CODE_CAMERA) {
-			if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-				barcodeView.resume();
-			} else {
-				// Mit einem Handscanner geht es auch ohne Kamera
-				Toast.makeText(this, R.string.error_camera_permission_denied, Toast.LENGTH_LONG).show();
-				cameraEnabled = false;
-				applyCameraVisibility();
-			}
-		}
+		scanInput.onPermissionResult(requestCode, grantResults);
 	}
 
-	/** Handscanner im Tastaturmodus: die Ziffern kommen als Tastendrücke, Enter beendet den Barcode. */
 	@Override
 	public boolean dispatchKeyEvent(KeyEvent event) {
-		if (grocy != null && SharedPrefHelper.isBtScannerEnabled(this) && isScannerKey(event.getKeyCode())) {
-			if (event.getAction() == KeyEvent.ACTION_UP) {
-				if (event.getKeyCode() == KeyEvent.KEYCODE_ENTER || event.getKeyCode() == KeyEvent.KEYCODE_NUMPAD_ENTER) {
-					String code = keyboardBuffer.trim();
-					keyboardBuffer = "";
-					if (!code.isEmpty() && ScannerService.parseBattery(code) == null) {
-						handleBarcode(code);
-					}
-				} else {
-					keyboardBuffer += (char) event.getUnicodeChar();
-				}
-			}
+		if (grocy != null && scanInput.onKey(event)) {
 			return true;
 		}
 		return super.dispatchKeyEvent(event);
-	}
-
-	private static boolean isScannerKey(int keycode) {
-		return (keycode >= KeyEvent.KEYCODE_0 && keycode <= KeyEvent.KEYCODE_9)
-				|| (keycode >= KeyEvent.KEYCODE_NUMPAD_0 && keycode <= KeyEvent.KEYCODE_NUMPAD_9)
-				|| (keycode >= KeyEvent.KEYCODE_A && keycode <= KeyEvent.KEYCODE_Z)
-				|| keycode == KeyEvent.KEYCODE_PERIOD
-				|| keycode == KeyEvent.KEYCODE_NUMPAD_SUBTRACT
-				|| keycode == KeyEvent.KEYCODE_NUMPAD_DOT
-				|| keycode == KeyEvent.KEYCODE_NUMPAD_ENTER
-				|| keycode == KeyEvent.KEYCODE_ENTER
-				|| keycode == KeyEvent.KEYCODE_MINUS
-				|| keycode == KeyEvent.KEYCODE_SEMICOLON;
 	}
 
 	// ---------------------------------------------------------------- Zählen

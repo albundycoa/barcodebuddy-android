@@ -432,4 +432,41 @@ Die App zählt mit und vergleicht am Ende mit Grocy.</string>
     <string name="sc_low">Niedrig</string>
     <string name="sc_medium">Mittel</string>
     <string name="sc_high">Hoch</string>
+
+    <!-- Bestand prüfen -->
+    <string name="action_stock_check">Bestand prüfen</string>
+    <string name="stock_title">Bestand prüfen</string>
+    <string name="stock_empty">Scanne ein Produkt, um zu sehen, wie viel davon da ist und wann es abläuft.</string>
+    <string name="stock_unknown">Grocy kennt diesen Barcode nicht</string>
+    <string name="stock_amount">Bestand: %1$s %2$s</string>
+    <string name="stock_due">Nächstes MHD: %1$s %2$s</string>
+    <string name="stock_due_none">Kein Haltbarkeitsdatum hinterlegt</string>
+    <string name="stock_on_list">Steht auf der Einkaufsliste (%1$s %2$s)</string>
+    <string name="stock_consume_button">%1$s verbrauchen</string>
+    <string name="stock_consume">Verbrauchen</string>
+    <string name="stock_consume_confirm">%1$s %2$s aus dem Bestand verbrauchen?</string>
+    <string name="stock_consumed">%1$s %2$s verbraucht</string>
+    <string name="stock_to_list">Auf die Liste</string>
+    <string name="stock_list_confirm">%1$s %2$s auf die Einkaufsliste setzen?</string>
+    <string name="stock_listed">Auf die Einkaufsliste gesetzt</string>
+    <string name="stock_working">Wird gebucht …</string>
+    <string name="stock_err_rejected">Grocy lehnt das ab, vermutlich ist nicht genug im Bestand.</string>
+
+    <!-- Ablauf-Übersicht -->
+    <string name="action_expiry">Ablauf-Übersicht</string>
+    <string name="expiry_title">Ablauf-Übersicht</string>
+    <string name="expiry_loading">Haltbarkeiten werden geladen …</string>
+    <string name="expiry_header">%1$d Einträge · %2$s · %3$d abgelaufen</string>
+    <string name="expiry_empty">Nichts in diesem Zeitraum.</string>
+    <string name="expiry_range_expired">Abgelaufen</string>
+    <string name="expiry_range_7">In 7 Tagen</string>
+    <string name="expiry_range_14">In 14 Tagen</string>
+    <string name="expiry_range_30">In 30 Tagen</string>
+    <string name="expiry_range_all">Alles</string>
+    <string name="expiry_range_days">in %1$d Tagen</string>
+    <string name="expiry_reload">Neu laden</string>
+    <string name="expiry_detail">%1$s %2$s · MHD %3$s</string>
+    <string name="expiry_past">vor %1$d T</string>
+    <string name="expiry_today">heute</string>
+    <string name="expiry_future">in %1$d T</string>
 </resources>

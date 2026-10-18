@@ -121,7 +121,7 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
         public void run() {
             if (SharedPrefHelper.hasGrocy(MainActivity.this) && SharedPrefHelper.isSyncOnOpenEnabled(MainActivity.this)
                     && !sending) {
-                GrocySync.start(MainActivity.this, null);
+                GrocySync.startIfChanged(MainActivity.this);
             }
             pollHandler.postDelayed(this, POLL_MS);
         }
@@ -1090,6 +1090,12 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
             return true;
         } else if (itemId == R.id.action_products) {
             startActivity(new Intent(this, ProductsActivity.class));
+            return true;
+        } else if (itemId == R.id.action_stock_check) {
+            startActivity(new Intent(this, StockCheckActivity.class));
+            return true;
+        } else if (itemId == R.id.action_expiry) {
+            startActivity(new Intent(this, ExpiryActivity.class));
             return true;
         } else if (itemId == R.id.action_inventory) {
             startActivity(new Intent(this, InventoryActivity.class));

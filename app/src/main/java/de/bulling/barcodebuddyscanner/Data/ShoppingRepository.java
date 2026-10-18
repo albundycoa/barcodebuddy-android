@@ -929,6 +929,58 @@ public final class ShoppingRepository {
 		}, callback);
 	}
 
+	/** Alles, was die Bestandsabfrage zu einem gescannten Barcode anzeigt. */
+	public static final class StockInfo {
+		public long    id;
+		public String  name;
+		public String  group;
+		public String  stockUnit;
+		/** Bestand laut lokaler Kopie in Lagereinheiten */
+		public double  stock;
+		public double  stockPerScan = 1;
+		public String  scanUnit;
+		/** Schnellverbrauch-Menge in Lagereinheiten, null = nicht bekannt */
+		public Double  quickConsume;
+		/** Letzter Preis je Preiseinheit */
+		public Double  lastPrice;
+		public String  priceUnit;
+		/** Menge, die offen auf der Einkaufsliste steht, in Lagereinheiten */
+		public double  onShoppingList;
+	}
+
+	/** Die Bestandsauskunft zu einem Barcode, oder null, wenn die lokale Kopie ihn nicht kennt. */
+	public void findStockInfo(final String barcode, Callback<StockInfo> callback) {
+		read(() -> {
+			String sql = "SELECT p.id, p.name, p.group_name, p.stock_unit, p.price_unit, p.stock_to_price, "
+					+ "p.consume_amount, COALESCE(st.amount, 0) AS stock, b.stock_per_scan, b.scan_unit, "
+					+ "lp.price AS last_price, (SELECT COALESCE(SUM(s.stock_amount), 0) FROM g_shopping s "
+					+ "WHERE s.product_id = p.id AND s.done = 0) AS on_list "
+					+ "FROM g_barcodes b JOIN g_products p ON p.id = b.product_id "
+					+ "LEFT JOIN g_stock st ON st.product_id = p.id LEFT JOIN g_lastprice lp ON lp.product_id = p.id "
+					+ "WHERE b.barcode = ?";
+			try (Cursor c = dbHelper.getReadableDatabase().rawQuery(sql, new String[]{barcode})) {
+				if (!c.moveToFirst()) {
+					return null;
+				}
+				StockInfo info = new StockInfo();
+				info.id             = c.getLong(c.getColumnIndexOrThrow("id"));
+				info.name           = c.getString(c.getColumnIndexOrThrow("name"));
+				info.group          = c.getString(c.getColumnIndexOrThrow("group_name"));
+				info.stockUnit      = c.getString(c.getColumnIndexOrThrow("stock_unit"));
+				info.priceUnit      = c.getString(c.getColumnIndexOrThrow("price_unit"));
+				info.stock          = c.getDouble(c.getColumnIndexOrThrow("stock"));
+				info.stockPerScan   = c.getDouble(c.getColumnIndexOrThrow("stock_per_scan"));
+				info.scanUnit       = c.getString(c.getColumnIndexOrThrow("scan_unit"));
+				info.quickConsume   = getDouble(c, "consume_amount");
+				info.onShoppingList = c.getDouble(c.getColumnIndexOrThrow("on_list"));
+				Double price        = getDouble(c, "last_price");
+				double factor       = c.getDouble(c.getColumnIndexOrThrow("stock_to_price"));
+				info.lastPrice      = price == null || factor <= 0 ? null : price / factor;
+				return info;
+			}
+		}, callback);
+	}
+
 	/** Anzahl der Produkte, von denen laut lokaler Kopie etwas im Bestand ist. */
 	public void getStockedProductCount(Callback<Integer> callback) {
 		read(() -> (int) DatabaseUtils.queryNumEntries(dbHelper.getReadableDatabase(), ShoppingDb.T_STOCK, "amount > 0"),

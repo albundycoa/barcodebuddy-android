@@ -38,7 +38,7 @@ public final class GrocySync {
 	private static final long FRESH_MS = 10 * 60 * 1000L;
 
 	/** Version der gespeicherten Datenfelder; bei einer Änderung wird einmal neu synchronisiert. */
-	private static final int CACHE_VERSION = 8;
+	private static final int CACHE_VERSION = 9;
 
 	public interface Callback {
 		/** ok = false: Verbindung oder Daten fehlerhaft, die bisherige Kopie bleibt erhalten */
@@ -69,8 +69,49 @@ public final class GrocySync {
 			if (System.currentTimeMillis() - last < FRESH_MS) {
 				return;
 			}
+			startIfChanged(context);
+			return;
 		}
 		start(context, null);
+	}
+
+	/**
+	 * Wie {@link #start}, lädt aber nur, wenn sich in Grocy seit der letzten Synchronisierung etwas geändert hat.
+	 * Ob etwas geändert wurde, sagt Grocy mit einem einzigen kleinen Aufruf; im Zweifel wird geladen.
+	 */
+	public static void startIfChanged(Context context) {
+		final Context appContext = context.getApplicationContext();
+		final GrocyClient client = new SharedPrefHelper(appContext).initGrocyClient();
+		if (client == null) {
+			return;
+		}
+		if (!SharedPrefHelper.isGrocyCacheCurrent(appContext, CACHE_VERSION)) {
+			start(appContext, null);
+			return;
+		}
+		executor.execute(() -> {
+			String now = fetchChangedTime(client);
+			if (now != null && now.equals(SharedPrefHelper.getGrocyChangedTime(appContext))) {
+				// Nichts Neues in Grocy: die Kopie ist aktuell
+				SharedPrefHelper.saveGrocySync(appContext, System.currentTimeMillis(),
+						SharedPrefHelper.getGrocySummary(appContext));
+				return;
+			}
+			main.post(() -> start(appContext, null));
+		});
+	}
+
+	/** Zeitpunkt der letzten Änderung der Grocy-Datenbank, oder null, wenn Grocy ihn nicht liefert. */
+	private static String fetchChangedTime(GrocyClient client) {
+		try {
+			JsonElement response = client.get("system/db-changed-time");
+			if (response != null && response.isJsonObject()) {
+				return asString(response.getAsJsonObject(), "changed_time");
+			}
+		} catch (IOException | RuntimeException ignored) {
+			// Ohne diese Angabe wird einfach immer vollständig geladen
+		}
+		return null;
 	}
 
 	/**
@@ -84,6 +125,7 @@ public final class GrocySync {
 			return false;
 		}
 		try {
+			final String changedTime = fetchChangedTime(client);
 			final GrocyData data = load(client);
 			final CountDownLatch latch = new CountDownLatch(1);
 			final boolean[] stored = {false};
@@ -97,6 +139,7 @@ public final class GrocySync {
 			SharedPrefHelper.saveGrocySync(appContext, System.currentTimeMillis(),
 					Texts.get(R.string.sync_summary, data.products.size(), data.shops.size()));
 			SharedPrefHelper.setGrocyCacheVersion(appContext, CACHE_VERSION);
+			SharedPrefHelper.setGrocyChangedTime(appContext, changedTime);
 			return true;
 		} catch (IOException | RuntimeException e) {
 			Log.w(TAG, "Hintergrund-Synchronisierung fehlgeschlagen: " + e.getMessage());
@@ -122,11 +165,13 @@ public final class GrocySync {
 		}
 		executor.execute(() -> {
 			try {
+				final String changedTime = fetchChangedTime(client);
 				final GrocyData data = load(client);
 				ShoppingRepository.get(appContext).replaceGrocyCache(data, stored -> {
 					String summary = Texts.get(R.string.sync_summary, data.products.size(), data.shops.size());
 					SharedPrefHelper.saveGrocySync(appContext, System.currentTimeMillis(), summary);
 					SharedPrefHelper.setGrocyCacheVersion(appContext, CACHE_VERSION);
+					SharedPrefHelper.setGrocyChangedTime(appContext, changedTime);
 					running.set(false);
 					if (callback != null) {
 						callback.onDone(true, summary);
@@ -333,6 +378,12 @@ public final class GrocySync {
 			Long days = asLong(o, "default_best_before_days");
 			if (days != null) {
 				v.put("best_before_days", days);
+			}
+			// Schnellverbrauch-Menge nur übernehmen, wenn sie in der Lagereinheit steht
+			Long consumeUnit = asLong(o, "qu_id_consume");
+			Double quick = asDouble(o, "quick_consume_amount");
+			if (quick != null && quick > 0 && (consumeUnit == null || consumeUnit.equals(stock))) {
+				v.put("consume_amount", quick);
 			}
 			Long tare = asLong(o, "enable_tare_weight_handling");
 			v.put("tare", tare != null && tare != 0 ? 1 : 0);
