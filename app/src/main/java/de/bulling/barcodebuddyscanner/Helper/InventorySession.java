@@ -94,7 +94,12 @@ public final class InventorySession {
 	private int                            scans;
 
 	private InventorySession(Context appContext) {
-		prefs = appContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+		this(appContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE));
+	}
+
+	/** Für Tests mit eigenem Speicher. */
+	InventorySession(SharedPreferences prefs) {
+		this.prefs = prefs;
 		try {
 			State state = gson.fromJson(prefs.getString(KEY, null), State.class);
 			if (state != null) {

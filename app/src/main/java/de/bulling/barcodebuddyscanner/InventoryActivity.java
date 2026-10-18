@@ -54,6 +54,9 @@ import de.bulling.barcodebuddyscanner.Api.GrocyProducts;
 import de.bulling.barcodebuddyscanner.Api.GrocySync;
 import de.bulling.barcodebuddyscanner.Data.ShoppingRepository;
 import de.bulling.barcodebuddyscanner.Helper.EdgeToEdgeHelper;
+import de.bulling.barcodebuddyscanner.Helper.InventoryPlanner;
+import de.bulling.barcodebuddyscanner.Helper.InventoryPlanner.Change;
+import de.bulling.barcodebuddyscanner.Helper.InventoryPlanner.Plan;
 import de.bulling.barcodebuddyscanner.Helper.InventorySession;
 import de.bulling.barcodebuddyscanner.Helper.InventorySession.Entry;
 import de.bulling.barcodebuddyscanner.Helper.InventorySession.Status;
@@ -436,30 +439,6 @@ public class InventoryActivity extends AppCompatActivity {
 
 	// ---------------------------------------------------------------- Abschluss
 
-	/** Eine nötige Korrektur: Bestand von before auf after setzen. */
-	private static final class Change {
-		final Entry  entry;
-		final double before;
-		final double after;
-
-		Change(Entry entry, double before, double after) {
-			this.entry  = entry;
-			this.before = before;
-			this.after  = Math.round(after * 10000) / 10000.0;
-		}
-
-		boolean isIncrease() {
-			return after > before;
-		}
-	}
-
-	private static final class Plan {
-		final List<Change> changes = new ArrayList<>();
-		int matched;
-		int unknown;
-		int notScanned;
-	}
-
 	private static final class Outcome {
 		final List<Change> done   = new ArrayList<>();
 		final List<Change> failed = new ArrayList<>();
@@ -518,29 +497,15 @@ public class InventoryActivity extends AppCompatActivity {
 	}
 
 	private Plan buildPlan(Map<Long, Double> live) {
-		Plan plan = new Plan();
-		Set<Long> counted = new HashSet<>();
-		for (Entry e : session.snapshot()) {
-			if (!e.known) {
-				plan.unknown++;
-				continue;
-			}
-			counted.add(e.productId);
-			Double amount = live.get(e.productId);
-			double before = amount == null ? 0 : amount;
-			session.updateStock(e.key, before);
-			if (InventorySession.sameAmount(e.counted, before)) {
-				plan.matched++;
-			} else {
-				plan.changes.add(new Change(e, before, e.counted));
+		List<Entry> entries = session.snapshot();
+		// Der Bestand aus Grocy ersetzt den zuletzt bekannten Stand in der Zählung
+		for (Entry e : entries) {
+			if (e.known) {
+				Double amount = live.get(e.productId);
+				session.updateStock(e.key, amount == null ? 0 : amount);
 			}
 		}
-		for (Map.Entry<Long, Double> row : live.entrySet()) {
-			if (row.getValue() > 0 && !counted.contains(row.getKey())) {
-				plan.notScanned++;
-			}
-		}
-		return plan;
+		return InventoryPlanner.plan(entries, live);
 	}
 
 	private void showPlan(final Plan plan) {
@@ -641,7 +606,6 @@ public class InventoryActivity extends AppCompatActivity {
 		render();
 
 		int skipped = plan.changes.size() - chosen.size();
-		int compared = plan.matched + plan.changes.size();
 		StringBuilder message = new StringBuilder();
 		message.append(getString(R.string.inventory_done_matched, plan.matched));
 		message.append('\n').append(getString(R.string.inventory_done_changed, outcome.done.size(),
@@ -655,8 +619,8 @@ public class InventoryActivity extends AppCompatActivity {
 		if (outcome.error != null) {
 			message.append("\n\n").append(getString(R.string.inventory_done_error, outcome.error));
 		}
-		if (compared > 0) {
-			message.append("\n\n").append(getString(R.string.inventory_done_accuracy, plan.matched * 100 / compared));
+		if (plan.matched + plan.changes.size() > 0) {
+			message.append("\n\n").append(getString(R.string.inventory_done_accuracy, plan.accuracyPercent()));
 		}
 		message.append(notesFor(plan));
 		new MaterialAlertDialogBuilder(this)
