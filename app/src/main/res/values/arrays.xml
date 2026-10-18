@@ -18,6 +18,7 @@
         <item>@string/scan_method_spp</item>
         <item>@string/scan_method_camera</item>
         <item>@string/scan_method_both</item>
+        <item>@string/scan_method_spp_camera</item>
     </string-array>
 
     <string-array name="booking_mode">
@@ -71,5 +72,6 @@
         <item>spp</item>
         <item>camera</item>
         <item>both</item>
+        <item>spp_camera</item>
     </string-array>
 </resources>

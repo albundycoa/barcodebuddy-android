@@ -305,8 +305,8 @@
     <string name="trip_item_price">×%1$d · %2$s</string>
 
     <string name="scan_method">Scan-Methode</string>
-    <string name="scan_method_scanner">Bluetooth-Scanner (Tastaturmodus, HID)</string>
-    <string name="scan_method_spp">Bluetooth-Scanner (SPP, auch bei ausgeschaltetem Display)</string>
+    <string name="scan_method_scanner">Scanner · HID (Tastatur)</string>
+    <string name="scan_method_spp">Scanner · SPP (auch Display aus)</string>
     <string name="spp_device_title">Scanner auswählen (SPP)</string>
     <string name="spp_device_none">Nicht ausgewählt</string>
     <string name="spp_picker_title">Gekoppelten Scanner wählen</string>
@@ -326,7 +326,8 @@
     <string name="scanner_battery_toast">Akku des Scanners: %1$d %%</string>
     <string name="scanner_status_connected">Scanner verbunden: %1$s</string>
     <string name="scan_method_camera">Handy-Kamera</string>
-    <string name="scan_method_both">Barcodescanner und Kamera</string>
+    <string name="scan_method_both">HID-Scanner + Kamera</string>
+    <string name="scan_method_spp_camera">SPP-Scanner + Kamera</string>
 
     <!-- Inventur -->
     <string name="action_inventory">Inventur</string>

@@ -56,6 +56,7 @@ public class SharedPrefHelper {
 	private static final String SCAN_METHOD_SPP     = "spp";
 	private static final String SCAN_METHOD_CAMERA  = "camera";
 	private static final String SCAN_METHOD_BOTH    = "both";
+	private static final String SCAN_METHOD_SPP_CAMERA = "spp_camera";
 
 	private static String scanMethod(Context context) {
 		return PreferenceManager.getDefaultSharedPreferences(context)
@@ -92,14 +93,17 @@ public class SharedPrefHelper {
 		}
 	}
 
+	/** "SPP-Scanner" oder "SPP-Scanner + Kamera" */
 	public static boolean isSppScannerEnabled(Context context) {
-		return SCAN_METHOD_SPP.equals(scanMethod(context));
+		String method = scanMethod(context);
+		return SCAN_METHOD_SPP.equals(method) || SCAN_METHOD_SPP_CAMERA.equals(method);
 	}
 
-	/** Kamera-Scanner: "Kamera" oder "Beides" */
+	/** Kamera-Scanner: "Kamera" oder eine der Kombinationen mit einem Scanner */
 	public static boolean isCameraScannerEnabled(Context context) {
 		String method = scanMethod(context);
-		return SCAN_METHOD_CAMERA.equals(method) || SCAN_METHOD_BOTH.equals(method);
+		return SCAN_METHOD_CAMERA.equals(method) || SCAN_METHOD_BOTH.equals(method)
+				|| SCAN_METHOD_SPP_CAMERA.equals(method);
 	}
 
 	// ---- SPP-Scanner ----
