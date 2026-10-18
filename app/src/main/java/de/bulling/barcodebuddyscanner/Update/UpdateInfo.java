@@ -26,7 +26,7 @@ public final class UpdateInfo {
 	public String built;
 
 	/**
-	 * Liest und prüft die Beschreibung. Eine unvollständige oder verdächtige Datei (kein https, keine gültige
+	 * Liest und prüft die Beschreibung. Eine unvollständige oder verdächtige Datei (keine Web-Adresse, keine gültige
 	 * Prüfsumme) wird abgelehnt, damit daraus kein Download wird.
 	 *
 	 * @throws IllegalArgumentException wenn die Angaben nicht stimmen
@@ -41,8 +41,10 @@ public final class UpdateInfo {
 		if (info == null || info.version == null || info.version.trim().isEmpty() || info.version_code <= 0) {
 			throw new IllegalArgumentException("Version fehlt");
 		}
-		if (info.url == null || !info.url.startsWith("https://")) {
-			throw new IllegalArgumentException("Adresse fehlt oder ist nicht https");
+		// Auch http ist erlaubt (Update-Server im Heimnetz): Die Echtheit sichert die Signatur, die Android bei der
+		// Installation prüft, eine fremde APK lässt sich nicht über die App installieren.
+		if (info.url == null || !(info.url.startsWith("https://") || info.url.startsWith("http://"))) {
+			throw new IllegalArgumentException("Adresse fehlt oder ist weder http noch https");
 		}
 		if (info.sha256 == null || !info.sha256.matches("(?i)[0-9a-f]{64}")) {
 			throw new IllegalArgumentException("Prüfsumme fehlt");

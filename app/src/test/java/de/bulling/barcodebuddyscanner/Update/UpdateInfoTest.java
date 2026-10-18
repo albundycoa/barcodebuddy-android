@@ -40,9 +40,16 @@ public class UpdateInfoTest {
 	}
 
 	@Test
-	public void rejectsAddressesThatAreNotHttps() {
-		assertRejected(json("0.2.0", 200, "http://example.org/a.apk", SHA));
+	public void acceptsHttpForTheServerInTheHomeNetwork() {
+		UpdateInfo info = UpdateInfo.parse(json("0.2.0", 200, "http://192.168.2.69:9296/a.apk", SHA));
+		assertEquals("http://192.168.2.69:9296/a.apk", info.url);
+	}
+
+	@Test
+	public void rejectsAddressesThatAreNotWebAddresses() {
 		assertRejected(json("0.2.0", 200, "file:///sdcard/a.apk", SHA));
+		assertRejected(json("0.2.0", 200, "ftp://example.org/a.apk", SHA));
+		assertRejected(json("0.2.0", 200, "javascript:alert(1)", SHA));
 	}
 
 	@Test

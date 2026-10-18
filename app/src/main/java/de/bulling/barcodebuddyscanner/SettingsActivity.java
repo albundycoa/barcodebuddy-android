@@ -77,6 +77,21 @@ public class SettingsActivity extends AppCompatActivity {
 		@Override
 		public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
 			setPreferencesFromResource(R.xml.root_preferences, rootKey);
+			androidx.preference.EditTextPreference updateUrl = findPreference("update_url");
+			if (updateUrl != null) {
+				updateUrl.setOnBindEditTextListener(edit -> {
+					edit.setInputType(android.text.InputType.TYPE_TEXT_VARIATION_URI);
+					edit.setHint(BuildConfig.UPDATE_URL);
+					edit.selectAll();
+				});
+				// Leer (zurück zur eingebauten Adresse) oder eine Web-Adresse
+				updateUrl.setOnPreferenceChangeListener((p, value) -> {
+					String text = String.valueOf(value).trim();
+					return text.isEmpty() || de.bulling.barcodebuddyscanner.Update.UpdateChecker.isWebAddress(text);
+				});
+				updateUrl.setSummaryProvider(p ->
+						de.bulling.barcodebuddyscanner.Update.UpdateChecker.updateUrl(requireContext()));
+			}
 			Preference version = findPreference("app_version");
 			if (version != null) {
 				version.setSummary(BuildConfig.VERSION_NAME + " (" + BuildConfig.VERSION_CODE + ")");

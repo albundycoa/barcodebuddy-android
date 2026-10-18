@@ -480,6 +480,7 @@ Die App zählt mit und vergleicht am Ende mit Grocy.</string>
     <string name="update_check_title">Automatisch nach Updates suchen</string>
     <string name="update_check_summary">Beim Start der App, höchstens alle 12 Stunden</string>
     <string name="app_version_title">Installierte Version</string>
+    <string name="update_url_title">Adresse der Update-Datei</string>
     <string name="update_check_failed">Update-Suche nicht möglich: %1$s</string>
     <string name="update_none">Du hast die neueste Version (%1$s).</string>
     <string name="update_available_title">Neue Version verfügbar</string>

@@ -25,6 +25,10 @@ android {
         targetSdkVersion 37
         versionCode vMajor * 10000 + vMinor * 100 + vPatch
         versionName appVersion
+        // Wo die App nach Updates fragt (in den Einstellungen überschreibbar). Zurzeit der private Update-Server auf der
+        // Docker-VM im Heimnetz; für ein öffentliches Release wäre es
+        // https://github.com/albundycoa/barcodebuddy-android/releases/latest/download/latest.json
+        buildConfigField "String", "UPDATE_URL", '"http://192.168.2.69:9296/latest.json"'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 

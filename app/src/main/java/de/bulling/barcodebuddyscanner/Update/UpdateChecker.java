@@ -18,13 +18,12 @@ import java.util.concurrent.Executors;
 import de.bulling.barcodebuddyscanner.BuildConfig;
 
 /**
- * Fragt beim GitHub-Release nach der neuesten Version. Die Adresse "releases/latest/download/..." führt immer zum
- * zuletzt veröffentlichten Release, braucht kein Konto und hat keine Abfragegrenze.
+ * Fragt beim Update-Server nach der neuesten Version (die Datei latest.json). Die Adresse steht in den Einstellungen;
+ * ist sie leer, gilt die eingebaute (BuildConfig.UPDATE_URL).
  */
 public final class UpdateChecker {
 
-	public static final String LATEST_URL =
-			"https://github.com/albundycoa/barcodebuddy-android/releases/latest/download/latest.json";
+	private static final String PREF_URL = "update_url";
 
 	/** So oft wird von selbst nach Updates gefragt: höchstens alle 12 Stunden */
 	private static final long AUTO_INTERVAL_MS = 12L * 60 * 60 * 1000;
@@ -46,6 +45,17 @@ public final class UpdateChecker {
 	private UpdateChecker() {
 	}
 
+	/** Die Adresse der Datei latest.json: die eigene aus den Einstellungen, sonst die eingebaute. */
+	public static String updateUrl(Context context) {
+		String custom = PreferenceManager.getDefaultSharedPreferences(context).getString(PREF_URL, "");
+		custom = custom == null ? "" : custom.trim();
+		return isWebAddress(custom) ? custom : BuildConfig.UPDATE_URL;
+	}
+
+	public static boolean isWebAddress(String text) {
+		return text != null && (text.startsWith("http://") || text.startsWith("https://"));
+	}
+
 	public static boolean isAutoCheckEnabled(Context context) {
 		return PreferenceManager.getDefaultSharedPreferences(context).getBoolean(PREF_ENABLED, true);
 	}
@@ -65,7 +75,7 @@ public final class UpdateChecker {
 			UpdateInfo newer = null;
 			String error = null;
 			try {
-				UpdateInfo latest = UpdateInfo.parse(download(LATEST_URL));
+				UpdateInfo latest = UpdateInfo.parse(download(updateUrl(appContext)));
 				PreferenceManager.getDefaultSharedPreferences(appContext).edit()
 						.putLong(PREF_LAST_CHECK, System.currentTimeMillis()).apply();
 				if (latest.isNewerThan(BuildConfig.VERSION_CODE)) {

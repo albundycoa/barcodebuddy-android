@@ -10,8 +10,8 @@ Dieser Fork der Barcode-Buddy-App führt seine eigene Versionsnummer. Sie folgt 
 
 Der Versionscode der APK ist `MAJOR*10000 + MINOR*100 + PATCH` und steigt dadurch mit jeder Version. Er darf nie
 zurückgehen, sonst lässt sich ein Update nicht mehr einspielen. Gepflegt wird die Version an einer einzigen Stelle,
-`appVersion` in `app/build.gradle`. Veröffentlicht wird mit `./publish-apk.sh`; es legt einen GitHub-Release mit
-dem Tag `vX.Y.Z` an, aus dem die App ihre Updates lädt.
+`appVersion` in `app/build.gradle`. Veröffentlicht wird mit `./publish-apk.sh`: privat auf den Update-Server im Heimnetz, mit `--github` als
+öffentlicher GitHub-Release.
 
 ## [0.1.0] – erster Stand des Forks
 
@@ -29,7 +29,8 @@ Scanner-Anbindung). Dazu kamen:
 - **Kamera-Reiter** zwischen Einkaufsliste und Gescannt, abhängig von der Scan-Methode; neue Scan-Methode
   „SPP-Scanner + Kamera“.
 - **Sync** lädt nur noch, wenn sich in Grocy etwas geändert hat.
-- **Updates** direkt aus der App über GitHub-Releases.
+- **Updates** direkt aus der App. Die App fragt einen Update-Server (zurzeit privat im Heimnetz, die Adresse ist
+  in den Einstellungen änderbar; GitHub-Releases gehen genauso).
 - **SPP-Anlernmodus** des Scanners (Einstellungen und Scanner-Steuerung): Die App zeigt den QR-Code zum Abscannen mit dem
   Scanner, damit man ihn nicht aus dem Handbuch abscannen muss.
 - API-Schlüssel bleiben aus dem Cloud-Backup, Fehlermeldungen stehen in `strings.xml`, Unit-Tests und GitHub-Action.

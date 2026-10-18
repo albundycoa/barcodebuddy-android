@@ -29,6 +29,10 @@
             app:summary="@string/update_check_summary"
             app:title="@string/update_check_title" />
 
+        <EditTextPreference
+            app:key="update_url"
+            app:title="@string/update_url_title" />
+
         <Preference
             app:key="app_version"
             app:selectable="false"
