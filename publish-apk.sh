@@ -76,8 +76,9 @@ cp "$APK" "$OUT/$FILE"
 SIZE=$(wc -c < "$OUT/$FILE" | tr -d ' ')
 SHA=$(sha256sum "$OUT/$FILE" | cut -d' ' -f1)
 BUILT=$(date +%d.%m.%Y)
-NOTES_JSON=$(printf '%s' "$NOTES" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))' 2>/dev/null \
-  || printf '%s' "$NOTES" | python -c 'import json,sys; print(json.dumps(sys.stdin.read()))')
+# PYTHONUTF8: Python unter Windows liest sonst mit der Systemcodierung, aus Umlauten wird Buchstabensalat
+NOTES_JSON=$(printf '%s' "$NOTES" | PYTHONUTF8=1 python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))' 2>/dev/null \
+  || printf '%s' "$NOTES" | PYTHONUTF8=1 python -c 'import json,sys; print(json.dumps(sys.stdin.read()))')
 cat > "$OUT/latest.json" <<EOF
 {"version": "$VERSION", "version_code": $CODE, "url": "$DOWNLOAD_BASE/$FILE", "size": $SIZE, "sha256": "$SHA", "built": "$BUILT", "notes": $NOTES_JSON}
 EOF
