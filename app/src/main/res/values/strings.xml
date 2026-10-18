@@ -346,7 +346,9 @@ Die App zählt mit und vergleicht am Ende mit Grocy.</string>
     <string name="inventory_status_more">▲ Mehr als im Bestand: %1$s gezählt, %2$s %3$s im Bestand</string>
     <string name="inventory_status_less">… Erst %1$s von %2$s %3$s gefunden</string>
     <string name="inventory_status_unknown">Grocy kennt diesen Barcode nicht. Antippen zum Zuordnen.</string>
-    <string name="inventory_detail">Gezählt: %1$s %3$s · Bestand: %2$s %3$s</string>
+    <string name="inventory_detail">Gezählt: %1$s %3$s · Bestand: %2$s %3$s%4$s</string>
+    <string name="inventory_edit_stock">Bestand in Grocy: %1$s %2$s</string>
+    <string name="inventory_tap_to_change">Antippen, um die Menge zu ändern</string>
     <string name="inventory_edit_message">Gezählte Menge in %1$s</string>
     <string name="inventory_pack_default">Packung</string>
     <string name="inventory_pack_counted">1 %1$s gezählt = %2$s %3$s</string>

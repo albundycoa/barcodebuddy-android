@@ -99,6 +99,8 @@ public class InventoryActivity extends AppCompatActivity {
 	/** Der unbekannte Barcode, der gerade in Grocy angelegt oder zugeordnet wird */
 	private String  assignBarcode;
 	private Snackbar packHint;
+	/** Der zuletzt gescannte Eintrag; die Statuskarte ändert beim Antippen seine Menge */
+	private Entry lastEntry;
 
 	// ---------------------------------------------------------------- Lebenszyklus
 
@@ -131,6 +133,11 @@ public class InventoryActivity extends AppCompatActivity {
 		barcodeView.initializeFromIntent(getIntent());
 		barcodeView.decodeContinuous(cameraCallback);
 		lastCard   = findViewById(R.id.last_card);
+		lastCard.setOnClickListener(v -> {
+			if (lastEntry != null && lastEntry.known) {
+				showEdit(lastEntry);
+			}
+		});
 		lastName   = findViewById(R.id.last_name);
 		lastStatus = findViewById(R.id.last_status);
 		progress   = findViewById(R.id.progress);
@@ -294,16 +301,17 @@ public class InventoryActivity extends AppCompatActivity {
 	}
 
 	private void showLast(Entry e) {
+		lastEntry = e;
 		int[] colors = colorsFor(InventorySession.status(e));
 		lastCard.setCardBackgroundColor(colors[0]);
 		lastName.setTextColor(colors[1]);
 		lastStatus.setTextColor(colors[1]);
 		lastName.setText(e.known ? e.name : getString(R.string.inventory_unknown_name) + "\n" + e.barcode);
-		lastStatus.setText(statusText(e));
+		lastStatus.setText(e.known ? statusText(e) + "\n" + getString(R.string.inventory_tap_to_change) : statusText(e));
 	}
 
 	private String statusText(Entry e) {
-		String unit = e.unit == null ? "" : e.unit;
+		String unit = unitOf(e) + stockPacks(e);
 		switch (InventorySession.status(e)) {
 			case MATCH:
 				return getString(R.string.inventory_status_match, InventorySession.format(e.counted),
@@ -835,6 +843,16 @@ public class InventoryActivity extends AppCompatActivity {
 		return e.scanUnit == null || e.scanUnit.equals(e.unit) ? getString(R.string.inventory_pack_default) : e.scanUnit;
 	}
 
+	/** " (= 4 Pack)": der Bestand in Packungen, wenn der Barcode mehrere Einheiten zählt. */
+	private String stockPacks(Entry e) {
+		if (!e.known || e.perScan <= 1.0001) {
+			return "";
+		}
+		double packs = e.stock / e.perScan;
+		boolean whole = Math.abs(packs - Math.rint(packs)) < 0.0001;
+		return " (" + (whole ? "= " : "≈ ") + InventorySession.format(Math.round(packs * 10) / 10.0) + " " + packName(e) + ")";
+	}
+
 	/** Meldung unten nach dem Scan einer Packung, die mehr als eine Einheit enthält. */
 	private void showPackHint(final Entry e) {
 		String text = getString(R.string.inventory_pack_counted, packName(e),
@@ -906,7 +924,8 @@ public class InventoryActivity extends AppCompatActivity {
 
 	/** Text im Dialog zum Ändern der Menge: Einheit und, falls vorhanden, die Umrechnung der Packung. */
 	private String editMessage(Entry e) {
-		String text = getString(R.string.inventory_edit_message, unitOf(e));
+		String text = getString(R.string.inventory_edit_message, unitOf(e)) + "\n"
+				+ getString(R.string.inventory_edit_stock, InventorySession.format(e.stock), unitOf(e) + stockPacks(e));
 		if (e.perScan > 1.0001) {
 			text += "\n" + getString(R.string.inventory_pack_hint, packName(e),
 					InventorySession.format(e.perScan), unitOf(e));
@@ -915,6 +934,7 @@ public class InventoryActivity extends AppCompatActivity {
 	}
 
 	private void resetLastCard() {
+		lastEntry = null;
 		lastName.setText(R.string.inventory_title);
 		lastStatus.setText(R.string.inventory_ready);
 		lastName.setTextColor(getColor(R.color.md_on_surface));
@@ -1000,7 +1020,7 @@ public class InventoryActivity extends AppCompatActivity {
 					break;
 				default:
 					String detail = getString(R.string.inventory_detail, InventorySession.format(e.counted),
-							InventorySession.format(e.stock), unitOf(e)).trim();
+							InventorySession.format(e.stock), unitOf(e), stockPacks(e)).trim();
 					if (e.perScan > 1.0001) {
 						detail += "\n" + getString(R.string.inventory_pack_hint, packName(e),
 								InventorySession.format(e.perScan), unitOf(e));
