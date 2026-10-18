@@ -100,3 +100,9 @@ lint/tmp/
 .cxx
 /logo/
 app/src/main/java/de/bulling/barcodebuddyscanner/Helper/Secrets.java
+
+# Build- und IDE-Reste, die nicht ins Repository gehören
+/.idea/*
+!/.idea/codeStyles/
+/app/release/
+/app/debugPublic/
