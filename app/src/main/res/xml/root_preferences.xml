@@ -133,6 +133,11 @@
             app:key="spp_device"
             app:title="@string/spp_device_title" />
 
+        <Preference
+            app:key="spp_pairing_code"
+            app:summary="@string/spp_pairing_pref_summary"
+            app:title="@string/spp_pairing_title" />
+
         <SwitchPreferenceCompat
             app:defaultValue="true"
             app:key="scan_notification"

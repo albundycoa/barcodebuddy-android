@@ -61,6 +61,12 @@ public class ScannerControlActivity extends AppCompatActivity {
 		addTitle(container, R.string.scanner_control_actions);
 		ChipGroup actions = new ChipGroup(this);
 		actions.addView(chip(getString(R.string.scanner_control_battery), CMD_BATTERY));
+		// Der Scanner lässt sich nur per Code in den Anlernmodus bringen, nicht über die Verbindung (er ist ja noch nicht
+		// verbunden): die App zeigt den Code zum Abscannen
+		Chip pairing = new Chip(this);
+		pairing.setText(R.string.spp_pairing_title);
+		pairing.setOnClickListener(v -> de.bulling.barcodebuddyscanner.Helper.ScannerCodes.showSppPairing(this));
+		actions.addView(pairing);
 		Chip sleep = new Chip(this);
 		sleep.setText(R.string.scanner_control_sleep_now);
 		sleep.setOnClickListener(v -> new MaterialAlertDialogBuilder(this)

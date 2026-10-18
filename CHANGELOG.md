@@ -30,4 +30,6 @@ Scanner-Anbindung). Dazu kamen:
   „SPP-Scanner + Kamera“.
 - **Sync** lädt nur noch, wenn sich in Grocy etwas geändert hat.
 - **Updates** direkt aus der App über GitHub-Releases.
+- **SPP-Anlernmodus** des Scanners (Einstellungen und Scanner-Steuerung): Die App zeigt den QR-Code zum Abscannen mit dem
+  Scanner, damit man ihn nicht aus dem Handbuch abscannen muss.
 - API-Schlüssel bleiben aus dem Cloud-Backup, Fehlermeldungen stehen in `strings.xml`, Unit-Tests und GitHub-Action.

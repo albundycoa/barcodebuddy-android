@@ -496,4 +496,10 @@ Die App zählt mit und vergleicht am Ende mit Grocy.</string>
     <string name="update_size_mismatch">Die geladene Datei hat nicht die erwartete Größe.</string>
     <string name="update_checksum_mismatch">Die Prüfsumme der geladenen Datei stimmt nicht. Das Update wird nicht installiert.</string>
     <string name="update_install_failed">Die Installation ließ sich nicht starten.</string>
+
+    <!-- SPP-Anlernmodus des Scanners -->
+    <string name="spp_pairing_title">SPP-Anlernmodus</string>
+    <string name="spp_pairing_pref_summary">QR-Code zum Abscannen mit dem Scanner anzeigen</string>
+    <string name="spp_pairing_steps">1. Scanner einschalten.\n2. Diesen Code mit dem Scanner abscannen: Er wechselt in den SPP-Suchmodus, die blaue Anzeige blinkt.\n3. In den Android-Bluetooth-Einstellungen den Scanner koppeln und danach hier in den Einstellungen unter „Scanner auswählen (SPP)“ wählen.</string>
+    <string name="spp_pairing_close">Schließen</string>
 </resources>

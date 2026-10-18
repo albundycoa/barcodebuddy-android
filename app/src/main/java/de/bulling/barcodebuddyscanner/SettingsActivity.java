@@ -102,6 +102,13 @@ public class SettingsActivity extends AppCompatActivity {
 							: getString(R.string.battery_interval_summary, (int) minutes);
 				});
 			}
+			Preference pairing = findPreference("spp_pairing_code");
+			if (pairing != null) {
+				pairing.setOnPreferenceClickListener(p -> {
+					de.bulling.barcodebuddyscanner.Helper.ScannerCodes.showSppPairing(requireActivity());
+					return true;
+				});
+			}
 			sppDevice = findPreference("spp_device");
 			if (sppDevice != null) {
 				sppDevice.setOnPreferenceClickListener(p -> {
