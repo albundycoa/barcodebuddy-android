@@ -473,4 +473,27 @@ Die App zählt mit und vergleicht am Ende mit Grocy.</string>
     <!-- Menge in der Einkaufsliste ändern -->
     <string name="entry_amount_in">Menge in %1$s</string>
     <string name="entry_total">Gesamt: %1$s</string>
+
+    <!-- Updates -->
+    <string name="action_update">Nach Updates suchen</string>
+    <string name="update_header">Updates</string>
+    <string name="update_check_title">Automatisch nach Updates suchen</string>
+    <string name="update_check_summary">Beim Start der App, höchstens alle 12 Stunden</string>
+    <string name="app_version_title">Installierte Version</string>
+    <string name="update_check_failed">Update-Suche nicht möglich: %1$s</string>
+    <string name="update_none">Du hast die neueste Version (%1$s).</string>
+    <string name="update_available_title">Neue Version verfügbar</string>
+    <string name="update_available_text">Installiert: %1$s\nNeu: %2$s (%3$s MB)</string>
+    <string name="update_install">Aktualisieren</string>
+    <string name="update_later">Später</string>
+    <string name="update_permission_title">Updates direkt aus der App installieren</string>
+    <string name="update_permission_text">Android fragt dafür einmalig, ob diese App Updates installieren darf. Auf der nächsten Seite den Schalter „Zulassen“ einschalten und zurückgehen. Danach geht jedes Update ohne weitere Rückfrage.</string>
+    <string name="update_permission_continue">Weiter</string>
+    <string name="update_settings_failed">Die Android-Einstellungsseite ließ sich nicht öffnen.</string>
+    <string name="update_not_allowed">Nicht erlaubt: das Update wurde nicht geladen.</string>
+    <string name="update_downloading">Update wird geladen …</string>
+    <string name="update_download_failed">Update nicht geladen: %1$s</string>
+    <string name="update_size_mismatch">Die geladene Datei hat nicht die erwartete Größe.</string>
+    <string name="update_checksum_mismatch">Die Prüfsumme der geladenen Datei stimmt nicht. Das Update wird nicht installiert.</string>
+    <string name="update_install_failed">Die Installation ließ sich nicht starten.</string>
 </resources>

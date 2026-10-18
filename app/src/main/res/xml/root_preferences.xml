@@ -21,6 +21,20 @@
             app:title="@string/volume" />
 
     </PreferenceCategory>
+    <PreferenceCategory app:title="@string/update_header">
+
+        <SwitchPreferenceCompat
+            app:defaultValue="true"
+            app:key="update_check"
+            app:summary="@string/update_check_summary"
+            app:title="@string/update_check_title" />
+
+        <Preference
+            app:key="app_version"
+            app:selectable="false"
+            app:title="@string/app_version_title" />
+
+    </PreferenceCategory>
     <PreferenceCategory app:title="@string/bb_header">
 
         <Preference

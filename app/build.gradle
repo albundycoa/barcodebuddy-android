@@ -2,6 +2,19 @@ plugins {
     id 'com.android.application'
 }
 
+// Version der App. Der Versionscode steigt mit der Version (X*10000 + Y*100 + Z) und darf nie zurückgehen,
+// sonst lässt sich ein Update nicht mehr einspielen.
+def appVersion = "0.1.0"
+def (vMajor, vMinor, vPatch) = appVersion.tokenize('.').collect { it as int }
+
+// Schlüssel für die veröffentlichten APKs: liegt außerhalb des Repositorys unter ~/.barcodebuddy-keys
+def keyDir = new File(System.getProperty('user.home'), '.barcodebuddy-keys')
+def keyProps = new Properties()
+def keyFile = new File(keyDir, 'keystore.properties')
+if (keyFile.exists()) {
+    keyFile.withInputStream { keyProps.load(it) }
+}
+
 android {
     namespace 'de.bulling.barcodebuddyscanner'
     compileSdk 37
@@ -10,8 +23,8 @@ android {
         applicationId "de.bulling.barcodebuddyscanner"
         minSdkVersion 24
         targetSdkVersion 37
-        versionCode 10
-        versionName "0.4.1"
+        versionCode vMajor * 10000 + vMinor * 100 + vPatch
+        versionName appVersion
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -20,15 +33,32 @@ android {
         buildConfig true
     }
 
+    signingConfigs {
+        release {
+            if (keyFile.exists()) {
+                storeFile file(keyProps['storeFile'])
+                storePassword keyProps['storePassword']
+                keyAlias keyProps['keyAlias']
+                keyPassword keyProps['keyPassword']
+            }
+        }
+    }
+
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            // Ohne Schlüssel (z. B. in der GitHub-Action) bleibt die APK unsigniert
+            if (keyFile.exists()) {
+                signingConfig signingConfigs.release
+            }
         }
 
+        // Zum Entwickeln und Testen: debugbar, aber mit dem gleichen Schlüssel wie die Release-APK, damit sich
+        // beide gegenseitig überinstallieren lassen. Ohne Schlüssel gilt der Debug-Schlüssel.
         debugPublic {
             debuggable true
-            signingConfig signingConfigs.debug
+            signingConfig keyFile.exists() ? signingConfigs.release : signingConfigs.debug
         }
     }
 
@@ -55,7 +85,6 @@ dependencies {
 
     // Gson for JSON parsing:
     implementation 'com.google.code.gson:gson:2.14.0'
-    testImplementation 'junit:junit:4.13.2'
 
     // Barcode Scanner
     implementation 'com.journeyapps:zxing-android-embedded:4.3.0'

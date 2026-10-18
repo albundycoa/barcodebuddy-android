@@ -93,6 +93,8 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
     private final List<Integer> tabIds = new ArrayList<>();
     private boolean rebuildingTabs = false;
 
+    private final de.bulling.barcodebuddyscanner.Update.AppUpdater updater =
+            new de.bulling.barcodebuddyscanner.Update.AppUpdater(this);
     private DecoratedBarcodeView cameraView;
     private boolean resumed = false;
     private boolean cameraPermissionAsked = false;
@@ -159,6 +161,11 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
         refreshList();
         // Geschäfte, Namen und Preise aus Grocy auffrischen (ohne Verbindung bleibt die letzte Kopie)
         GrocySync.startIfStale(this);
+        // Höchstens alle 12 Stunden von selbst nach einer neuen App-Version fragen
+        if (!SharedPrefHelper.noApiDetailsSaved(this)
+                && de.bulling.barcodebuddyscanner.Update.UpdateChecker.shouldAutoCheck(this)) {
+            updater.checkAndOffer(false);
+        }
         SyncScheduler.apply(this);
         pollHandler.postDelayed(poll, POLL_MS);
         if (activeSender != null) {
@@ -586,6 +593,8 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
         super.onResume();
         resumed = true;
         updateCameraState();
+        // Zurück aus der Android-Einstellung "Unbekannte Apps installieren": mit dem Update weitermachen
+        updater.onResume();
     }
 
     @Override
@@ -1135,6 +1144,9 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
             return true;
         } else if (itemId == R.id.action_products) {
             startActivity(new Intent(this, ProductsActivity.class));
+            return true;
+        } else if (itemId == R.id.action_update) {
+            updater.checkAndOffer(true);
             return true;
         } else if (itemId == R.id.action_stock_check) {
             startActivity(new Intent(this, StockCheckActivity.class));

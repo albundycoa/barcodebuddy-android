@@ -77,6 +77,10 @@ public class SettingsActivity extends AppCompatActivity {
 		@Override
 		public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
 			setPreferencesFromResource(R.xml.root_preferences, rootKey);
+			Preference version = findPreference("app_version");
+			if (version != null) {
+				version.setSummary(BuildConfig.VERSION_NAME + " (" + BuildConfig.VERSION_CODE + ")");
+			}
 			androidx.preference.EditTextPreference battery = findPreference("battery_interval");
 			if (battery != null) {
 				battery.setOnBindEditTextListener(edit -> {

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Nur der Ordner für heruntergeladene App-Updates (AppUpdater) wird per FileProvider an den Installer gereicht -->
+<paths>
+    <cache-path name="apk" path="apk/" />
+</paths>
