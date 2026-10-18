@@ -184,6 +184,13 @@ public class ShoppingEntryAdapter extends RecyclerView.Adapter<RecyclerView.View
 		} else {
 			h.price.setVisibility(View.GONE);
 		}
+		// Steht ein Produkt mehrfach in der Liste, zeigt der Gesamtpreis, was alle zusammen kosten
+		if (e.lastPrice != null && e.amount > 1.0001 && !e.isNote) {
+			h.total.setText(context.getString(R.string.entry_total, Money.format(e.lastPrice * e.stockAmount)));
+			h.total.setVisibility(View.VISIBLE);
+		} else {
+			h.total.setVisibility(View.GONE);
+		}
 
 		String info = "";
 		if (e.scanned > 0 && !e.isNote) {
@@ -224,6 +231,7 @@ public class ShoppingEntryAdapter extends RecyclerView.Adapter<RecyclerView.View
 		final MaterialButton   minus;
 		final MaterialButton   plus;
 		final TextView         price;
+		final TextView         total;
 		final TextView         info;
 		final MaterialCheckBox check;
 
@@ -234,6 +242,7 @@ public class ShoppingEntryAdapter extends RecyclerView.Adapter<RecyclerView.View
 			minus  = view.findViewById(R.id.entry_minus);
 			plus   = view.findViewById(R.id.entry_plus);
 			price  = view.findViewById(R.id.entry_price);
+			total  = view.findViewById(R.id.entry_total);
 			info   = view.findViewById(R.id.entry_info);
 			check  = view.findViewById(R.id.entry_check);
 		}

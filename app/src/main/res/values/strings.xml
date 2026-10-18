@@ -472,4 +472,5 @@ Die App zählt mit und vergleicht am Ende mit Grocy.</string>
 
     <!-- Menge in der Einkaufsliste ändern -->
     <string name="entry_amount_in">Menge in %1$s</string>
+    <string name="entry_total">Gesamt: %1$s</string>
 </resources>
