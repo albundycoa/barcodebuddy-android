@@ -13,6 +13,11 @@ zurückgehen, sonst lässt sich ein Update nicht mehr einspielen. Gepflegt wird 
 `appVersion` in `app/build.gradle`. Veröffentlicht wird mit `./publish-apk.sh`: privat auf den Update-Server im Heimnetz, mit `--github` als
 öffentlicher GitHub-Release.
 
+## [0.1.1] – Update-Weg geprüft
+
+Keine Änderung in der Bedienung. Diese Version prüft den Weg über den privaten Update-Server: Die App findet sie, lädt
+sie, vergleicht die Prüfsumme und installiert sie über die vorhandene Version.
+
 ## [0.1.0] – erster Stand des Forks
 
 Ausgangspunkt ist die Barcode-Buddy-App von Forceu (Version 0.4.1 mit eigener Einkaufsliste, Produktanlage und
