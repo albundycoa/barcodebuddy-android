@@ -898,14 +898,13 @@ public final class ShoppingRepository {
 		public double  stock;
 		/** Lagereinheiten je Scan dieses Barcodes */
 		public double  stockPerScan = 1;
-		public boolean tare;
 		public Integer bestBeforeDays;
 	}
 
 	/** Das Produkt zu einem Barcode, oder null, wenn die lokale Kopie den Barcode nicht kennt. */
 	public void findInventoryProduct(final String barcode, Callback<InventoryProduct> callback) {
 		read(() -> {
-			String sql = "SELECT p.id, p.name, p.group_name, p.stock_unit, p.tare, p.best_before_days, "
+			String sql = "SELECT p.id, p.name, p.group_name, p.stock_unit, p.best_before_days, "
 					+ "COALESCE(st.amount, 0) AS stock, b.stock_per_scan "
 					+ "FROM g_barcodes b JOIN g_products p ON p.id = b.product_id "
 					+ "LEFT JOIN g_stock st ON st.product_id = p.id WHERE b.barcode = ?";
@@ -920,7 +919,6 @@ public final class ShoppingRepository {
 				p.stockUnit      = c.getString(c.getColumnIndexOrThrow("stock_unit"));
 				p.stock          = c.getDouble(c.getColumnIndexOrThrow("stock"));
 				p.stockPerScan   = c.getDouble(c.getColumnIndexOrThrow("stock_per_scan"));
-				p.tare           = c.getInt(c.getColumnIndexOrThrow("tare")) != 0;
 				Double days      = getDouble(c, "best_before_days");
 				p.bestBeforeDays = days == null ? null : (int) Math.round(days);
 				return p;

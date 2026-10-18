@@ -33,9 +33,7 @@ public final class InventorySession {
 		/** Weniger gezählt als im Bestand */
 		LESS,
 		/** Barcode, den Grocy nicht kennt */
-		UNKNOWN,
-		/** Tara-Produkt: muss in Grocy mit Gewicht gezählt werden */
-		TARE
+		UNKNOWN
 	}
 
 	public static final class Entry {
@@ -51,7 +49,6 @@ public final class InventorySession {
 		/** Gezählte Menge in Lagereinheiten */
 		public double  counted;
 		public boolean known;
-		public boolean tare;
 		public Integer bestBeforeDays;
 		public long    lastScan;
 	}
@@ -140,7 +137,6 @@ public final class InventorySession {
 		e.unit           = p.stockUnit;
 		e.group          = p.group;
 		e.stock          = p.stock;
-		e.tare           = p.tare;
 		e.bestBeforeDays = p.bestBeforeDays;
 		e.counted       += p.stockPerScan;
 		touch(e);
@@ -229,9 +225,6 @@ public final class InventorySession {
 	public static Status status(Entry e) {
 		if (!e.known) {
 			return Status.UNKNOWN;
-		}
-		if (e.tare) {
-			return Status.TARE;
 		}
 		if (Math.abs(e.counted - e.stock) < EPS) {
 			return Status.MATCH;

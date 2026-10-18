@@ -309,8 +309,6 @@ public class InventoryActivity extends AppCompatActivity {
 			case LESS:
 				return getString(R.string.inventory_status_less, InventorySession.format(e.counted),
 						InventorySession.format(e.stock), unit).trim();
-			case TARE:
-				return getString(R.string.inventory_status_tare);
 			default:
 				return getString(R.string.inventory_status_unknown);
 		}
@@ -346,9 +344,6 @@ public class InventoryActivity extends AppCompatActivity {
 			Status status = InventorySession.status(e);
 			if (status == Status.UNKNOWN) {
 				unknown++;
-				continue;
-			}
-			if (status == Status.TARE) {
 				continue;
 			}
 			if (e.stock > 0) {
@@ -447,7 +442,6 @@ public class InventoryActivity extends AppCompatActivity {
 		final List<Change> changes = new ArrayList<>();
 		int matched;
 		int unknown;
-		int tare;
 		int notScanned;
 	}
 
@@ -497,10 +491,6 @@ public class InventoryActivity extends AppCompatActivity {
 				continue;
 			}
 			counted.add(e.productId);
-			if (e.tare) {
-				plan.tare++;
-				continue;
-			}
 			Double amount = live.get(e.productId);
 			double before = amount == null ? 0 : amount;
 			session.updateStock(e.key, before);
@@ -646,9 +636,6 @@ public class InventoryActivity extends AppCompatActivity {
 		if (plan.unknown > 0) {
 			notes.append("\n\n").append(getString(R.string.inventory_done_unknown, plan.unknown));
 		}
-		if (plan.tare > 0) {
-			notes.append("\n\n").append(getString(R.string.inventory_done_tare, plan.tare));
-		}
 		return notes.toString();
 	}
 
@@ -776,10 +763,6 @@ public class InventoryActivity extends AppCompatActivity {
 				case UNKNOWN:
 					holder.detail.setText(R.string.inventory_detail_unknown);
 					holder.badge.setText(getString(R.string.scan_status, "", (int) Math.round(e.counted)).trim());
-					break;
-				case TARE:
-					holder.detail.setText(R.string.inventory_detail_tare);
-					holder.badge.setText(InventorySession.format(e.counted));
 					break;
 				default:
 					holder.detail.setText(getString(R.string.inventory_detail, InventorySession.format(e.stock),
