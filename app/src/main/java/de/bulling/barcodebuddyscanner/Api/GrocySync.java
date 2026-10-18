@@ -212,7 +212,7 @@ public final class GrocySync {
 	}
 
 	/**
-	 * Überträgt abgehakte oder wieder geöffnete Einträge der Einkaufsliste sofort an Grocy. Klappt das nicht
+	 * Überträgt abgehakte, wieder geöffnete oder in der Menge geänderte Einträge der Einkaufsliste sofort an Grocy. Klappt das nicht
 	 * (kein Netz, Server nicht erreichbar), bleibt der Wunsch gespeichert und wird beim nächsten Aufruf
 	 * erneut versucht.
 	 */
@@ -241,8 +241,21 @@ public final class GrocySync {
 				try {
 					for (ShoppingRepository.ShoppingEntry e : todo) {
 						boolean done = e.isDone();
-						client.put("objects/shopping_list/" + e.id, done ? "{\"done\":1}" : "{\"done\":0}");
-						repo.setServerDone(e.id, done);
+						boolean doneChanged = done != e.serverDone;
+						JsonObject body = new JsonObject();
+						if (doneChanged) {
+							body.addProperty("done", done ? 1 : 0);
+						}
+						if (e.pendingAmount != null) {
+							body.addProperty("amount", e.pendingAmount);
+						}
+						client.put("objects/shopping_list/" + e.id, body.toString());
+						if (doneChanged) {
+							repo.setServerDone(e.id, done);
+						}
+						if (e.pendingAmount != null) {
+							repo.setServerAmount(e.id, e.pendingAmount);
+						}
 					}
 				} catch (IOException ex) {
 					Log.i(TAG, "Abhaken noch nicht übertragen: " + ex.getMessage());

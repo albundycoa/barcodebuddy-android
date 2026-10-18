@@ -623,6 +623,7 @@ public final class ShoppingRepository {
 		public double  scanned;     // schon gescannte Menge in Lagereinheiten
 		public boolean serverDone;  // Stand in Grocy
 		public Integer manual;      // Wunsch des Nutzers: 1 = abgehakt, 0 = offen, null = keiner
+		public Double  pendingAmount; // von Hand geänderte Menge, die Grocy noch nicht kennt (amount zeigt sie schon)
 		public Long    shopId;
 		public String  shopName;
 		public String  group;
@@ -640,7 +641,7 @@ public final class ShoppingRepository {
 
 		/** Der gewünschte Stand weicht vom Stand in Grocy ab und muss noch dorthin übertragen werden. */
 		public boolean needsUpload() {
-			return isDone() != serverDone;
+			return isDone() != serverDone || pendingAmount != null;
 		}
 
 		/** Von Hand abgehakt und noch nicht eingebucht: wird beim Senden gebucht. */
@@ -709,8 +710,20 @@ public final class ShoppingRepository {
 				wishes.put(c.getLong(0), c.getInt(1));
 			}
 		}
+		Map<Long, Double> amounts = new HashMap<>();
+		try (Cursor c = db.query(ShoppingDb.T_SHOPPING, new String[]{"id", "manual_amount"}, "manual_amount IS NOT NULL",
+				null, null, null, null)) {
+			while (c.moveToNext()) {
+				amounts.put(c.getLong(0), c.getDouble(1));
+			}
+		}
 		db.delete(ShoppingDb.T_SHOPPING, null, null);
 		for (ContentValues v : incoming) {
+			Double pendingAmount = amounts.get(v.getAsLong("id"));
+			if (pendingAmount != null && Math.abs(pendingAmount - v.getAsDouble("amount")) > 0.0001) {
+				// Grocy kennt die neue Menge noch nicht: sie bleibt vorgemerkt
+				v.put("manual_amount", pendingAmount);
+			}
 			Integer wish = wishes.get(v.getAsLong("id"));
 			if (wish != null) {
 				boolean serverDone = v.getAsInteger("done") != null && v.getAsInteger("done") != 0;
@@ -727,7 +740,7 @@ public final class ShoppingRepository {
 	public void getShoppingList(Callback<ShoppingData> callback) {
 		read(() -> {
 			SQLiteDatabase db = dbHelper.getReadableDatabase();
-			String sql = "SELECT e.id, e.product_id, e.note, e.amount, e.stock_amount, e.done, e.manual, "
+			String sql = "SELECT e.id, e.product_id, e.note, e.amount, e.stock_amount, e.done, e.manual, e.manual_amount, "
 					+ "u.name AS unit, p.name AS pname, p.group_name, p.shop_id, p.stock_unit, p.best_before_days, "
 					+ "s.name AS shop, lp.price AS last_price, COALESCE(sc.scanned, 0) AS scanned "
 					+ "FROM g_shopping e "
@@ -753,6 +766,13 @@ public final class ShoppingRepository {
 					e.amount = c.getDouble(c.getColumnIndexOrThrow("amount"));
 					e.stockAmount = c.getDouble(c.getColumnIndexOrThrow("stock_amount"));
 					e.unit = c.getString(c.getColumnIndexOrThrow("unit"));
+					Double pending = getDouble(c, "manual_amount");
+					if (pending != null && pending > 0 && e.amount > 0) {
+						// Die Menge in Lagereinheiten wächst und schrumpft mit
+						e.stockAmount = e.stockAmount * pending / e.amount;
+						e.amount = pending;
+						e.pendingAmount = pending;
+					}
 					e.serverDone = c.getInt(c.getColumnIndexOrThrow("done")) != 0;
 					int manualCol = c.getColumnIndexOrThrow("manual");
 					e.manual = c.isNull(manualCol) ? null : c.getInt(manualCol);
@@ -779,6 +799,26 @@ public final class ShoppingRepository {
 			v.put("manual", done ? 1 : 0);
 			return dbHelper.getWritableDatabase().update(ShoppingDb.T_SHOPPING, v, "id = ?",
 					new String[]{String.valueOf(entryId)});
+		}, null);
+	}
+
+	/** Ändert die Menge eines Eintrags von Hand; die App überträgt das an Grocy, sobald es geht. */
+	public void setShoppingAmount(final long entryId, final double amount) {
+		write(() -> {
+			dbHelper.getWritableDatabase().execSQL("UPDATE " + ShoppingDb.T_SHOPPING
+					+ " SET manual_amount = CASE WHEN ABS(amount - ?) < 0.0001 THEN NULL ELSE ? END WHERE id = ?",
+					new Object[]{amount, amount, entryId});
+			return null;
+		}, null);
+	}
+
+	/** Grocy hat die geänderte Menge dieses Eintrags übernommen. */
+	public void setServerAmount(final long entryId, final double amount) {
+		write(() -> {
+			dbHelper.getWritableDatabase().execSQL("UPDATE " + ShoppingDb.T_SHOPPING
+					+ " SET stock_amount = CASE WHEN amount > 0 THEN stock_amount * ? / amount ELSE stock_amount END, "
+					+ "amount = ?, manual_amount = NULL WHERE id = ?", new Object[]{amount, amount, entryId});
+			return null;
 		}, null);
 	}
 

@@ -7,7 +7,7 @@ import android.database.sqlite.SQLiteOpenHelper;
 class ShoppingDb extends SQLiteOpenHelper {
 
 	private static final String DB_NAME    = "shopping.db";
-	private static final int    DB_VERSION = 9;
+	private static final int    DB_VERSION = 10;
 
 	static final String T_ITEMS      = "items";
 	static final String T_TRIPS      = "trips";
@@ -82,6 +82,10 @@ class ShoppingDb extends SQLiteOpenHelper {
 			// Schnellverbrauch-Menge je Produkt, kommt mit der nächsten Synchronisierung
 			db.execSQL("ALTER TABLE " + T_PRODUCTS + " ADD COLUMN consume_amount REAL");
 		}
+		if (oldVersion >= 5 && oldVersion < 10) {
+			// Von Hand geänderte Menge eines Eintrags der Einkaufsliste, bis Grocy sie übernommen hat
+			db.execSQL("ALTER TABLE " + T_SHOPPING + " ADD COLUMN manual_amount REAL");
+		}
 		if (oldVersion >= 2 && oldVersion < 3) {
 			db.execSQL("ALTER TABLE " + T_ITEMS + " ADD COLUMN shop_name TEXT");
 			// Die Kopie der Grocy-Daten wird bei der nächsten Synchronisierung vollständig neu gefüllt
@@ -106,7 +110,8 @@ class ShoppingDb extends SQLiteOpenHelper {
 				+ "qu_id INTEGER, "
 				+ "stock_amount REAL NOT NULL DEFAULT 1, "
 				+ "done INTEGER NOT NULL DEFAULT 0, "
-				+ "manual INTEGER)");
+				+ "manual INTEGER, "
+				+ "manual_amount REAL)");
 		db.execSQL("CREATE TABLE IF NOT EXISTS " + T_UNITS + " ("
 				+ "id INTEGER PRIMARY KEY, "
 				+ "name TEXT NOT NULL)");

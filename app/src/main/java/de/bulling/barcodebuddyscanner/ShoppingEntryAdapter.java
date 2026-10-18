@@ -10,6 +10,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.material.button.MaterialButton;
 import com.google.android.material.checkbox.MaterialCheckBox;
 
 import java.util.ArrayList;
@@ -32,6 +33,13 @@ public class ShoppingEntryAdapter extends RecyclerView.Adapter<RecyclerView.View
 		void onToggle(ShoppingEntry entry);
 	}
 
+	/** Menge eines Eintrags ändern: um einen Schritt oder per Eingabe. */
+	public interface AmountActions {
+		void onStep(ShoppingEntry entry, double delta);
+
+		void onEdit(ShoppingEntry entry);
+	}
+
 	private static final int TYPE_HEADER = 0;
 	private static final int TYPE_ENTRY  = 1;
 
@@ -47,6 +55,7 @@ public class ShoppingEntryAdapter extends RecyclerView.Adapter<RecyclerView.View
 
 	private final Context   context;
 	private final Actions   actions;
+	private       AmountActions amountActions;
 	private final List<Row> rows = new ArrayList<>();
 	private       int       doneCount;
 	private       int       totalCount;
@@ -54,6 +63,10 @@ public class ShoppingEntryAdapter extends RecyclerView.Adapter<RecyclerView.View
 	public ShoppingEntryAdapter(Context context, Actions actions) {
 		this.context = context.getApplicationContext();
 		this.actions = actions;
+	}
+
+	public void setAmountActions(AmountActions amountActions) {
+		this.amountActions = amountActions;
 	}
 
 	public int getDoneCount() {
@@ -152,6 +165,17 @@ public class ShoppingEntryAdapter extends RecyclerView.Adapter<RecyclerView.View
 		h.amount.setPaintFlags(done ? h.amount.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG
 				: h.amount.getPaintFlags() & ~Paint.STRIKE_THRU_TEXT_FLAG);
 
+		// Menge ändern geht nur bei offenen Einträgen mit Produkt
+		boolean editable = !done && !e.isNote && amountActions != null;
+		int editVisibility = editable ? View.VISIBLE : View.GONE;
+		h.minus.setVisibility(editVisibility);
+		h.plus.setVisibility(editVisibility);
+		h.minus.setEnabled(e.amount > 1.0001);
+		h.minus.setOnClickListener(v -> amountActions.onStep(e, -1));
+		h.plus.setOnClickListener(v -> amountActions.onStep(e, 1));
+		h.amount.setOnClickListener(editable ? v -> amountActions.onEdit(e) : null);
+		h.amount.setClickable(editable);
+
 		// Letzter Preis je Einheit des Eintrags (die Menge im Eintrag und in Lagereinheiten ergeben den Faktor)
 		if (e.lastPrice != null && e.amount > 0) {
 			double perEntryUnit = e.lastPrice * e.stockAmount / e.amount;
@@ -194,6 +218,8 @@ public class ShoppingEntryAdapter extends RecyclerView.Adapter<RecyclerView.View
 	static class EntryHolder extends RecyclerView.ViewHolder {
 		final TextView         title;
 		final TextView         amount;
+		final MaterialButton   minus;
+		final MaterialButton   plus;
 		final TextView         price;
 		final TextView         info;
 		final MaterialCheckBox check;
@@ -202,6 +228,8 @@ public class ShoppingEntryAdapter extends RecyclerView.Adapter<RecyclerView.View
 			super(view);
 			title  = view.findViewById(R.id.entry_title);
 			amount = view.findViewById(R.id.entry_amount);
+			minus  = view.findViewById(R.id.entry_minus);
+			plus   = view.findViewById(R.id.entry_plus);
 			price  = view.findViewById(R.id.entry_price);
 			info   = view.findViewById(R.id.entry_info);
 			check  = view.findViewById(R.id.entry_check);

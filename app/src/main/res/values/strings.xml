@@ -469,4 +469,7 @@ Die App zählt mit und vergleicht am Ende mit Grocy.</string>
     <string name="expiry_past">vor %1$d T</string>
     <string name="expiry_today">heute</string>
     <string name="expiry_future">in %1$d T</string>
+
+    <!-- Menge in der Einkaufsliste ändern -->
+    <string name="entry_amount_in">Menge in %1$s</string>
 </resources>

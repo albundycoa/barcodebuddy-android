@@ -344,6 +344,17 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
 
         adapter = new ItemAdapter(this, this);
         entryAdapter = new ShoppingEntryAdapter(this, this::onToggleEntry);
+        entryAdapter.setAmountActions(new ShoppingEntryAdapter.AmountActions() {
+            @Override
+            public void onStep(ShoppingEntry entry, double delta) {
+                changeEntryAmount(entry, entry.amount + delta);
+            }
+
+            @Override
+            public void onEdit(ShoppingEntry entry) {
+                showEntryAmountDialog(entry);
+            }
+        });
         itemList.setLayoutManager(new LinearLayoutManager(this));
         itemList.setAdapter(adapter);
 
@@ -582,6 +593,40 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
         super.onPause();
         resumed = false;
         cameraView.pause();
+    }
+
+    /** Menge eines Eintrags der Einkaufsliste ändern; sie geht an Grocy, sobald eine Verbindung besteht. */
+    private void changeEntryAmount(ShoppingEntry entry, double amount) {
+        if (sending || amount <= 0) {
+            return;
+        }
+        repo.setShoppingAmount(entry.id, Math.round(amount * 1000) / 1000.0);
+    }
+
+    private void showEntryAmountDialog(final ShoppingEntry entry) {
+        final EditText input = new EditText(this);
+        input.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
+        input.setText(entry.amount == Math.rint(entry.amount) ? String.valueOf((long) entry.amount)
+                : String.valueOf(entry.amount).replace('.', ','));
+        input.setSelectAllOnFocus(true);
+        FrameLayout box = new FrameLayout(this);
+        int pad = (int) (20 * getResources().getDisplayMetrics().density);
+        box.setPadding(pad, pad / 2, pad, 0);
+        box.addView(input);
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(entry.name)
+                .setMessage(getString(R.string.entry_amount_in, entry.unit == null ? "" : entry.unit).trim())
+                .setView(box)
+                .setPositiveButton(R.string.inventory_edit_save, (d, w) -> {
+                    try {
+                        changeEntryAmount(entry,
+                                Double.parseDouble(input.getText().toString().trim().replace(',', '.')));
+                    } catch (NumberFormatException ignored) {
+                        // ungültige Eingabe: Menge bleibt wie sie war
+                    }
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
     }
 
     /** Eintrag von Hand abhaken oder wieder öffnen. */
