@@ -36,6 +36,7 @@ import java.util.concurrent.TimeUnit;
 
 import de.bulling.barcodebuddyscanner.Api.GrocySync;
 import de.bulling.barcodebuddyscanner.Data.ShoppingRepository;
+import de.bulling.barcodebuddyscanner.Helper.InventorySession;
 import de.bulling.barcodebuddyscanner.Helper.PermissionHelper;
 import de.bulling.barcodebuddyscanner.Helper.ScanFeedback;
 import de.bulling.barcodebuddyscanner.Helper.ScanNotifier;
@@ -554,6 +555,12 @@ public class ScannerService extends Service {
 			return;
 		}
 		main.post(() -> {
+			// Läuft gerade eine Inventur, zählt der Scan dort und landet nicht in der Einkaufsliste
+			final InventorySession.ScanSink inventory = InventorySession.getScanSink();
+			if (inventory != null) {
+				inventory.onBarcode(code);
+				return;
+			}
 			feedback.beep();
 			// Danach die Einkaufsliste in Grocy abhaken, falls der Scan einen Eintrag abdeckt
 			repo.addScan(code, item -> {

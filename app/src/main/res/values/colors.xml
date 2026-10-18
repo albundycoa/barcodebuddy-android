@@ -32,4 +32,6 @@
     <color name="scanner_ok_text">#0B3D12</color>
     <color name="scanner_off_bg">#FFCDD2</color>
     <color name="scanner_off_text">#5F1313</color>
+    <color name="inventory_more_bg">#FFE0B2</color>
+    <color name="inventory_more_text">#4A2800</color>
 </resources>

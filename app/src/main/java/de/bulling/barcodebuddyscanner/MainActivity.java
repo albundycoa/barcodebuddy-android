@@ -955,6 +955,9 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
         } else if (itemId == R.id.action_products) {
             startActivity(new Intent(this, ProductsActivity.class));
             return true;
+        } else if (itemId == R.id.action_inventory) {
+            startActivity(new Intent(this, InventoryActivity.class));
+            return true;
         } else if (itemId == R.id.action_receipt) {
             exportReceipt();
             return true;

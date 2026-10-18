@@ -284,7 +284,7 @@ public class PurchaseSender {
 	}
 
 	/** Wie Barcode Buddy: heute plus Standard-Haltbarkeit, -1 bedeutet unbegrenzt. */
-	private static String bestBeforeDate(Integer days) {
+	public static String bestBeforeDate(Integer days) {
 		if (days != null && days == -1) {
 			return "2999-12-31";
 		}

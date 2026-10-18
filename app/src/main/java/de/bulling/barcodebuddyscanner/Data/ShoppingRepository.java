@@ -886,6 +886,54 @@ public final class ShoppingRepository {
 		read(() -> (int) DatabaseUtils.queryNumEntries(dbHelper.getReadableDatabase(), ShoppingDb.T_PRODUCTS), callback);
 	}
 
+	// ---------------------------------------------------------------- Inventur
+
+	/** Ein Produkt für die Inventur: Bestand laut lokaler Kopie und Menge, die ein Scan des Barcodes zählt. */
+	public static final class InventoryProduct {
+		public long    id;
+		public String  name;
+		public String  group;
+		public String  stockUnit;
+		/** Bestand in Lagereinheiten */
+		public double  stock;
+		/** Lagereinheiten je Scan dieses Barcodes */
+		public double  stockPerScan = 1;
+		public boolean tare;
+		public Integer bestBeforeDays;
+	}
+
+	/** Das Produkt zu einem Barcode, oder null, wenn die lokale Kopie den Barcode nicht kennt. */
+	public void findInventoryProduct(final String barcode, Callback<InventoryProduct> callback) {
+		read(() -> {
+			String sql = "SELECT p.id, p.name, p.group_name, p.stock_unit, p.tare, p.best_before_days, "
+					+ "COALESCE(st.amount, 0) AS stock, b.stock_per_scan "
+					+ "FROM g_barcodes b JOIN g_products p ON p.id = b.product_id "
+					+ "LEFT JOIN g_stock st ON st.product_id = p.id WHERE b.barcode = ?";
+			try (Cursor c = dbHelper.getReadableDatabase().rawQuery(sql, new String[]{barcode})) {
+				if (!c.moveToFirst()) {
+					return null;
+				}
+				InventoryProduct p = new InventoryProduct();
+				p.id             = c.getLong(c.getColumnIndexOrThrow("id"));
+				p.name           = c.getString(c.getColumnIndexOrThrow("name"));
+				p.group          = c.getString(c.getColumnIndexOrThrow("group_name"));
+				p.stockUnit      = c.getString(c.getColumnIndexOrThrow("stock_unit"));
+				p.stock          = c.getDouble(c.getColumnIndexOrThrow("stock"));
+				p.stockPerScan   = c.getDouble(c.getColumnIndexOrThrow("stock_per_scan"));
+				p.tare           = c.getInt(c.getColumnIndexOrThrow("tare")) != 0;
+				Double days      = getDouble(c, "best_before_days");
+				p.bestBeforeDays = days == null ? null : (int) Math.round(days);
+				return p;
+			}
+		}, callback);
+	}
+
+	/** Anzahl der Produkte, von denen laut lokaler Kopie etwas im Bestand ist. */
+	public void getStockedProductCount(Callback<Integer> callback) {
+		read(() -> (int) DatabaseUtils.queryNumEntries(dbHelper.getReadableDatabase(), ShoppingDb.T_STOCK, "amount > 0"),
+				callback);
+	}
+
 	// ---------------------------------------------------------------- Helfer
 
 	private static Map<Long, Integer> readShopPositions(SQLiteDatabase db) {

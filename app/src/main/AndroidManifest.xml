@@ -88,6 +88,10 @@
             android:label="@string/products_title"
             android:theme="@style/AppTheme.NoActionBar" />
         <activity
+            android:name=".InventoryActivity"
+            android:label="@string/inventory_title"
+            android:theme="@style/AppTheme.NoActionBar" />
+        <activity
             android:name=".HistoryActivity"
             android:label="@string/title_history"
             android:theme="@style/AppTheme.NoActionBar" />
