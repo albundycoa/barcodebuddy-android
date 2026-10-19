@@ -13,6 +13,12 @@ zurückgehen, sonst lässt sich ein Update nicht mehr einspielen. Gepflegt wird 
 `appVersion` in `gradle.properties`. Veröffentlicht wird mit `./publish-apk.sh`: privat auf den Update-Server im Heimnetz, mit `--github` als
 öffentlicher GitHub-Release.
 
+## [0.4.2] – Übersichtlichere Karten
+
+- In der Liste „Gescannt“ stehen Name und Hinweise (z. B. „Unbekanntes Produkt · Vorschlag von OpenFoodFacts“, Barcode) jetzt über der
+  ganzen Kartenbreite; Preis, „Anlegen / zuordnen“ und die Mengenknöpfe folgen darunter. Lange Namen brechen nicht mehr neben den Knöpfen um.
+- Uhr: keine Änderung.
+
 ## [0.4.1] – Vorschläge auch für ältere Einträge
 
 - Unbekannte Barcodes, die schon vor dem Update in der Einkaufsliste standen, bekommen ebenfalls einen Namensvorschlag von OpenFoodFacts,
