@@ -13,6 +13,11 @@ zurückgehen, sonst lässt sich ein Update nicht mehr einspielen. Gepflegt wird 
 `appVersion` in `gradle.properties`. Veröffentlicht wird mit `./publish-apk.sh`: privat auf den Update-Server im Heimnetz, mit `--github` als
 öffentlicher GitHub-Release.
 
+## [0.4.5] – Produktname im Zuordnen-Dialog
+
+- Hat OpenFoodFacts das Produkt erkannt, zeigt der Dialog nach „Anlegen / zuordnen“ (Einkaufsliste und Inventur) den Produktnamen statt des Barcodes.
+- Uhr: keine Änderung.
+
 ## [0.4.4] – Symbole in den Knöpfen mittig
 
 - Die Symbole − und + sowie der Papierkorb sitzen in den runden Knöpfen der Liste „Gescannt“ (und im Verlauf und bei den

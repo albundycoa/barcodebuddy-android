@@ -632,7 +632,8 @@ public class InventoryActivity extends AppCompatActivity {
 		String[] choices = {getString(R.string.assign_new), getString(R.string.assign_existing),
 				getString(R.string.inventory_edit_remove)};
 		new MaterialAlertDialogBuilder(this)
-				.setTitle(getString(R.string.inventory_unknown_name) + " " + e.barcode)
+				.setTitle(suggestions.containsKey(e.barcode) ? suggestions.get(e.barcode)
+						: getString(R.string.inventory_unknown_name) + " " + e.barcode)
 				.setItems(choices, (d, which) -> {
 					if (which == 0) {
 						assignBarcode = e.barcode;

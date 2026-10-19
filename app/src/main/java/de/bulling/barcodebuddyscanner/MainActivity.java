@@ -860,7 +860,8 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
         assignItem = item;
         String[] choices = {getString(R.string.assign_new), getString(R.string.assign_existing)};
         new com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
-                .setTitle(item.displayName() != null ? item.displayName() : item.barcode)
+                .setTitle(item.displayName() != null ? item.displayName()
+                        : item.suggestion != null ? item.suggestion : item.barcode)
                 .setItems(choices, (d, which) -> {
                     if (which == 0) {
                         startActivity(new Intent(this, ProductCreateActivity.class)
