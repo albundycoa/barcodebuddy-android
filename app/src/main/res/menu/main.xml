@@ -42,6 +42,10 @@
         android:title="@string/action_clear"
         app:showAsAction="never" />
     <item
+        android:id="@+id/action_wear_update"
+        android:title="@string/action_wear_update"
+        app:showAsAction="never" />
+    <item
         android:id="@+id/action_update"
         android:title="@string/action_update"
         app:showAsAction="never" />

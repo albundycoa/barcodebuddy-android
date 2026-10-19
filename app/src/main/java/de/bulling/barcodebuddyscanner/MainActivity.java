@@ -1145,6 +1145,9 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
         } else if (itemId == R.id.action_products) {
             startActivity(new Intent(this, ProductsActivity.class));
             return true;
+        } else if (itemId == R.id.action_wear_update) {
+            de.bulling.barcodebuddyscanner.Wear.WearUpdater.start(this);
+            return true;
         } else if (itemId == R.id.action_update) {
             updater.checkAndOffer(true);
             return true;

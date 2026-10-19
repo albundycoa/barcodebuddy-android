@@ -15,9 +15,29 @@ if (keyFile.exists()) {
     keyFile.withInputStream { keyProps.load(it) }
 }
 
+// Die Uhr-App steckt als Datei in der Handy-App (assets/wear/wear.apk): so kann das Handy die Uhr aktualisieren. Sie
+// wird bei jedem Bauen aus dem Modul :wear geholt, das Version und Schlüssel mit dieser App teilt. Standard ist die
+// Release-Variante; mit -PwearVariant=Debug wird die debugbare Uhr-App eingebettet.
+def wearVariant = (project.findProperty('wearVariant') ?: 'Release').toString()
+def wearAssetsDir = new File(layout.buildDirectory.get().asFile, 'generated/wearAssets')
+tasks.register('embedWearApk', Copy) {
+    dependsOn ":wear:assemble${wearVariant}"
+    from(project(':wear').layout.buildDirectory.dir("outputs/apk/${wearVariant.toLowerCase()}")) {
+        include '*.apk'
+        rename { 'wear.apk' }
+    }
+    into new File(wearAssetsDir, 'wear')
+}
+
 android {
     namespace 'de.bulling.barcodebuddyscanner'
     compileSdk 37
+
+    sourceSets {
+        main {
+            assets.srcDir wearAssetsDir
+        }
+    }
 
     defaultConfig {
         applicationId "de.bulling.barcodebuddyscanner"
@@ -70,6 +90,10 @@ android {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
+}
+
+tasks.matching { it.name == 'preBuild' }.configureEach {
+    dependsOn 'embedWearApk'
 }
 
 dependencies {

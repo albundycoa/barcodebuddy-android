@@ -34,6 +34,11 @@ public class MainActivity extends Activity implements State.Listener {
 		State.addListener(this);
 		onStateChanged();
 		PhoneLink.requestSync(this);
+		// Eine noch offene Rückfrage zur Installation eines Updates jetzt anzeigen
+		Intent confirm = UpdateInstaller.takePendingConfirmation();
+		if (confirm != null) {
+			startActivity(confirm);
+		}
 	}
 
 	@Override

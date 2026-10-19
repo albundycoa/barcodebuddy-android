@@ -13,7 +13,12 @@ zurückgehen, sonst lässt sich ein Update nicht mehr einspielen. Gepflegt wird 
 `appVersion` in `gradle.properties`. Veröffentlicht wird mit `./publish-apk.sh`: privat auf den Update-Server im Heimnetz, mit `--github` als
 öffentlicher GitHub-Release.
 
-## [Unveröffentlicht]
+## [0.1.2] – Uhr aktualisieren ohne Kabel
+
+- **Uhr-App aktualisieren (Menü)**: Die Handy-App enthält die passende Uhr-App und schickt sie über die Data Layer an die Uhr. Die
+  Uhr installiert sie selbst, beim ersten Mal nach einer Rückfrage. Dafür braucht die Uhr-App einmalig die Erlaubnis
+  „Apps installieren“ (per `adb shell appops set de.bulling.barcodebuddyscanner REQUEST_INSTALL_PACKAGES allow`).
+  Handy und Uhr haben immer dieselbe Version.
 
 - **Uhr (Wear OS)**: Die Uhr-App wird jetzt mit demselben Schlüssel signiert wie die Handy-App und trägt dieselbe Version. Die
   Data Layer von Google lässt Handy und Uhr nur miteinander reden, wenn Paketkennung und Signatur gleich sind. Seit dem

@@ -14,4 +14,8 @@
     <string name="total">Summe %1$s</string>
     <string name="done_by_scan">Durch Scan erledigt</string>
     <string name="no_phone">Handy nicht erreichbar</string>
+    <string name="update_installing">Update %1$s wird installiert …</string>
+    <string name="update_failed">Update vom Handy nicht angekommen</string>
+    <string name="update_failed_reason">Update nicht installiert: %1$s</string>
+    <string name="update_open_app">Update bereit. Öffne die App zum Installieren.</string>
 </resources>

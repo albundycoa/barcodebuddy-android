@@ -24,6 +24,11 @@ public class WearListenerService extends WearableListenerService {
 
 	@Override
 	public void onMessageReceived(MessageEvent event) {
+		if (WearUpdater.PATH_VERSION_REPLY.equals(event.getPath())) {
+			// Die Uhr nennt ihre Version, bevor das Handy ein Update sendet
+			WearUpdater.onVersionReply(event.getData());
+			return;
+		}
 		if (!WearSync.PATH_ACTION.equals(event.getPath())) {
 			return;
 		}

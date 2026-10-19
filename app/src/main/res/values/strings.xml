@@ -503,4 +503,18 @@ Die App zählt mit und vergleicht am Ende mit Grocy.</string>
     <string name="spp_pairing_pref_summary">QR-Code zum Abscannen mit dem Scanner anzeigen</string>
     <string name="spp_pairing_steps">1. Scanner einschalten.\n2. Diesen Code mit dem Scanner abscannen: Er wechselt in den SPP-Suchmodus, die blaue Anzeige blinkt.\n3. In den Android-Bluetooth-Einstellungen den Scanner koppeln und danach hier in den Einstellungen unter „Scanner auswählen (SPP)“ wählen.</string>
     <string name="spp_pairing_close">Schließen</string>
+
+    <!-- Uhr-App aktualisieren -->
+    <string name="action_wear_update">Uhr-App aktualisieren</string>
+    <string name="wear_update_no_watch">Keine Uhr verbunden.</string>
+    <string name="wear_update_no_answer">Die Uhr antwortet nicht. Ist die Uhr-App installiert und die Uhr in Reichweite?</string>
+    <string name="wear_update_current">Die Uhr-App ist schon auf dem neuesten Stand (%1$s).</string>
+    <string name="wear_update_title">Uhr-App aktualisieren</string>
+    <string name="wear_update_text">Version %1$s wird an die Uhr gesendet. Das dauert ein paar Minuten, danach fragt die Uhr, ob sie installieren soll.</string>
+    <string name="wear_update_send">Senden</string>
+    <string name="wear_update_sending">Wird an die Uhr gesendet …</string>
+    <string name="wear_update_sending_text">Bitte Handy und Uhr nah beieinander lassen.</string>
+    <string name="wear_update_sent_title">Gesendet</string>
+    <string name="wear_update_sent_text">Die Uhr hat die Datei bekommen. Bestätige dort die Installation. Kommt keine Rückfrage, öffne die Uhr-App.</string>
+    <string name="wear_update_failed">Senden an die Uhr nicht möglich: %1$s</string>
 </resources>
