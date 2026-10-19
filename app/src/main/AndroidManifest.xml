@@ -111,6 +111,10 @@
             android:label="@string/products_title"
             android:theme="@style/AppTheme.NoActionBar" />
         <activity
+            android:name=".MenuOrderActivity"
+            android:label="@string/menu_order_title"
+            android:theme="@style/AppTheme.NoActionBar" />
+        <activity
             android:name=".StockCheckActivity"
             android:label="@string/stock_title"
             android:theme="@style/AppTheme.NoActionBar" />

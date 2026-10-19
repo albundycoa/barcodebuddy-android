@@ -13,6 +13,14 @@ zurückgehen, sonst lässt sich ein Update nicht mehr einspielen. Gepflegt wird 
 `appVersion` in `gradle.properties`. Veröffentlicht wird mit `./publish-apk.sh`: privat auf den Update-Server im Heimnetz, mit `--github` als
 öffentlicher GitHub-Release.
 
+## [0.2.0] – Menü anordnen
+
+- **Menü anordnen** (Einstellungen → Darstellung): Die Einträge im Drei-Punkte-Menü lassen sich am Griff verschieben und über den Haken
+  ausblenden. „Einstellungen“ bleibt immer sichtbar, „Zurücksetzen“ stellt die Standardreihenfolge wieder her. Neue Einträge späterer
+  Versionen erscheinen automatisch am Ende.
+- Uhr: keine Änderung. Die Uhr-App trägt aber die neue Version, sie lässt sich wie gewohnt über „Uhr-App aktualisieren“ nachziehen.
+- Download-Seite auf dem Update-Server (nur im Heimnetz), Beschreibung der Versionen ohne Markdown-Zeichen.
+
 ## [0.1.2] – Uhr aktualisieren ohne Kabel
 
 - **Uhr-App aktualisieren (Menü)**: Die Handy-App enthält die passende Uhr-App und schickt sie über die Data Layer an die Uhr. Die

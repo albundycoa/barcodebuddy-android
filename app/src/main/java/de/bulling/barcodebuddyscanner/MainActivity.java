@@ -593,6 +593,8 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
         super.onResume();
         resumed = true;
         updateCameraState();
+        // Das Menü neu aufbauen: Reihenfolge und Sichtbarkeit können sich in den Einstellungen geändert haben
+        invalidateOptionsMenu();
         // Zurück aus der Android-Einstellung "Unbekannte Apps installieren": mit dem Update weitermachen
         updater.onResume();
     }
@@ -1109,6 +1111,8 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.main, menu);
+        // Reihenfolge und Sichtbarkeit nach den Einstellungen (Einstellungen -> Menü anordnen)
+        de.bulling.barcodebuddyscanner.Helper.MenuLayout.apply(this, menu);
         return true;
     }
 

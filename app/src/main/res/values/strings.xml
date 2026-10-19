@@ -517,4 +517,11 @@ Die App zählt mit und vergleicht am Ende mit Grocy.</string>
     <string name="wear_update_sent_title">Gesendet</string>
     <string name="wear_update_sent_text">Die Uhr hat die Datei bekommen. Bestätige dort die Installation. Kommt keine Rückfrage, öffne die Uhr-App.</string>
     <string name="wear_update_failed">Senden an die Uhr nicht möglich: %1$s</string>
+
+    <!-- Menü anordnen -->
+    <string name="menu_order_header">Darstellung</string>
+    <string name="menu_order_title">Menü anordnen</string>
+    <string name="menu_order_pref_summary">Reihenfolge der Einträge im Drei-Punkte-Menü ändern oder Einträge ausblenden</string>
+    <string name="menu_order_hint">Am Griff ziehen zum Verschieben. Haken entfernen blendet einen Eintrag aus. „Einstellungen“ bleibt immer sichtbar.</string>
+    <string name="menu_order_reset">Zurücksetzen</string>
 </resources>

@@ -21,6 +21,18 @@
             app:title="@string/volume" />
 
     </PreferenceCategory>
+    <PreferenceCategory app:title="@string/menu_order_header">
+
+        <Preference
+            app:key="menu_order"
+            app:summary="@string/menu_order_pref_summary"
+            app:title="@string/menu_order_title">
+            <intent
+                android:targetClass="de.bulling.barcodebuddyscanner.MenuOrderActivity"
+                android:targetPackage="de.bulling.barcodebuddyscanner" />
+        </Preference>
+
+    </PreferenceCategory>
     <PreferenceCategory app:title="@string/update_header">
 
         <SwitchPreferenceCompat
