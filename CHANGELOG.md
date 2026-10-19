@@ -13,6 +13,12 @@ zurückgehen, sonst lässt sich ein Update nicht mehr einspielen. Gepflegt wird 
 `appVersion` in `gradle.properties`. Veröffentlicht wird mit `./publish-apk.sh`: privat auf den Update-Server im Heimnetz, mit `--github` als
 öffentlicher GitHub-Release.
 
+## [0.4.1] – Vorschläge auch für ältere Einträge
+
+- Unbekannte Barcodes, die schon vor dem Update in der Einkaufsliste standen, bekommen ebenfalls einen Namensvorschlag von OpenFoodFacts,
+  sobald die Liste das nächste Mal geladen wird.
+- Uhr: keine Änderung.
+
 ## [0.4.0] – Namensvorschläge und nur Hochformat
 
 - **Namensvorschlag für unbekannte Produkte**: Scannt man einen Barcode, den Grocy nicht kennt, fragt die App im Hintergrund die offene

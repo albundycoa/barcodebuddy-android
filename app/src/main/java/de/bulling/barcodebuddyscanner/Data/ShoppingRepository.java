@@ -225,8 +225,14 @@ public final class ShoppingRepository {
 	}
 
 	/** Holt im Hintergrund einen Namensvorschlag; die Liste lädt neu, sobald er da ist. */
+	private final java.util.Set<String> prefetching = java.util.Collections.synchronizedSet(new java.util.HashSet<>());
+
 	private void prefetchSuggestion(final String barcode) {
+		if (!prefetching.add(barcode)) {
+			return;
+		}
 		suggestionFor(barcode, name -> {
+			prefetching.remove(barcode);
 			if (name != null) {
 				notifyChanged();
 			}
@@ -295,7 +301,19 @@ public final class ShoppingRepository {
 			}
 			boolean cache = DatabaseUtils.queryNumEntries(db, ShoppingDb.T_PRODUCTS) > 0;
 			return new OpenList(items, cache, readShopPositions(db));
-		}, callback);
+		}, list -> {
+			// Auch ältere Einträge bekommen einen Vorschlag (die Abfrage selbst merkt sich Fehlanzeigen)
+			if (list.cacheAvailable) {
+				for (ShoppingItem item : list.items) {
+					if (!item.known && item.suggestion == null && item.displayName() == null) {
+						prefetchSuggestion(item.barcode);
+					}
+				}
+			}
+			if (callback != null) {
+				callback.onResult(list);
+			}
+		});
 	}
 
 	public void setQuantity(final long itemId, final int quantity) {
