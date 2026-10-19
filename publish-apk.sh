@@ -13,7 +13,8 @@
 #   4. Hochladen. Die JSON-Datei kommt zuletzt, damit die App die neue Version erst sieht, wenn die APK komplett da ist.
 #
 # Privat: Auf der Docker-VM (SSH-Alias "docker-vm") liegt der Ordner /opt/barcodebuddy-apk, den der Container "bb-apk"
-# (nginx) unter http://192.168.2.69:9296/ ausliefert. Die gleiche Adresse steht als Standard in der App.
+# (nginx) unter http://192.168.2.69:9296/ ausliefert. Die gleiche Adresse steht als Standard in der App. Unter dieser
+# Adresse zeigt der Server auch eine Download-Seite (update-server/index.html) für die Installation auf anderen Geräten.
 # Vorher: Änderungen committen und pushen.
 set -euo pipefail
 
@@ -77,8 +78,9 @@ SIZE=$(wc -c < "$OUT/$FILE" | tr -d ' ')
 SHA=$(sha256sum "$OUT/$FILE" | cut -d' ' -f1)
 BUILT=$(date +%d.%m.%Y)
 # PYTHONUTF8: Python unter Windows liest sonst mit der Systemcodierung, aus Umlauten wird Buchstabensalat
-NOTES_JSON=$(printf '%s' "$NOTES" | PYTHONUTF8=1 python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))' 2>/dev/null \
-  || printf '%s' "$NOTES" | PYTHONUTF8=1 python -c 'import json,sys; print(json.dumps(sys.stdin.read()))')
+NOTES_PLAIN=$(printf '%s' "$NOTES" | sed -e 's/\*\*//g' -e 's/`//g')
+NOTES_JSON=$(printf '%s' "$NOTES_PLAIN" | PYTHONUTF8=1 python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))' 2>/dev/null \
+  || printf '%s' "$NOTES_PLAIN" | PYTHONUTF8=1 python -c 'import json,sys; print(json.dumps(sys.stdin.read()))')
 cat > "$OUT/latest.json" <<EOF
 {"version": "$VERSION", "version_code": $CODE, "url": "$DOWNLOAD_BASE/$FILE", "size": $SIZE, "sha256": "$SHA", "built": "$BUILT", "notes": $NOTES_JSON}
 EOF
@@ -95,8 +97,11 @@ if [ "$MODE" = "github" ]; then
   echo ">>> Fertig: https://github.com/$REPO/releases/tag/$TAG"
 else
   scp -q "$OUT/$FILE" "$HOST:$REMOTE_DIR/$FILE"
+  # Die Download-Seite (zum Installieren auf einem anderen Gerät) und ein fester Link auf die neueste APK
+  scp -q update-server/index.html "$HOST:$REMOTE_DIR/index.html"
+  ssh "$HOST" "cd $REMOTE_DIR && ln -sf $FILE barcodebuddy-latest.apk && rm -f index.json"
   scp -q "$OUT/latest.json" "$HOST:$REMOTE_DIR/latest.json"
   # alte APKs aufräumen: die aktuelle und die davor behalten
-  ssh "$HOST" "cd $REMOTE_DIR && ls -t barcodebuddy-*.apk 2>/dev/null | tail -n +3 | xargs -r rm -f"
-  echo ">>> Fertig: $BASE_URL/latest.json"
+  ssh "$HOST" "cd $REMOTE_DIR && ls -t barcodebuddy-[0-9]*.apk 2>/dev/null | tail -n +3 | xargs -r rm -f"
+  echo ">>> Fertig: $BASE_URL/  (Download-Seite), $BASE_URL/latest.json, $BASE_URL/barcodebuddy-latest.apk"
 fi

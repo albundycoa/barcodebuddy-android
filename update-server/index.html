@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Barcode Buddy Scanner</title>
+<style>
+  :root {
+    --bg: #f4fbf9; --card: #ffffff; --text: #161d1b; --muted: #3f4947; --accent: #00695c; --on-accent: #ffffff; --line: #dae5e1;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #0e1513; --card: #1a211f; --text: #dde4e1; --muted: #bec9c6; --accent: #80d5c8; --on-accent: #003731; --line: #3f4947; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 640px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 1.5rem; margin: 0 0 4px; }
+  p.sub { margin: 0 0 20px; color: var(--muted); }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 18px; margin-bottom: 16px; }
+  .version { font-size: 1.25rem; font-weight: 600; }
+  .meta { color: var(--muted); font-size: .9rem; margin-top: 2px; }
+  a.button { display: block; text-align: center; margin-top: 16px; padding: 14px 18px; border-radius: 28px; background: var(--accent);
+    color: var(--on-accent); font-weight: 600; text-decoration: none; }
+  h2 { font-size: 1.05rem; margin: 0 0 8px; }
+  ol { margin: 0; padding-left: 1.3rem; }
+  li { margin-bottom: 6px; }
+  pre.notes { white-space: pre-wrap; margin: 12px 0 0; font: inherit; color: var(--muted); }
+  code { word-break: break-all; font-size: .8rem; }
+  .error { color: #ba1a1a; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Barcode Buddy Scanner</h1>
+  <p class="sub">Eigene Version der Android-App mit Inventur, Bestandsabfrage, Wear-OS-Uhr und Updates aus der App.</p>
+
+  <div class="card" id="latest">
+    <div class="meta">Aktuelle Version wird geladen …</div>
+  </div>
+
+  <div class="card">
+    <h2>Installieren</h2>
+    <ol>
+      <li>Datei oben herunterladen und öffnen.</li>
+      <li>Android fragt einmal, ob der Browser Apps installieren darf: <b>Zulassen</b> und zurück.</li>
+      <li>Auf <b>Installieren</b> tippen.</li>
+    </ol>
+    <p class="meta">Neu auf einem Gerät? Danach Barcode Buddy (QR-Code unter „API → Add mobile app“) und Grocy (Adresse und
+    API-Schlüssel in den Einstellungen) koppeln.<br>
+    Über eine vorhandene Installation lässt sich die Datei direkt drüberspielen, Einstellungen bleiben erhalten.</p>
+  </div>
+
+  <div class="card">
+    <h2>Hinweise</h2>
+    <ul>
+      <li>Diese Seite ist nur im Heimnetz oder über Tailscale erreichbar.</li>
+      <li>Updates holt die App selbst: Menü → „Nach Updates suchen“.</li>
+      <li>Die Uhr-App steckt in der Handy-App: Menü → „Uhr-App aktualisieren“.</li>
+    </ul>
+  </div>
+</main>
+
+<script>
+  fetch('latest.json', { cache: 'no-store' })
+    .then(function (r) { if (!r.ok) { throw new Error('HTTP ' + r.status); } return r.json(); })
+    .then(function (d) {
+      // Der Link ist relativ zur Seite, damit er auch über eine andere Adresse (z. B. Tailscale) funktioniert
+      var file = String(d.url).split('/').pop();
+      var mb = (d.size / 1024 / 1024).toFixed(1).replace('.', ',');
+      var box = document.getElementById('latest');
+      box.innerHTML = '';
+      var v = document.createElement('div'); v.className = 'version'; v.textContent = 'Version ' + d.version;
+      var m = document.createElement('div'); m.className = 'meta';
+      m.textContent = (d.built ? 'Stand ' + d.built + ' · ' : '') + mb + ' MB';
+      var a = document.createElement('a'); a.className = 'button'; a.href = file; a.textContent = 'APK herunterladen';
+      var s = document.createElement('div'); s.className = 'meta'; s.style.marginTop = '12px';
+      s.innerHTML = 'SHA-256<br><code></code>'; s.querySelector('code').textContent = d.sha256;
+      box.appendChild(v); box.appendChild(m); box.appendChild(a); box.appendChild(s);
+      if (d.notes && d.notes.trim()) {
+        var det = document.createElement('details'); det.style.marginTop = '12px';
+        var sum = document.createElement('summary'); sum.textContent = 'Was ist neu?'; sum.style.cursor = 'pointer';
+        var n = document.createElement('pre'); n.className = 'notes';
+        n.textContent = d.notes.replace(/\*\*/g, '').replace(/`/g, '').trim();
+        det.appendChild(sum); det.appendChild(n); box.appendChild(det);
+      }
+    })
+    .catch(function (e) {
+      var box = document.getElementById('latest');
+      box.innerHTML = '<div class="error">Aktuelle Version nicht lesbar (' + e.message + ').</div>';
+    });
+</script>
+</body>
+</html>
