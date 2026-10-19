@@ -13,6 +13,18 @@ zurückgehen, sonst lässt sich ein Update nicht mehr einspielen. Gepflegt wird 
 `appVersion` in `gradle.properties`. Veröffentlicht wird mit `./publish-apk.sh`: privat auf den Update-Server im Heimnetz, mit `--github` als
 öffentlicher GitHub-Release.
 
+## [0.3.0] – Einrichtungsassistent
+
+- **Einrichtungsassistent**: Beim ersten Start führt die App durch Barcode Buddy (QR-Code oder von Hand), Grocy (QR-Code aus
+  „API-Schlüssel verwalten“ oder von Hand) und die Wahl des Scanners, bei SPP mit Anlernmodus-Code und Geräteauswahl. Jede Verbindung
+  wird gleich geprüft. Jeder Schritt lässt sich überspringen.
+- **Hinweiszeile** im Hauptbildschirm, solange Barcode Buddy oder Grocy fehlen: „Einrichten“ springt zum fehlenden Schritt, „Ausblenden“
+  blendet sie aus. Der Assistent ist außerdem unter Einstellungen → Einrichtung erreichbar.
+- Ohne Barcode Buddy lassen sich bekannte Produkte weiter direkt in Grocy buchen; unbekannte Barcodes bleiben in der Liste, statt dass der
+  Einkauf abbricht.
+- Wer schon gekoppelt war, sieht den Assistenten nicht von selbst.
+- Uhr: keine Änderung (die Uhr-App trägt nur die neue Version).
+
 ## [0.2.0] – Menü anordnen
 
 - **Menü anordnen** (Einstellungen → Darstellung): Die Einträge im Drei-Punkte-Menü lassen sich am Griff verschieben und über den Haken

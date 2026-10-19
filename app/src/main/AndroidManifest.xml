@@ -111,6 +111,11 @@
             android:label="@string/products_title"
             android:theme="@style/AppTheme.NoActionBar" />
         <activity
+            android:name=".OnboardingActivity"
+            android:label="@string/onb_pref_title"
+            android:theme="@style/AppTheme.NoActionBar"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
             android:name=".MenuOrderActivity"
             android:label="@string/menu_order_title"
             android:theme="@style/AppTheme.NoActionBar" />

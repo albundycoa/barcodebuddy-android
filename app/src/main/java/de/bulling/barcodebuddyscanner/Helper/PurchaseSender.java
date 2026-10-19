@@ -98,6 +98,8 @@ public class PurchaseSender {
 	private final List<ShoppingEntry> manualJobs = new ArrayList<>();
 	private final boolean             bookManual;
 	private int                       manualIndex;
+	/** Stück, die nur über Barcode Buddy gebucht werden könnten, aber Barcode Buddy ist nicht gekoppelt */
+	private int                       skippedNoBb;
 
 	private Listener listener;
 	private Result   finishedResult;
@@ -158,6 +160,10 @@ public class PurchaseSender {
 				Job job = new Job(item, remaining);
 				if (grocy != null && item.canBookDirectly()) {
 					directJobs.add(job);
+				} else if (api == null) {
+					// Ohne Barcode Buddy lassen sich unbekannte Barcodes nicht buchen: sie bleiben in der Liste
+					skippedNoBb += remaining;
+					continue;
 				} else {
 					bbJobs.add(job);
 				}
@@ -181,7 +187,13 @@ public class PurchaseSender {
 	}
 
 	private void finishLoading() {
+		if (skippedNoBb > 0) {
+			result.warning = Texts.get(R.string.send_warn_no_bb, skippedNoBb);
+		}
 		if (directJobs.isEmpty() && bbJobs.isEmpty() && manualJobs.isEmpty()) {
+			if (skippedNoBb > 0) {
+				result.error = Texts.get(R.string.send_err_no_bb);
+			}
 			finish();
 			return;
 		}

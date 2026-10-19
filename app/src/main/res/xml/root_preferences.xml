@@ -21,6 +21,18 @@
             app:title="@string/volume" />
 
     </PreferenceCategory>
+    <PreferenceCategory app:title="@string/onb_pref_header">
+
+        <Preference
+            app:key="onboarding"
+            app:summary="@string/onb_pref_summary"
+            app:title="@string/onb_pref_title">
+            <intent
+                android:targetClass="de.bulling.barcodebuddyscanner.OnboardingActivity"
+                android:targetPackage="de.bulling.barcodebuddyscanner" />
+        </Preference>
+
+    </PreferenceCategory>
     <PreferenceCategory app:title="@string/menu_order_header">
 
         <Preference

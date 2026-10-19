@@ -32,6 +32,40 @@
         android:orientation="vertical"
         app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
+        <LinearLayout
+            android:id="@+id/setup_hint"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="?attr/colorTertiaryContainer"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="16dp"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/setup_hint_text"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:paddingVertical="8dp"
+                android:textAppearance="?attr/textAppearanceBodySmall"
+                android:textColor="?attr/colorOnTertiaryContainer" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/setup_hint_open"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/hint_setup_open" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/setup_hint_dismiss"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/hint_setup_dismiss" />
+        </LinearLayout>
+
         <TextView
             android:id="@+id/bt_hint"
             android:layout_width="match_parent"

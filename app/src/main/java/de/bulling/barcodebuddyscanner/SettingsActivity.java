@@ -145,35 +145,7 @@ public class SettingsActivity extends AppCompatActivity {
 
 		/** Zeigt die in Android gekoppelten Bluetooth-Geräte zur Auswahl. */
 		private void showDevicePicker() {
-			Context context = requireContext();
-			BluetoothAdapter adapter = ((BluetoothManager) context.getSystemService(Context.BLUETOOTH_SERVICE)).getAdapter();
-			final List<BluetoothDevice> devices = new ArrayList<>();
-			try {
-				if (adapter != null && adapter.isEnabled()) {
-					devices.addAll(adapter.getBondedDevices());
-				}
-			} catch (SecurityException e) {
-				Toast.makeText(context, R.string.spp_permission_needed, Toast.LENGTH_LONG).show();
-				return;
-			}
-			if (devices.isEmpty()) {
-				Toast.makeText(context, R.string.spp_no_devices, Toast.LENGTH_LONG).show();
-				return;
-			}
-			String[] labels = new String[devices.size()];
-			for (int i = 0; i < labels.length; i++) {
-				BluetoothDevice d = devices.get(i);
-				labels[i] = d.getName() + "\n" + d.getAddress();
-			}
-			new MaterialAlertDialogBuilder(context)
-					.setTitle(R.string.spp_picker_title)
-					.setItems(labels, (dialog, which) -> {
-						BluetoothDevice d = devices.get(which);
-						SharedPrefHelper.saveSppDevice(context, d.getAddress(), d.getName());
-						updateSummary();
-					})
-					.setNegativeButton(android.R.string.cancel, null)
-					.show();
+			de.bulling.barcodebuddyscanner.Helper.SppDevicePicker.show(requireContext(), this::updateSummary);
 		}
 	}
 }

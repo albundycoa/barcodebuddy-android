@@ -106,6 +106,7 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
     private TextView syncInfo;
     private TextView emptyView;
     private TextView btHint;
+    private View setupHint;
     private TextView totalBar;
     private TextView progressText;
     private LinearProgressIndicator progress;
@@ -140,8 +141,9 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
         repo = ShoppingRepository.get(this);
         setupUI();
 
-        if (SharedPrefHelper.noApiDetailsSaved(this)) {
-            showSetupScreen();
+        if (SharedPrefHelper.needsOnboarding(this)) {
+            // Erster Start: der Assistent koppelt Barcode Buddy und Grocy und wählt den Scanner
+            showOnboarding(0);
             return;
         }
         // ACCESS_LOCAL_NETWORK is optional: if denied, connecting to a
@@ -162,7 +164,7 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
         // Geschäfte, Namen und Preise aus Grocy auffrischen (ohne Verbindung bleibt die letzte Kopie)
         GrocySync.startIfStale(this);
         // Höchstens alle 12 Stunden von selbst nach einer neuen App-Version fragen
-        if (!SharedPrefHelper.noApiDetailsSaved(this)
+        if (SharedPrefHelper.isConfigured(this)
                 && de.bulling.barcodebuddyscanner.Update.UpdateChecker.shouldAutoCheck(this)) {
             updater.checkAndOffer(false);
         }
@@ -172,7 +174,7 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
             activeSender.attach(senderListener);
         }
         ScannerService.addStatusListener(sppStatusListener);
-        if (!SharedPrefHelper.noApiDetailsSaved(this)) {
+        if (SharedPrefHelper.isConfigured(this)) {
             ensureSppService();
         }
     }
@@ -198,21 +200,23 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
         super.onActivityResult(requestCode, resultCode, data);
         switch (requestCode) {
             case RESULT_SETUP_COMPLETE:
-                if (SharedPrefHelper.noApiDetailsSaved(this))
+                if (!SharedPrefHelper.isConfigured(this) && !SharedPrefHelper.isOnboardingDone(this)) {
+                    // Den Assistenten abgebrochen, ohne etwas einzurichten
                     finish();
-                else {
+                } else {
                     PermissionHelper.requestLocalNetworkPermissionIfNeeded(this);
                     checkIfBarcodeScannerEnabled();
+                    if (SharedPrefHelper.isScanNotificationEnabled(this)) {
+                        PermissionHelper.requestNotificationPermissionIfNeeded(this);
+                    }
+                    refreshList();
+                    updateSetupHint();
                 }
                 break;
             case RESULT_SETTINGS_OPENED:
                 feedback.reloadPrefs();
-                if (SharedPrefHelper.noApiDetailsSaved(this)) {
-                    // In den Einstellungen von Barcode Buddy abgemeldet: neu koppeln
-                    showSetupScreen();
-                    break;
-                }
                 checkIfBarcodeScannerEnabled();
+                updateSetupHint();
                 break;
         }
     }
@@ -336,6 +340,7 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
         refresh.setOnRefreshListener(this::refreshFromGrocy);
         emptyView = findViewById(R.id.empty_view);
         btHint = findViewById(R.id.bt_hint);
+        setupHint = findViewById(R.id.setup_hint);
         totalBar = findViewById(R.id.total_bar);
         syncInfo = findViewById(R.id.sync_info);
         // Antippen der Statuszeile startet die Scannersuche neu, falls der Dienst ruht
@@ -595,6 +600,9 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
         updateCameraState();
         // Das Menü neu aufbauen: Reihenfolge und Sichtbarkeit können sich in den Einstellungen geändert haben
         invalidateOptionsMenu();
+        if (setupHint != null) {
+            updateSetupHint();
+        }
         // Zurück aus der Android-Einstellung "Unbekannte Apps installieren": mit dem Update weitermachen
         updater.onResume();
     }
@@ -1172,6 +1180,31 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
             return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    private void showOnboarding(int startStep) {
+        startActivityForResult(new Intent(MainActivity.this, OnboardingActivity.class)
+                .putExtra(OnboardingActivity.EXTRA_START_STEP, startStep), RESULT_SETUP_COMPLETE);
+    }
+
+    /** Hinweiszeile oben, solange Barcode Buddy oder Grocy noch nicht gekoppelt sind. */
+    private void updateSetupHint() {
+        final boolean bb = !SharedPrefHelper.noApiDetailsSaved(this);
+        final boolean grocy = SharedPrefHelper.hasGrocy(this);
+        boolean show = !(bb && grocy) && !SharedPrefHelper.isSetupHintDismissed(this)
+                && !SharedPrefHelper.needsOnboarding(this);
+        setupHint.setVisibility(show ? View.VISIBLE : View.GONE);
+        if (!show) {
+            return;
+        }
+        ((TextView) findViewById(R.id.setup_hint_text)).setText(!bb && !grocy ? R.string.hint_setup_both
+                : !bb ? R.string.hint_setup_bb : R.string.hint_setup_grocy);
+        final int missing = de.bulling.barcodebuddyscanner.Helper.SetupQr.firstMissingStep(bb, grocy);
+        findViewById(R.id.setup_hint_open).setOnClickListener(v -> showOnboarding(missing));
+        findViewById(R.id.setup_hint_dismiss).setOnClickListener(v -> {
+            SharedPrefHelper.setSetupHintDismissed(this, true);
+            updateSetupHint();
+        });
     }
 
     private void showSetupScreen() {

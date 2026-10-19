@@ -17,6 +17,37 @@ public class SharedPrefHelper {
 		return preferences.getBoolean("needsSetup", true);
 	}
 
+	/** Der Einrichtungsassistent wurde durchlaufen (auch mit übersprungenen Schritten). */
+	public static boolean isOnboardingDone(final Context context) {
+		return PreferenceManager.getDefaultSharedPreferences(context).getBoolean("onboarding_done", false);
+	}
+
+	public static void setOnboardingDone(final Context context) {
+		PreferenceManager.getDefaultSharedPreferences(context).edit().putBoolean("onboarding_done", true).apply();
+	}
+
+	/**
+	 * Der Assistent soll beim Start erscheinen: noch nichts eingerichtet und nie durchlaufen. Wer schon Barcode Buddy
+	 * oder Grocy gekoppelt hat (auch vor diesem Assistenten), bekommt ihn nicht aufgezwungen.
+	 */
+	public static boolean needsOnboarding(final Context context) {
+		return !isOnboardingDone(context) && noApiDetailsSaved(context) && !hasGrocy(context);
+	}
+
+	/** Mindestens eine der beiden Verbindungen steht. */
+	public static boolean isConfigured(final Context context) {
+		return !noApiDetailsSaved(context) || hasGrocy(context);
+	}
+
+	/** Die Hinweiszeile zur unvollständigen Einrichtung wurde weggedrückt. */
+	public static boolean isSetupHintDismissed(final Context context) {
+		return PreferenceManager.getDefaultSharedPreferences(context).getBoolean("setup_hint_dismissed", false);
+	}
+
+	public static void setSetupHintDismissed(final Context context, boolean dismissed) {
+		PreferenceManager.getDefaultSharedPreferences(context).edit().putBoolean("setup_hint_dismissed", dismissed).apply();
+	}
+
 	public static void saveApiDetails(final Context context, final String url, final String key, final boolean isUnsafe) {
 		SharedPreferences.Editor preferences = PreferenceManager.getDefaultSharedPreferences(context).edit();
 		preferences.putBoolean("needsSetup", false);
@@ -270,7 +301,11 @@ public class SharedPrefHelper {
 		return url + "/";
 	}
 
+	/** null, wenn Barcode Buddy nicht gekoppelt ist. */
 	public BBApi initBBApi() {
+		if (this.globalPreferences.getBoolean("needsSetup", true)) {
+			return null;
+		}
 		return new BBApi(this.globalPreferences.getString("url", null),
 				this.globalPreferences.getString("key", null),
 				this.globalPreferences.getBoolean("unsafe", false));
