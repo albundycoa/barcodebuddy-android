@@ -10,6 +10,7 @@ import android.os.Looper;
 import android.util.Log;
 
 import de.bulling.barcodebuddyscanner.Api.OpenFoodFacts;
+import de.bulling.barcodebuddyscanner.Helper.Deposit;
 import de.bulling.barcodebuddyscanner.Helper.SharedPrefHelper;
 import de.bulling.barcodebuddyscanner.Wear.WearSync;
 
@@ -77,13 +78,13 @@ public final class ShoppingRepository {
 
 	private static final String[] ITEM_COLUMNS = {
 			"id", "trip_id", "barcode", "name", "quantity", "scanned_at", "sent_count", "message", "error",
-			"price", "scan_price", "shop_name"
+			"price", "scan_price", "shop_name", "deposit"
 	};
 
 	/** Offene Artikel mit den passenden Grocy-Daten (Name, Geschäft, Einheiten, Letztpreis). */
 	private static final String OPEN_ITEMS_SQL =
 			"SELECT i.id, i.trip_id, i.barcode, i.name, i.quantity, i.scanned_at, i.sent_count, i.message, "
-					+ "i.error, i.price, i.scan_price, i.shop_name, "
+					+ "i.error, i.price, i.scan_price, i.shop_name, i.deposit, p.group_id AS g_group_id, "
 					+ "b.product_id AS g_product_id, b.stock_per_scan AS g_stock_per_scan, "
 					+ "p.name AS g_name, p.stock_to_price AS g_stock_to_price, p.stock_unit AS g_stock_unit, "
 					+ "p.price_unit AS g_price_unit, p.best_before_days AS g_bb_days, p.tare AS g_tare, "
@@ -299,6 +300,7 @@ public final class ShoppingRepository {
 					items.add(openItemFromCursor(c));
 				}
 			}
+			Deposit.apply(items, new SharedPrefHelper(appContext).getDepositRules());
 			boolean cache = DatabaseUtils.queryNumEntries(db, ShoppingDb.T_PRODUCTS) > 0;
 			return new OpenList(items, cache, readShopPositions(db));
 		}, list -> {
@@ -332,6 +334,16 @@ public final class ShoppingRepository {
 			v.put("price", price);
 			return dbHelper.getWritableDatabase().update(ShoppingDb.T_ITEMS, v, "id = ?",
 					new String[]{String.valueOf(itemId)});
+		}, null);
+	}
+
+	/** Übernimmt das neue Geschäft eines Barcodes in die lokale Kopie, damit die Liste sofort stimmt. */
+	public void setBarcodeShop(final String barcode, final long shopId) {
+		write(() -> {
+			ContentValues v = new ContentValues();
+			v.put("shop_id", shopId);
+			return dbHelper.getWritableDatabase().update(ShoppingDb.T_BARCODES, v, "barcode = ? OR barcode = ltrim(?, '0')",
+					new String[]{barcode, barcode});
 		}, null);
 	}
 
@@ -393,6 +405,7 @@ public final class ShoppingRepository {
 			db.beginTransaction();
 			try {
 				List<ShoppingItem> open = readItems(db, 0);
+				final Map<Long, Double> deposits = openDeposits(db);
 				long tripId = -1;
 				int  items  = 0;
 				int  units  = 0;
@@ -413,10 +426,12 @@ public final class ShoppingRepository {
 						ContentValues v = new ContentValues();
 						v.put("trip_id", tripId);
 						v.put("error", (String) null);
+						v.put("deposit", deposits.get(it.id));
 						db.update(ShoppingDb.T_ITEMS, v, "id = ?", new String[]{String.valueOf(it.id)});
 					} else {
 						ShoppingItem archived = it.copy();
 						archived.tripId   = tripId;
+						archived.deposit  = deposits.get(it.id);
 						archived.quantity = sent;
 						archived.error    = null;
 						db.insert(ShoppingDb.T_ITEMS, null, itemToValues(archived, false));
@@ -443,6 +458,29 @@ public final class ShoppingRepository {
 				db.endTransaction();
 			}
 		}, callback);
+	}
+
+	/** Pfand je Scan für alle offenen Artikel (Nummer des Artikels -> Betrag), nach den aktuellen Regeln. */
+	private Map<Long, Double> openDeposits(SQLiteDatabase db) {
+		List<ShoppingItem> items = new ArrayList<>();
+		try (Cursor c = db.rawQuery(OPEN_ITEMS_SQL, null)) {
+			while (c.moveToNext()) {
+				items.add(openItemFromCursor(c));
+			}
+		}
+		Deposit.apply(items, new SharedPrefHelper(appContext).getDepositRules());
+		Map<Long, Double> result = new HashMap<>();
+		for (ShoppingItem item : items) {
+			if (item.deposit != null) {
+				result.put(item.id, item.deposit);
+			}
+		}
+		return result;
+	}
+
+	/** Lässt alle Listen neu laden, z. B. nachdem das Pfand geändert wurde. */
+	public void reload() {
+		main.post(this::notifyChanged);
 	}
 
 	// ---------------------------------------------------------------- Verlauf
@@ -1165,6 +1203,7 @@ public final class ShoppingRepository {
 		item.price     = getDouble(c, "price");
 		item.scanPrice = getDouble(c, "scan_price");
 		item.shopName  = c.getString(c.getColumnIndexOrThrow("shop_name"));
+		item.deposit   = getDouble(c, "deposit");
 		return item;
 	}
 
@@ -1177,6 +1216,8 @@ public final class ShoppingRepository {
 			item.known         = true;
 			item.productId     = c.getLong(productCol);
 			item.productName   = c.getString(c.getColumnIndexOrThrow("g_name"));
+			int groupCol = c.getColumnIndexOrThrow("g_group_id");
+			item.groupId       = c.isNull(groupCol) ? null : c.getLong(groupCol);
 			item.stockPerScan  = c.getDouble(c.getColumnIndexOrThrow("g_stock_per_scan"));
 			item.stockToPrice  = c.getDouble(c.getColumnIndexOrThrow("g_stock_to_price"));
 			item.stockUnitName = c.getString(c.getColumnIndexOrThrow("g_stock_unit"));
@@ -1219,6 +1260,7 @@ public final class ShoppingRepository {
 		v.put("price", item.price);
 		v.put("scan_price", item.scanPrice);
 		v.put("shop_name", item.shopName);
+		v.put("deposit", item.deposit);
 		return v;
 	}
 

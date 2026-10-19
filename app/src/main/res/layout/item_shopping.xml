@@ -31,6 +31,17 @@
             android:textColor="?attr/colorOnSurfaceVariant" />
 
         <TextView
+            android:id="@+id/item_shop"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="?attr/selectableItemBackground"
+            android:gravity="center_vertical"
+            android:minHeight="32dp"
+            android:textAppearance="?attr/textAppearanceBodyMedium"
+            android:textColor="?attr/colorPrimary"
+            android:visibility="gone" />
+
+        <TextView
             android:id="@+id/item_price"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

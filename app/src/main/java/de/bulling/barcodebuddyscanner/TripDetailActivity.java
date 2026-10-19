@@ -107,16 +107,22 @@ public class TripDetailActivity extends AppCompatActivity {
 	/** Kopfzeile: Anzahl der Artikel und, wenn Preise bekannt sind, die Summe. */
 	private void updateSummary() {
 		double total = 0;
+		double deposit = 0;
 		boolean hasPrice = false;
 		for (ShoppingItem item : items) {
 			if (item.scanPrice != null) {
 				total += item.scanPrice * item.quantity;
 				hasPrice = true;
 			}
+			deposit += item.depositTotal();
 		}
+		total += deposit;
 		String text = summary;
-		if (hasPrice) {
+		if (hasPrice || deposit > 0) {
 			text += " · " + getString(R.string.trip_total, Money.format(total));
+		}
+		if (deposit > 0) {
+			text += " · " + getString(R.string.total_deposit, Money.format(deposit));
 		}
 		((TextView) findViewById(R.id.trip_summary)).setText(text);
 	}
@@ -178,11 +184,17 @@ public class TripDetailActivity extends AppCompatActivity {
 				}
 				subtitle.append(item.message);
 			}
+			if (item.deposit != null) {
+				if (subtitle.length() > 0) {
+					subtitle.append("\n");
+				}
+				subtitle.append(getString(R.string.trip_item_deposit, Money.format(item.depositTotal())));
+			}
 			holder.subtitle.setText(subtitle);
 			holder.subtitle.setVisibility(subtitle.length() > 0 ? View.VISIBLE : View.GONE);
 			holder.quantity.setText(item.scanPrice == null
 					? getString(R.string.trip_item_quantity, item.quantity)
-					: getString(R.string.trip_item_price, item.quantity, Money.format(item.scanPrice * item.quantity)));
+					: getString(R.string.trip_item_price, item.quantity, Money.format(item.scanPrice * item.quantity + item.depositTotal())));
 		}
 
 		@Override

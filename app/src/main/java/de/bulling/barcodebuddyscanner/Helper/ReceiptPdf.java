@@ -32,7 +32,10 @@ public final class ReceiptPdf {
 	}
 
 	public static class Totals {
+		/** Summe inklusive Pfand */
 		public double sum;
+		/** Darin enthaltenes Pfand */
+		public double deposit;
 		public int    withoutPrice;
 	}
 
@@ -54,6 +57,8 @@ public final class ReceiptPdf {
 			} else {
 				totals.sum += line;
 			}
+			totals.sum     += item.depositTotal();
+			totals.deposit += item.depositTotal();
 		}
 		return totals;
 	}
@@ -183,7 +188,7 @@ public final class ReceiptPdf {
 								Paint text, Paint small) {
 		float right = PAGE_WIDTH - MARGIN;
 		Double total = lineTotal(item);
-		String price = total == null ? "–" : Money.format(total);
+		String price = total == null ? "–" : Money.format(total + item.depositTotal());
 		float priceWidth = text.measureText(price);
 		float maxName = right - MARGIN - priceWidth - 16;
 		canvas.drawText(fit(name(item), text, maxName), MARGIN, y, text);
@@ -196,6 +201,9 @@ public final class ReceiptPdf {
 		String detail = scan == null
 				? item.quantity + " × " + context.getString(R.string.receipt_no_price)
 				: item.quantity + " × " + Money.format(scan);
+		if (item.deposit != null) {
+			detail += " + " + context.getString(R.string.receipt_deposit, item.quantity, Money.format(item.deposit));
+		}
 		canvas.drawText(fit(detail + " · " + item.barcode, small, right - MARGIN), MARGIN, y + 13, small);
 	}
 

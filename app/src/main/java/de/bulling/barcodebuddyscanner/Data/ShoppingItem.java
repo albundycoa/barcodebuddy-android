@@ -23,6 +23,8 @@ public class ShoppingItem {
 	public Double price;
 	/** Beim Senden verwendeter Preis je Scan, für den Verlauf */
 	public Double scanPrice;
+	/** Pfand je Scan (nur in der App mitgerechnet, nicht im Produktpreis), null = keins */
+	public Double deposit;
 
 	// ---- Aus dem Grocy-Speicher, nur beim Laden der offenen Liste gefüllt ----
 
@@ -31,6 +33,8 @@ public class ShoppingItem {
 	/** Namensvorschlag von OpenFoodFacts für einen unbekannten Barcode, null = keiner */
 	public String  suggestion;
 	public Long    productId;
+	/** Produktgruppe in Grocy, daraus ergibt sich das Pfand */
+	public Long    groupId;
 	public String  productName;
 	public Long    shopId;
 	public String  shopName;
@@ -69,8 +73,14 @@ public class ShoppingItem {
 		c.error     = error;
 		c.price     = price;
 		c.scanPrice = scanPrice;
+		c.deposit   = deposit;
 		c.shopName  = shopName;
 		return c;
+	}
+
+	/** Pfand für die ganze Zeile (Stückzahl mal Pfand je Scan). */
+	public double depositTotal() {
+		return deposit == null ? 0 : deposit * quantity;
 	}
 
 	/** Name aus Grocy, sonst der gespeicherte Name, sonst null. */

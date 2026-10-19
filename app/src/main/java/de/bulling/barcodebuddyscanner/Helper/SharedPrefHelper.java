@@ -74,6 +74,15 @@ public class SharedPrefHelper {
 		this.globalPreferences = PreferenceManager.getDefaultSharedPreferences(context);
 	}
 
+	/** Pfand je Produktgruppe (Grocy-Gruppennummer -> Betrag je Lagereinheit). */
+	public java.util.Map<Long, Double> getDepositRules() {
+		return Deposit.parse(this.globalPreferences.getString("deposit_rules", ""));
+	}
+
+	public void setDepositRules(java.util.Map<Long, Double> rules) {
+		this.globalPreferences.edit().putString("deposit_rules", Deposit.serialize(rules)).apply();
+	}
+
 	/** Unbekannte Barcodes bei OpenFoodFacts nachschlagen (überträgt nur den Barcode). */
 	public boolean isOffLookupEnabled() {
 		return this.globalPreferences.getBoolean("off_lookup", true);

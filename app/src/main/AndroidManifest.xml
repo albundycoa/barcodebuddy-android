@@ -132,6 +132,12 @@
             android:label="@string/menu_order_title"
             android:theme="@style/AppTheme.NoActionBar" />
         <activity
+            android:name=".DepositActivity"
+            android:screenOrientation="portrait"
+            android:label="@string/deposit_title"
+            android:theme="@style/AppTheme.NoActionBar"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
             android:name=".StockCheckActivity"
             android:screenOrientation="portrait"
             android:label="@string/stock_title"

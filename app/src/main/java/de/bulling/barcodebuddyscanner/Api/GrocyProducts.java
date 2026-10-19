@@ -141,6 +141,30 @@ public final class GrocyProducts {
 		client.post("objects/product_barcodes", body.toString());
 	}
 
+	/** Ändert nur das Geschäft eines vorhandenen Barcodes in Grocy (der Barcode bleibt dem Produkt zugeordnet). */
+	public static void setBarcodeShop(GrocyClient client, String barcode, long shopId) throws IOException {
+		Long id = findBarcodeId(client, barcode);
+		// Wie in der App sonst auch: ein mit Nullen aufgefüllter Code (GTIN-14) trifft den EAN-13
+		String stripped = barcode.replaceFirst("^0+", "");
+		if (id == null && !stripped.equals(barcode) && !stripped.isEmpty()) {
+			id = findBarcodeId(client, stripped);
+		}
+		if (id == null) {
+			throw new IOException(Texts.get(R.string.err_barcode_not_found));
+		}
+		JsonObject body = new JsonObject();
+		body.addProperty("shopping_location_id", shopId);
+		client.put("objects/product_barcodes/" + id, body.toString());
+	}
+
+	private static Long findBarcodeId(GrocyClient client, String barcode) throws IOException {
+		JsonElement response = client.get("objects/product_barcodes?query%5B%5D=barcode%3D" + java.net.URLEncoder.encode(barcode, "UTF-8"));
+		if (response == null || !response.isJsonArray() || response.getAsJsonArray().size() == 0) {
+			return null;
+		}
+		return response.getAsJsonArray().get(0).getAsJsonObject().get("id").getAsLong();
+	}
+
 	private static long createdId(JsonElement response) throws IOException {
 		try {
 			return response.getAsJsonObject().get("created_object_id").getAsLong();

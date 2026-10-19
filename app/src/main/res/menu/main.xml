@@ -14,6 +14,10 @@
         android:title="@string/products_title"
         app:showAsAction="never" />
     <item
+        android:id="@+id/action_deposit"
+        android:title="@string/action_deposit"
+        app:showAsAction="never" />
+    <item
         android:id="@+id/action_stock_check"
         android:title="@string/action_stock_check"
         app:showAsAction="never" />

@@ -766,6 +766,9 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
         }
         ReceiptPdf.Totals totals = ReceiptPdf.totals(currentItems);
         String text = getString(R.string.total_estimate, Money.format(totals.sum));
+        if (totals.deposit > 0) {
+            text += "  ·  " + getString(R.string.total_deposit, Money.format(totals.deposit));
+        }
         if (totals.withoutPrice > 0) {
             text += "  ·  " + getString(R.string.total_missing, totals.withoutPrice);
         }
@@ -875,6 +878,57 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
                 })
                 .setNegativeButton(android.R.string.cancel, null)
                 .show();
+    }
+
+    @Override
+    public void onChangeShop(final ShoppingItem item) {
+        final GrocyClient client = new SharedPrefHelper(this).initGrocyClient();
+        if (client == null) {
+            Toast.makeText(this, R.string.product_no_grocy, Toast.LENGTH_LONG).show();
+            return;
+        }
+        repo.getOptions("shops", shops -> {
+            if (shops.isEmpty()) {
+                Toast.makeText(this, R.string.assign_no_shops, Toast.LENGTH_LONG).show();
+                return;
+            }
+            final String[] names = new String[shops.size()];
+            int checked = -1;
+            for (int i = 0; i < shops.size(); i++) {
+                names[i] = shops.get(i).name;
+                if (item.shopId != null && shops.get(i).id == item.shopId) {
+                    checked = i;
+                }
+            }
+            final int[] selected = {checked};
+            new com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+                    .setTitle(getString(R.string.shop_change_title, item.displayName() != null ? item.displayName() : item.barcode))
+                    .setSingleChoiceItems(names, checked, (d, which) -> selected[0] = which)
+                    .setNegativeButton(android.R.string.cancel, null)
+                    .setPositiveButton(R.string.shop_change_button, (d, w) -> {
+                        if (selected[0] >= 0) {
+                            runShopChange(client, item, shops.get(selected[0]).id);
+                        }
+                    }).show();
+        });
+    }
+
+    private void runShopChange(final GrocyClient client, final ShoppingItem item, final long shopId) {
+        new Thread(() -> {
+            try {
+                GrocyProducts.setBarcodeShop(client, item.barcode, shopId);
+                runOnUiThread(() -> {
+                    repo.setBarcodeShop(item.barcode, shopId);
+                    Toast.makeText(this, R.string.shop_change_done, Toast.LENGTH_SHORT).show();
+                });
+            } catch (java.io.IOException e) {
+                runOnUiThread(() -> new com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+                        .setTitle(R.string.product_create_failed_title)
+                        .setMessage(getString(R.string.product_create_failed, String.valueOf(e.getMessage())))
+                        .setPositiveButton(android.R.string.ok, null)
+                        .show());
+            }
+        }, "barcode-shop").start();
     }
 
     /** Fragt, in welchem Geschäft der Barcode gescannt wurde, und hängt ihn dann an das Produkt in Grocy. */
@@ -1163,6 +1217,9 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
             return true;
         } else if (itemId == R.id.action_update) {
             updater.checkAndOffer(true);
+            return true;
+        } else if (itemId == R.id.action_deposit) {
+            startActivity(new Intent(this, DepositActivity.class));
             return true;
         } else if (itemId == R.id.action_stock_check) {
             startActivity(new Intent(this, StockCheckActivity.class));

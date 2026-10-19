@@ -38,7 +38,7 @@ public final class GrocySync {
 	private static final long FRESH_MS = 10 * 60 * 1000L;
 
 	/** Version der gespeicherten Datenfelder; bei einer Änderung wird einmal neu synchronisiert. */
-	private static final int CACHE_VERSION = 9;
+	private static final int CACHE_VERSION = 10;
 
 	public interface Callback {
 		/** ok = false: Verbindung oder Daten fehlerhaft, die bisherige Kopie bleibt erhalten */
@@ -403,6 +403,9 @@ public final class GrocySync {
 			Long group = asLong(o, "product_group_id");
 			if (group != null && groupNames.get(group) != null) {
 				v.put("group_name", groupNames.get(group));
+			}
+			if (group != null) {
+				v.put("group_id", group);
 			}
 			data.products.add(v);
 		}

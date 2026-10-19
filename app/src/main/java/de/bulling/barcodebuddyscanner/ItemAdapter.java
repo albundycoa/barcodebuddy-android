@@ -10,20 +10,14 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import de.bulling.barcodebuddyscanner.Data.ShoppingItem;
 import de.bulling.barcodebuddyscanner.Data.ShoppingRepository;
 import de.bulling.barcodebuddyscanner.Helper.Money;
 
 /**
- * Zeigt die offene Einkaufsliste, nach Geschäften gruppiert, mit Stückzahl- und Preis-Steuerung.
- * Oben stehen Produkte, die Grocy nicht kennt, danach die Geschäfte in der vom Nutzer
- * gewählten Reihenfolge und zuletzt Produkte ohne Geschäft.
+ * Zeigt die gescannten Artikel in Scanreihenfolge (neuester oben) mit Stückzahl-, Preis- und Geschäfts-Steuerung.
  */
 public class ItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
@@ -40,13 +34,13 @@ public class ItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
 		/** Unbekannten Barcode einem Produkt zuordnen oder dafür ein neues Produkt anlegen. */
 		void onAssign(ShoppingItem item);
+
+		/** Geschäft des Barcodes ändern (wird in Grocy am Barcode gespeichert). */
+		void onChangeShop(ShoppingItem item);
 	}
 
 	private static final int TYPE_HEADER = 0;
 	private static final int TYPE_ITEM   = 1;
-
-	private static final long GROUP_NEW  = -1;
-	private static final long GROUP_NONE = 0;
 
 	private static class Row {
 		final String       header;
@@ -72,78 +66,12 @@ public class ItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 	public void submit(ShoppingRepository.OpenList list) {
 		rows.clear();
 		cacheAvailable = list.cacheAvailable;
-		if (!list.cacheAvailable) {
-			// Ohne Grocy-Daten lässt sich nicht sagen, was neu ist und wo es gekauft wird
-			for (ShoppingItem item : list.items) {
-				rows.add(new Row(null, item));
-			}
-		} else {
-			final Map<Long, List<ShoppingItem>> groups = new HashMap<>();
-			final Map<Long, String> shopNames = new HashMap<>();
-			for (ShoppingItem item : list.items) {
-				long key = !item.known ? GROUP_NEW : (item.shopId != null ? item.shopId : GROUP_NONE);
-				List<ShoppingItem> group = groups.get(key);
-				if (group == null) {
-					group = new ArrayList<>();
-					groups.put(key, group);
-				}
-				group.add(item);
-				if (key > 0) {
-					shopNames.put(key, item.shopName);
-				}
-			}
-			final Map<Long, Integer> positions = list.shopPosition;
-			List<Long> keys = new ArrayList<>(groups.keySet());
-			Collections.sort(keys, (a, b) -> {
-				int ra = rank(a), rb = rank(b);
-				if (ra != rb) {
-					return ra < rb ? -1 : 1;
-				}
-				if (ra != 1) {
-					return 0;
-				}
-				int pa = positions.containsKey(a) ? positions.get(a) : Integer.MAX_VALUE;
-				int pb = positions.containsKey(b) ? positions.get(b) : Integer.MAX_VALUE;
-				if (pa != pb) {
-					return pa < pb ? -1 : 1;
-				}
-				return String.valueOf(shopNames.get(a)).compareToIgnoreCase(String.valueOf(shopNames.get(b)));
-			});
-			for (Long key : keys) {
-				List<ShoppingItem> group = groups.get(key);
-				Collections.sort(group, BY_NAME);
-				String title = key == GROUP_NEW ? context.getString(R.string.section_new)
-						: key == GROUP_NONE ? context.getString(R.string.section_none)
-						: shopNames.get(key);
-				double sum = 0;
-				boolean anyPrice = false;
-				for (ShoppingItem item : group) {
-					Double scan = item.effectiveScanPrice();
-					if (scan != null) {
-						sum += scan * item.quantity;
-						anyPrice = true;
-					}
-				}
-				rows.add(new Row(anyPrice
-						? context.getString(R.string.section_title_sum, title, group.size(), Money.format(sum))
-						: context.getString(R.string.section_title, title, group.size()), null));
-				for (ShoppingItem item : group) {
-					rows.add(new Row(null, item));
-				}
-			}
+		// In Scanreihenfolge: der neueste Scan steht oben (die Liste kommt bereits so sortiert aus der Datenbank)
+		for (ShoppingItem item : list.items) {
+			rows.add(new Row(null, item));
 		}
 		notifyDataSetChanged();
 	}
-
-	private static int rank(long key) {
-		return key == GROUP_NEW ? 0 : key == GROUP_NONE ? 2 : 1;
-	}
-
-	private static final Comparator<ShoppingItem> BY_NAME = (a, b) -> {
-		String na = a.displayName() != null ? a.displayName() : a.barcode;
-		String nb = b.displayName() != null ? b.displayName() : b.barcode;
-		return na.compareToIgnoreCase(nb);
-	};
 
 	/** Während des Sendens darf die Liste nicht verändert werden. */
 	public void setEditable(boolean editable) {
@@ -206,8 +134,23 @@ public class ItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 		if (item.sentCount > 0 && item.sentCount < item.quantity) {
 			append(subtitle, context.getString(R.string.item_partly_sent, item.sentCount));
 		}
+		if (item.deposit != null) {
+			append(subtitle, context.getString(R.string.item_deposit_line, item.quantity, Money.format(item.deposit),
+					Money.format(item.depositTotal())));
+		}
 		holder.subtitle.setText(subtitle);
 		holder.subtitle.setVisibility(subtitle.length() > 0 ? View.VISIBLE : View.GONE);
+
+		// Geschäft des Barcodes: Tippen ändert es (falsch zugeordnet, z. B. Aldi statt Lidl)
+		if (item.known && cacheAvailable) {
+			holder.shop.setVisibility(View.VISIBLE);
+			holder.shop.setText(item.shopName != null ? context.getString(R.string.item_shop_label, item.shopName)
+					: context.getString(R.string.item_shop_none));
+			holder.shop.setEnabled(editable);
+			holder.shop.setOnClickListener(v -> actions.onChangeShop(item));
+		} else {
+			holder.shop.setVisibility(View.GONE);
+		}
 
 		Double price = item.effectivePrice();
 		if (price == null) {
@@ -265,6 +208,7 @@ public class ItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 	static class ItemHolder extends RecyclerView.ViewHolder {
 		final TextView title;
 		final TextView subtitle;
+		final TextView shop;
 		final TextView price;
 		final TextView error;
 		final TextView quantity;
@@ -277,6 +221,7 @@ public class ItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 			super(view);
 			title    = view.findViewById(R.id.item_title);
 			subtitle = view.findViewById(R.id.item_subtitle);
+			shop     = view.findViewById(R.id.item_shop);
 			price    = view.findViewById(R.id.item_price);
 			error    = view.findViewById(R.id.item_error);
 			quantity = view.findViewById(R.id.item_quantity);

@@ -7,7 +7,7 @@ import android.database.sqlite.SQLiteOpenHelper;
 class ShoppingDb extends SQLiteOpenHelper {
 
 	private static final String DB_NAME    = "shopping.db";
-	private static final int    DB_VERSION = 11;
+	private static final int    DB_VERSION = 12;
 
 	static final String T_ITEMS      = "items";
 	static final String T_TRIPS      = "trips";
@@ -48,7 +48,8 @@ class ShoppingDb extends SQLiteOpenHelper {
 				+ "error TEXT, "
 				+ "price REAL, "
 				+ "scan_price REAL, "
-				+ "shop_name TEXT)");
+				+ "shop_name TEXT, "
+				+ "deposit REAL)");
 		db.execSQL("CREATE INDEX items_trip ON " + T_ITEMS + " (trip_id)");
 		createGrocyTables(db);
 		createShoppingTables(db);
@@ -87,6 +88,13 @@ class ShoppingDb extends SQLiteOpenHelper {
 		if (oldVersion >= 5 && oldVersion < 10) {
 			// Von Hand geänderte Menge eines Eintrags der Einkaufsliste, bis Grocy sie übernommen hat
 			db.execSQL("ALTER TABLE " + T_SHOPPING + " ADD COLUMN manual_amount REAL");
+		}
+		if (oldVersion < 12) {
+			// Pfand je Scan im Verlauf festhalten; die Produktgruppe kommt mit der nächsten Synchronisierung
+			db.execSQL("ALTER TABLE " + T_ITEMS + " ADD COLUMN deposit REAL");
+			if (oldVersion >= 2) {
+				db.execSQL("ALTER TABLE " + T_PRODUCTS + " ADD COLUMN group_id INTEGER");
+			}
 		}
 		if (oldVersion < 11) {
 			// Namensvorschläge von OpenFoodFacts für unbekannte Barcodes
@@ -150,7 +158,8 @@ class ShoppingDb extends SQLiteOpenHelper {
 				+ "best_before_days INTEGER, "
 				+ "tare INTEGER NOT NULL DEFAULT 0, "
 				+ "group_name TEXT, "
-				+ "consume_amount REAL)");
+				+ "consume_amount REAL, "
+				+ "group_id INTEGER)");
 		// stock_per_scan: Wie viele Lagereinheiten ein Scan dieses Barcodes bucht;
 		// exact: Der Barcode hat in Grocy eine eigene Menge (sonst entscheidet Barcode Buddy)
 		db.execSQL("CREATE TABLE " + T_BARCODES + " ("

@@ -13,6 +13,19 @@ zurückgehen, sonst lässt sich ein Update nicht mehr einspielen. Gepflegt wird 
 `appVersion` in `gradle.properties`. Veröffentlicht wird mit `./publish-apk.sh`: privat auf den Update-Server im Heimnetz, mit `--github` als
 öffentlicher GitHub-Release.
 
+## [0.5.0] – Pfand, Scanreihenfolge, Geschäft ändern
+
+- **Scanreihenfolge**: Die Liste „Gescannt“ ist nicht mehr nach Geschäften gruppiert, sondern nach Scanzeit sortiert. Jeder neue Scan steht
+  ganz oben, ein erneut gescannter Artikel rückt wieder nach oben.
+- **Geschäft ändern**: Bei bekannten Produkten steht in der Karte „Geschäft: …“. Antippen öffnet die Auswahl, der Barcode wird danach in Grocy
+  mit dem neuen Geschäft gespeichert (nur das Geschäft, alles andere bleibt).
+- **Pfand**: Neuer Menüpunkt „Pfand“. Dort steht jede Produktgruppe aus Grocy mit einem Betragsfeld (z. B. 0,25 für „Getränkepfand“). Das Pfand
+  wird je Stück zur Zeile addiert (3 × Cola = Preis + 3 × 0,25 €) und erscheint in der Liste, in der Summe („davon Pfand“), im Verlauf und im
+  Beleg. Es wird nur in der App gerechnet; an Grocy und Barcode Buddy geht weiterhin der reine Produktpreis. Weitere Gruppen kannst du jederzeit
+  dort nachtragen; neue Gruppen aus Grocy erscheinen nach der nächsten Synchronisierung.
+- Beim ersten Start nach dem Update lädt die App die Grocy-Daten einmal neu (Produktgruppen werden gebraucht).
+- Uhr: keine Änderung.
+
 ## [0.4.5] – Produktname im Zuordnen-Dialog
 
 - Hat OpenFoodFacts das Produkt erkannt, zeigt der Dialog nach „Anlegen / zuordnen“ (Einkaufsliste und Inventur) den Produktnamen statt des Barcodes.

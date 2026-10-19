@@ -82,6 +82,24 @@
     <string name="scanner_header">Barcode-Scanner</string>
     <!-- OpenFoodFacts: Namensvorschläge für unbekannte Produkte -->
     <string name="off_header">Unbekannte Produkte</string>
+    <!-- Pfand -->
+    <string name="action_deposit">Pfand</string>
+    <string name="deposit_title">Pfand</string>
+    <string name="deposit_hint">Trage bei einer Produktgruppe den Pfand je Stück ein, zum Beispiel 0,25 für eine Flasche. Das Pfand wird nur in der App mitgerechnet (Liste, Verlauf, Beleg) und nie auf den Produktpreis in Grocy aufgeschlagen. Leer lassen heißt: kein Pfand.</string>
+    <string name="deposit_amount_hint">0,00</string>
+    <string name="deposit_currency">€</string>
+    <string name="deposit_empty">Es gibt noch keine Produktgruppen aus Grocy. Sie erscheinen nach der nächsten Synchronisierung mit Grocy.</string>
+    <string name="item_deposit_line">Pfand: %1$d × %2$s = %3$s</string>
+    <string name="total_deposit">davon Pfand %1$s</string>
+    <string name="receipt_deposit">%1$d × %2$s Pfand</string>
+    <string name="trip_item_deposit">inkl. Pfand %1$s</string>
+    <!-- Geschäft eines gescannten Produkts ändern -->
+    <string name="item_shop_label">Geschäft: %1$s</string>
+    <string name="item_shop_none">Geschäft wählen</string>
+    <string name="shop_change_title">Geschäft für %1$s</string>
+    <string name="shop_change_button">Übernehmen</string>
+    <string name="shop_change_done">Geschäft geändert</string>
+    <string name="err_barcode_not_found">Der Barcode wurde in Grocy nicht gefunden.</string>
     <string name="off_lookup_title">Namen bei OpenFoodFacts suchen</string>
     <string name="off_lookup_summary">Schlägt für Barcodes, die Grocy nicht kennt, einen Namen aus der offenen Datenbank OpenFoodFacts vor. Dabei wird nur der Barcode übertragen.</string>
     <string name="item_unknown_suggestion">Unbekanntes Produkt · Vorschlag von OpenFoodFacts</string>
