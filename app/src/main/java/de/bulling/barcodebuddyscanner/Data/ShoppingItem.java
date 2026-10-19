@@ -28,6 +28,8 @@ public class ShoppingItem {
 
 	/** Der Barcode gehört zu einem Produkt, das Grocy kennt */
 	public boolean known;
+	/** Namensvorschlag von OpenFoodFacts für einen unbekannten Barcode, null = keiner */
+	public String  suggestion;
 	public Long    productId;
 	public String  productName;
 	public Long    shopId;

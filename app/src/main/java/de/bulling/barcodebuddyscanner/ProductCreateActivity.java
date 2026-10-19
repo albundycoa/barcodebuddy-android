@@ -94,6 +94,14 @@ public class ProductCreateActivity extends AppCompatActivity {
 		String suggestion = getIntent().getStringExtra(EXTRA_NAME);
 		if (suggestion != null && !suggestion.equals(barcode)) {
 			nameLayout.getEditText().setText(suggestion);
+		} else if (barcode != null) {
+			// Kein Name bekannt: bei OpenFoodFacts nachsehen und vorausfüllen, solange noch nichts eingetippt ist
+			repo.suggestionFor(barcode, name -> {
+				if (name != null && !isFinishing() && nameLayout.getEditText().getText().length() == 0) {
+					nameLayout.getEditText().setText(name);
+					nameLayout.setHelperText(getString(R.string.product_create_suggestion_hint));
+				}
+			});
 		}
 
 		location = picker(R.id.f_location, R.string.product_location, "np_location");

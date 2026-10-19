@@ -7,7 +7,7 @@ import android.database.sqlite.SQLiteOpenHelper;
 class ShoppingDb extends SQLiteOpenHelper {
 
 	private static final String DB_NAME    = "shopping.db";
-	private static final int    DB_VERSION = 10;
+	private static final int    DB_VERSION = 11;
 
 	static final String T_ITEMS      = "items";
 	static final String T_TRIPS      = "trips";
@@ -22,6 +22,7 @@ class ShoppingDb extends SQLiteOpenHelper {
 	static final String T_GROUPS      = "g_groups";
 	static final String T_LOCATIONS   = "g_locations";
 	static final String T_GROUP_ORDER = "group_order";
+	static final String T_OFF         = "off_cache";
 
 	ShoppingDb(Context context) {
 		super(context, DB_NAME, null, DB_VERSION);
@@ -51,6 +52,7 @@ class ShoppingDb extends SQLiteOpenHelper {
 		db.execSQL("CREATE INDEX items_trip ON " + T_ITEMS + " (trip_id)");
 		createGrocyTables(db);
 		createShoppingTables(db);
+		createOffTable(db);
 	}
 
 	@Override
@@ -86,6 +88,10 @@ class ShoppingDb extends SQLiteOpenHelper {
 			// Von Hand geänderte Menge eines Eintrags der Einkaufsliste, bis Grocy sie übernommen hat
 			db.execSQL("ALTER TABLE " + T_SHOPPING + " ADD COLUMN manual_amount REAL");
 		}
+		if (oldVersion < 11) {
+			// Namensvorschläge von OpenFoodFacts für unbekannte Barcodes
+			createOffTable(db);
+		}
 		if (oldVersion >= 2 && oldVersion < 3) {
 			db.execSQL("ALTER TABLE " + T_ITEMS + " ADD COLUMN shop_name TEXT");
 			// Die Kopie der Grocy-Daten wird bei der nächsten Synchronisierung vollständig neu gefüllt
@@ -95,6 +101,14 @@ class ShoppingDb extends SQLiteOpenHelper {
 			db.execSQL("ALTER TABLE " + T_BARCODES + " ADD COLUMN exact INTEGER NOT NULL DEFAULT 0");
 			db.execSQL("CREATE TABLE " + T_STOCK + " (product_id INTEGER PRIMARY KEY, amount REAL NOT NULL)");
 		}
+	}
+
+	/** Antworten von OpenFoodFacts je Barcode; name NULL = dort nicht gefunden (wird später erneut gefragt). */
+	private static void createOffTable(SQLiteDatabase db) {
+		db.execSQL("CREATE TABLE IF NOT EXISTS " + T_OFF + " ("
+				+ "barcode TEXT PRIMARY KEY, "
+				+ "name TEXT, "
+				+ "checked_at INTEGER NOT NULL)");
 	}
 
 	/** Einkaufsliste aus Grocy mit lokalem Abhak-Stand und Einheitennamen. */

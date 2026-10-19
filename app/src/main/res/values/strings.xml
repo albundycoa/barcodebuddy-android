@@ -80,10 +80,13 @@
     <string name="use_beep">Ton</string>
     <string name="volume">Lautstärke</string>
     <string name="scanner_header">Barcode-Scanner</string>
-    <string name="orientation">Ausrichtung</string>
-    <string name="orientation_auto">Automatisch</string>
-    <string name="orientation_land">Querformat</string>
-    <string name="orientation_port">Hochformat</string>
+    <!-- OpenFoodFacts: Namensvorschläge für unbekannte Produkte -->
+    <string name="off_header">Unbekannte Produkte</string>
+    <string name="off_lookup_title">Namen bei OpenFoodFacts suchen</string>
+    <string name="off_lookup_summary">Schlägt für Barcodes, die Grocy nicht kennt, einen Namen aus der offenen Datenbank OpenFoodFacts vor. Dabei wird nur der Barcode übertragen.</string>
+    <string name="item_unknown_suggestion">Unbekanntes Produkt · Vorschlag von OpenFoodFacts</string>
+    <string name="product_create_suggestion_hint">Vorschlag von OpenFoodFacts – bitte prüfen und bei Bedarf ändern</string>
+    <string name="inventory_unknown_suggestion">Unbekanntes Produkt: %1$s</string>
     <!-- Einkaufsliste: Geschäfte und Preise -->
     <string name="section_new">Neue Produkte (noch nicht in Grocy)</string>
     <string name="section_none">Ohne Geschäft</string>

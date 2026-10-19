@@ -138,15 +138,16 @@
         </Preference>
 
     </PreferenceCategory>
-    <PreferenceCategory app:title="@string/scanner_header">
+    <PreferenceCategory app:title="@string/off_header">
 
-        <ListPreference
-            android:defaultValue="0"
-            android:entries="@array/orientation"
-            android:summary="%s"
-            android:entryValues="@array/orientation_val"
-            app:title="@string/orientation"
-            app:key="orientation" />
+        <SwitchPreferenceCompat
+            android:defaultValue="true"
+            android:summary="@string/off_lookup_summary"
+            app:key="off_lookup"
+            app:title="@string/off_lookup_title" />
+
+    </PreferenceCategory>
+    <PreferenceCategory app:title="@string/scanner_header">
 
 
         <ListPreference

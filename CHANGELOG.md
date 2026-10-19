@@ -13,6 +13,17 @@ zurückgehen, sonst lässt sich ein Update nicht mehr einspielen. Gepflegt wird 
 `appVersion` in `gradle.properties`. Veröffentlicht wird mit `./publish-apk.sh`: privat auf den Update-Server im Heimnetz, mit `--github` als
 öffentlicher GitHub-Release.
 
+## [0.4.0] – Namensvorschläge und nur Hochformat
+
+- **Namensvorschlag für unbekannte Produkte**: Scannt man einen Barcode, den Grocy nicht kennt, fragt die App im Hintergrund die offene
+  Datenbank OpenFoodFacts ab. In der Einkaufsliste steht dann statt der nackten Nummer der Name (Marke, Produkt, Menge) mit dem Hinweis
+  „Unbekanntes Produkt · Vorschlag von OpenFoodFacts“. Beim Anlegen des Produkts in Grocy ist der Name schon vorausgefüllt und lässt sich
+  wie alle anderen Felder ändern. Das gilt auch für unbekannte Barcodes in der Inventur.
+- Übertragen wird nur der Barcode, und nur für echte Produktcodes (EAN/UPC). Treffer und Fehlanzeigen werden zwischengespeichert. Unter
+  Einstellungen → Unbekannte Produkte lässt sich das Nachschlagen ausschalten.
+- **Nur Hochformat**: Die App (inklusive Kamera-Scan) läuft nur noch hochkant. Die Einstellung „Ausrichtung“ entfällt.
+- Uhr: keine Änderung.
+
 ## [0.3.0] – Einrichtungsassistent
 
 - **Einrichtungsassistent**: Beim ersten Start führt die App durch Barcode Buddy (QR-Code oder von Hand), Grocy (QR-Code aus

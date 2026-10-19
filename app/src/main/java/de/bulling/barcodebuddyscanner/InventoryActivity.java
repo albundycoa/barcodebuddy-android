@@ -200,6 +200,17 @@ public class InventoryActivity extends AppCompatActivity {
 			Entry entry = product == null ? session.recordUnknown(code) : session.recordProduct(product);
 			showLast(entry);
 			render();
+			if (product == null && !suggestions.containsKey(code)) {
+				repo.suggestionFor(code, name -> {
+					if (name != null && !isFinishing() && !isDestroyed()) {
+						suggestions.put(code, name);
+						if (lastEntry == entry) {
+							showLast(entry);
+						}
+						render();
+					}
+				});
+			}
 			if (packHint != null) {
 				packHint.dismiss();
 				packHint = null;
@@ -217,8 +228,19 @@ public class InventoryActivity extends AppCompatActivity {
 		lastCard.setCardBackgroundColor(colors[0]);
 		lastName.setTextColor(colors[1]);
 		lastStatus.setTextColor(colors[1]);
-		lastName.setText(e.known ? e.name : getString(R.string.inventory_unknown_name) + "\n" + e.barcode);
+		lastName.setText(e.known ? e.name : unknownLabel(e, "\n"));
 		lastStatus.setText(e.known ? statusText(e) + "\n" + getString(R.string.inventory_tap_to_change) : statusText(e));
+	}
+
+	/** Barcode von OpenFoodFacts erkannter Barcodes (nur für die Anzeige) */
+	private final java.util.Map<String, String> suggestions = new java.util.HashMap<>();
+
+	private String unknownLabel(Entry e, String separator) {
+		String suggestion = suggestions.get(e.barcode);
+		if (suggestion != null) {
+			return getString(R.string.inventory_unknown_suggestion, suggestion) + separator + e.barcode;
+		}
+		return getString(R.string.inventory_unknown_name) + separator + e.barcode;
 	}
 
 	private String statusText(Entry e) {
@@ -884,7 +906,7 @@ public class InventoryActivity extends AppCompatActivity {
 			Entry e = shown.get(position);
 			Status status = InventorySession.status(e);
 			int[] colors = colorsFor(status);
-			holder.name.setText(e.known ? e.name : getString(R.string.inventory_unknown_name) + " " + e.barcode);
+			holder.name.setText(e.known ? e.name : unknownLabel(e, " "));
 			switch (status) {
 				case UNKNOWN:
 					holder.detail.setText(R.string.inventory_detail_unknown);

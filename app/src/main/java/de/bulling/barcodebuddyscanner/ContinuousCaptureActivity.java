@@ -64,9 +64,6 @@ public class ContinuousCaptureActivity extends Activity {
 		barcodeView.initializeFromIntent(getIntent());
 		barcodeView.decodeContinuous(callback);
 
-		int requestOrientation = new SharedPrefHelper(this).getPreferredOrientation();
-		if (requestOrientation != SharedPrefHelper.NO_ORIENTATION_CHANGE)
-			this.setRequestedOrientation(requestOrientation);
 	}
 
 	private BarcodeCallback callback = new BarcodeCallback() {

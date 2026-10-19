@@ -9,6 +9,8 @@ import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 
+import de.bulling.barcodebuddyscanner.Api.OpenFoodFacts;
+import de.bulling.barcodebuddyscanner.Helper.SharedPrefHelper;
 import de.bulling.barcodebuddyscanner.Wear.WearSync;
 
 import java.util.ArrayList;
@@ -87,7 +89,7 @@ public final class ShoppingRepository {
 					+ "p.price_unit AS g_price_unit, p.best_before_days AS g_bb_days, p.tare AS g_tare, "
 					+ "b.exact AS g_exact, st.amount AS g_stock, "
 					+ "COALESCE(b.shop_id, p.shop_id) AS g_shop_id, s.name AS g_shop_name, "
-					+ "lp.price AS g_last_price "
+					+ "lp.price AS g_last_price, o.name AS off_name "
 					+ "FROM items i "
 					// Wie Barcode Buddy: ein führend mit Nullen aufgefüllter Code (GTIN-14) trifft auch den EAN-13
 					+ "LEFT JOIN g_barcodes b ON b.barcode = i.barcode OR b.barcode = ltrim(i.barcode, '0') "
@@ -95,6 +97,7 @@ public final class ShoppingRepository {
 					+ "LEFT JOIN g_shops s ON s.id = COALESCE(b.shop_id, p.shop_id) "
 					+ "LEFT JOIN g_lastprice lp ON lp.product_id = p.id "
 					+ "LEFT JOIN g_stock st ON st.product_id = p.id "
+					+ "LEFT JOIN off_cache o ON o.barcode = i.barcode "
 					+ "WHERE i.trip_id = 0 ORDER BY i.scanned_at DESC";
 
 	private static ShoppingRepository instance;
@@ -109,6 +112,8 @@ public final class ShoppingRepository {
 	private final Context                       appContext;
 	private final ShoppingDb                     dbHelper;
 	private final ExecutorService                io        = Executors.newSingleThreadExecutor();
+	/** Netzwerkabfragen (OpenFoodFacts) getrennt von der Datenbank, damit ein langsamer Server nichts aufhält */
+	private final ExecutorService                net       = Executors.newFixedThreadPool(2);
 	private final Handler                        main      = new Handler(Looper.getMainLooper());
 	private final CopyOnWriteArrayList<Listener> listeners = new CopyOnWriteArrayList<>();
 
@@ -199,7 +204,84 @@ public final class ShoppingRepository {
 			} finally {
 				db.endTransaction();
 			}
-		}, callback);
+		}, item -> {
+			if (item.quantity == 1) {
+				// Neuer Eintrag: bei einem unbekannten Barcode gleich einen Namen suchen
+				prefetchSuggestion(item.barcode);
+			}
+			if (callback != null) {
+				callback.onResult(item);
+			}
+		});
+	}
+
+	// ---------------------------------------------------------------- OpenFoodFacts
+
+	private static final long OFF_RETRY_MS = 7L * 24 * 60 * 60 * 1000;
+
+	/** Darf die App unbekannte Barcodes bei OpenFoodFacts nachschlagen (Einstellung, Standard: ja)? */
+	private boolean offEnabled() {
+		return new SharedPrefHelper(appContext).isOffLookupEnabled();
+	}
+
+	/** Holt im Hintergrund einen Namensvorschlag; die Liste lädt neu, sobald er da ist. */
+	private void prefetchSuggestion(final String barcode) {
+		suggestionFor(barcode, name -> {
+			if (name != null) {
+				notifyChanged();
+			}
+		});
+	}
+
+	/**
+	 * Namensvorschlag für einen Barcode, den Grocy nicht kennt: aus dem Zwischenspeicher oder von OpenFoodFacts.
+	 * Das Ergebnis ist null bei bekanntem Barcode, ausgeschaltetem Nachschlagen, fehlender Grocy-Kopie,
+	 * keinem Treffer oder keiner Verbindung.
+	 */
+	public void suggestionFor(final String barcode, final Callback<String> callback) {
+		if (!offEnabled() || !OpenFoodFacts.isProductBarcode(barcode)) {
+			main.post(() -> callback.onResult(null));
+			return;
+		}
+		net.execute(() -> {
+			String name = null;
+			try {
+				SQLiteDatabase db = dbHelper.getWritableDatabase();
+				// Ohne Kopie der Grocy-Daten lässt sich "unbekannt" nicht beurteilen; was Grocy kennt, braucht keinen Vorschlag
+				if (DatabaseUtils.queryNumEntries(db, ShoppingDb.T_PRODUCTS) > 0 && !isKnownBarcode(db, barcode)) {
+					name = cachedOrFetched(db, barcode);
+				}
+			} catch (Exception e) {
+				Log.w(TAG, "OpenFoodFacts-Abfrage fehlgeschlagen: " + e.getMessage());
+			}
+			final String result = name;
+			main.post(() -> callback.onResult(result));
+		});
+	}
+
+	private static boolean isKnownBarcode(SQLiteDatabase db, String barcode) {
+		return DatabaseUtils.longForQuery(db, "SELECT COUNT(*) FROM g_barcodes WHERE barcode = ? OR barcode = ltrim(?, '0')",
+				new String[]{barcode, barcode}) > 0;
+	}
+
+	private static String cachedOrFetched(SQLiteDatabase db, String barcode) throws java.io.IOException {
+		try (Cursor c = db.query(ShoppingDb.T_OFF, new String[]{"name", "checked_at"}, "barcode = ?",
+				new String[]{barcode}, null, null, null)) {
+			if (c.moveToFirst()) {
+				String cachedName = c.getString(0);
+				// Treffer bleiben, ein "nicht gefunden" wird nach einer Woche noch einmal geprüft (die Datenbank wächst)
+				if (cachedName != null || System.currentTimeMillis() - c.getLong(1) < OFF_RETRY_MS) {
+					return cachedName;
+				}
+			}
+		}
+		OpenFoodFacts.Result result = OpenFoodFacts.lookup(barcode);
+		ContentValues v = new ContentValues();
+		v.put("barcode", barcode);
+		v.put("name", result.name);
+		v.put("checked_at", System.currentTimeMillis());
+		db.insertWithOnConflict(ShoppingDb.T_OFF, null, v, SQLiteDatabase.CONFLICT_REPLACE);
+		return result.name;
 	}
 
 	public void getOpenList(Callback<OpenList> callback) {
@@ -1071,6 +1153,7 @@ public final class ShoppingRepository {
 	/** Wie {@link #itemFromCursor}, dazu die Grocy-Spalten der offenen Liste. */
 	private static ShoppingItem openItemFromCursor(Cursor c) {
 		ShoppingItem item = itemFromCursor(c);
+		item.suggestion = c.getString(c.getColumnIndexOrThrow("off_name"));
 		int productCol = c.getColumnIndexOrThrow("g_product_id");
 		if (!c.isNull(productCol)) {
 			item.known         = true;

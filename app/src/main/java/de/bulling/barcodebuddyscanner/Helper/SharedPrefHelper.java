@@ -2,7 +2,6 @@ package de.bulling.barcodebuddyscanner.Helper;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.content.pm.ActivityInfo;
 import android.preference.PreferenceManager;
 
 import de.bulling.barcodebuddyscanner.Api.BBApi;
@@ -73,6 +72,11 @@ public class SharedPrefHelper {
 
 	public SharedPrefHelper(final Context context) {
 		this.globalPreferences = PreferenceManager.getDefaultSharedPreferences(context);
+	}
+
+	/** Unbekannte Barcodes bei OpenFoodFacts nachschlagen (überträgt nur den Barcode). */
+	public boolean isOffLookupEnabled() {
+		return this.globalPreferences.getBoolean("off_lookup", true);
 	}
 
 	public boolean isVibrationEnabled() {
@@ -163,22 +167,6 @@ public class SharedPrefHelper {
 	public float getBeepVolume() {
 		int volInInt = this.globalPreferences.getInt("volume_beep", 5);
 		return (volInInt / 20f);
-	}
-
-	public final static int NO_ORIENTATION_CHANGE = -1;
-
-
-	@SuppressWarnings("ConstantConditions")
-	public int getPreferredOrientation() {
-		int orientation = Integer.parseInt(this.globalPreferences.getString("orientation", "0"));
-		switch (orientation) {
-			case 1:
-				return ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE;
-			case 2:
-				return ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
-			default:
-				return NO_ORIENTATION_CHANGE;
-		}
 	}
 
 	// ---- Grocy ----

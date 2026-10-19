@@ -78,68 +78,86 @@
             android:foregroundServiceType="connectedDevice" />
         <activity
             android:name=".SettingsActivity"
+            android:screenOrientation="portrait"
             android:label="@string/title_activity_settings"
             android:theme="@style/AppTheme.NoActionBar" />
-        <activity android:name=".DebugActivity" />
+        <activity
+            android:name=".DebugActivity"
+            android:screenOrientation="portrait" />
         <activity
             android:name=".BbSettingsActivity"
+            android:screenOrientation="portrait"
             android:label="@string/bb_title"
             android:theme="@style/AppTheme.NoActionBar" />
         <activity
             android:name=".GrocySettingsActivity"
+            android:screenOrientation="portrait"
             android:label="@string/grocy_title"
             android:theme="@style/AppTheme.NoActionBar" />
         <activity
             android:name=".ShopOrderActivity"
+            android:screenOrientation="portrait"
             android:label="@string/shop_order_title"
             android:theme="@style/AppTheme.NoActionBar" />
         <activity
             android:name=".ProductCreateActivity"
+            android:screenOrientation="portrait"
             android:label="@string/product_create_title"
             android:theme="@style/AppTheme.NoActionBar"
             android:windowSoftInputMode="adjustResize" />
         <activity
             android:name=".ScannerControlActivity"
+            android:screenOrientation="portrait"
             android:label="@string/scanner_control_title"
             android:theme="@style/AppTheme.NoActionBar" />
         <activity
             android:name=".GroupOrderActivity"
+            android:screenOrientation="portrait"
             android:label="@string/group_order_title"
             android:theme="@style/AppTheme.NoActionBar" />
         <activity
             android:name=".ProductsActivity"
+            android:screenOrientation="portrait"
             android:label="@string/products_title"
             android:theme="@style/AppTheme.NoActionBar" />
         <activity
             android:name=".OnboardingActivity"
+            android:screenOrientation="portrait"
             android:label="@string/onb_pref_title"
             android:theme="@style/AppTheme.NoActionBar"
             android:windowSoftInputMode="adjustResize" />
         <activity
             android:name=".MenuOrderActivity"
+            android:screenOrientation="portrait"
             android:label="@string/menu_order_title"
             android:theme="@style/AppTheme.NoActionBar" />
         <activity
             android:name=".StockCheckActivity"
+            android:screenOrientation="portrait"
             android:label="@string/stock_title"
             android:theme="@style/AppTheme.NoActionBar" />
         <activity
             android:name=".ExpiryActivity"
+            android:screenOrientation="portrait"
             android:label="@string/expiry_title"
             android:theme="@style/AppTheme.NoActionBar" />
         <activity
             android:name=".InventoryActivity"
+            android:screenOrientation="portrait"
             android:label="@string/inventory_title"
             android:theme="@style/AppTheme.NoActionBar" />
         <activity
             android:name=".HistoryActivity"
+            android:screenOrientation="portrait"
             android:label="@string/title_history"
             android:theme="@style/AppTheme.NoActionBar" />
         <activity
             android:name=".TripDetailActivity"
+            android:screenOrientation="portrait"
             android:theme="@style/AppTheme.NoActionBar" />
         <activity
             android:name=".MainActivity"
+            android:screenOrientation="portrait"
             android:label="@string/app_name"
             android:theme="@style/AppTheme.NoActionBar"
             android:exported="true">
@@ -151,11 +169,18 @@
         </activity>
         <activity
             android:name=".SetupActivity"
+            android:screenOrientation="portrait"
             android:label="@string/app_name"
             android:theme="@style/AppTheme.NoActionBar" />
         <activity
             android:name=".ContinuousCaptureActivity"
+            android:screenOrientation="portrait"
             android:theme="@style/AppTheme.NoActionBar" />
+        <!-- Kamera-Scan der Bibliothek (QR-Codes im Assistenten) ebenfalls nur hochkant -->
+        <activity
+            android:name="com.journeyapps.barcodescanner.CaptureActivity"
+            android:screenOrientation="portrait"
+            tools:replace="android:screenOrientation" />
     </application>
 
 </manifest>

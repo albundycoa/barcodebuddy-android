@@ -188,10 +188,13 @@ public class ItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 		final ShoppingItem item = row.item;
 		ItemHolder holder = (ItemHolder) viewHolder;
 
-		holder.title.setText(item.displayName() != null ? item.displayName() : item.barcode);
+		boolean suggested = !item.known && item.displayName() == null && item.suggestion != null;
+		holder.title.setText(item.displayName() != null ? item.displayName() : suggested ? item.suggestion : item.barcode);
 
 		StringBuilder subtitle = new StringBuilder();
-		if (item.displayName() != null) {
+		if (suggested) {
+			subtitle.append(context.getString(R.string.item_unknown_suggestion)).append(" · ").append(item.barcode);
+		} else if (item.displayName() != null) {
 			subtitle.append(item.barcode);
 		}
 		if (item.known && item.stockPerScan > 1 && item.stockUnitName != null) {
