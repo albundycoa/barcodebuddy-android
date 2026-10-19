@@ -2,6 +2,18 @@ plugins {
     id 'com.android.application'
 }
 
+def appVersion = property("appVersion")
+def (vMajor, vMinor, vPatch) = appVersion.tokenize('.').collect { it as int }
+
+// Gleicher Schlüssel wie die Handy-App. Die Data Layer von Google (Daten und Befehle zwischen Handy und Uhr) lässt nur
+// Apps miteinander reden, die die gleiche Paketkennung UND die gleiche Signatur haben ("Mismatched certificate").
+def keyDir = new File(System.getProperty('user.home'), '.barcodebuddy-keys')
+def keyProps = new Properties()
+def keyFile = new File(keyDir, 'keystore.properties')
+if (keyFile.exists()) {
+    keyFile.withInputStream { keyProps.load(it) }
+}
+
 android {
     namespace 'de.bulling.barcodebuddyscanner.wear'
     compileSdk 37
@@ -11,13 +23,32 @@ android {
         applicationId "de.bulling.barcodebuddyscanner"
         minSdkVersion 30
         targetSdkVersion 34
-        versionCode 10
-        versionName "0.4.1"
+        versionCode vMajor * 10000 + vMinor * 100 + vPatch
+        versionName appVersion
+    }
+
+    signingConfigs {
+        shared {
+            if (keyFile.exists()) {
+                storeFile file(keyProps['storeFile'])
+                storePassword keyProps['storePassword']
+                keyAlias keyProps['keyAlias']
+                keyPassword keyProps['keyPassword']
+            }
+        }
     }
 
     buildTypes {
+        debug {
+            if (keyFile.exists()) {
+                signingConfig signingConfigs.shared
+            }
+        }
         release {
             minifyEnabled false
+            if (keyFile.exists()) {
+                signingConfig signingConfigs.shared
+            }
         }
     }
 

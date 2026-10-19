@@ -7,7 +7,7 @@
 #   ./publish-apk.sh --github   öffentlich: als GitHub-Release (fragt vorher nach)
 #
 # Ablauf:
-#   1. Version aus app/build.gradle (appVersion), Beschreibung aus CHANGELOG.md ("## [X.Y.Z]")
+#   1. Version aus gradle.properties (appVersion), Beschreibung aus CHANGELOG.md ("## [X.Y.Z]")
 #   2. Tests laufen lassen, Release-APK bauen (Schlüssel aus ~/.barcodebuddy-keys, nicht im Repository)
 #   3. latest.json mit Version, Größe und SHA-256 schreiben
 #   4. Hochladen. Die JSON-Datei kommt zuletzt, damit die App die neue Version erst sieht, wenn die APK komplett da ist.
@@ -32,8 +32,8 @@ git fetch -q origin
 BRANCH=$(git rev-parse --abbrev-ref HEAD)
 [ "$(git rev-parse HEAD)" = "$(git rev-parse "origin/$BRANCH")" ] || { echo "Der Stand ist nicht gepusht (Branch $BRANCH)."; exit 1; }
 
-VERSION=$(grep -oP 'def appVersion = "\K[0-9]+\.[0-9]+\.[0-9]+' app/build.gradle)
-[ -n "$VERSION" ] || { echo "Version nicht gefunden (erwartet: def appVersion = \"X.Y.Z\" in app/build.gradle)"; exit 1; }
+VERSION=$(grep -oP '^appVersion=\K[0-9]+\.[0-9]+\.[0-9]+' gradle.properties)
+[ -n "$VERSION" ] || { echo "Version nicht gefunden (erwartet: appVersion=X.Y.Z in gradle.properties)"; exit 1; }
 IFS=. read -r MAJOR MINOR PATCH <<< "$VERSION"
 CODE=$((MAJOR * 10000 + MINOR * 100 + PATCH))
 TAG="v$VERSION"
@@ -47,7 +47,7 @@ NOTES=$(awk -v v="$VERSION" '
 
 if [ "$MODE" = "github" ]; then
   if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
-    echo "Den Release $TAG gibt es schon. Erst die Version in app/build.gradle erhöhen."
+    echo "Den Release $TAG gibt es schon. Erst die Version in gradle.properties erhöhen."
     exit 1
   fi
   DOWNLOAD_BASE="https://github.com/$REPO/releases/download/$TAG"
@@ -55,7 +55,7 @@ else
   ssh "$HOST" "test -d $REMOTE_DIR" || { echo "Ordner $REMOTE_DIR auf $HOST fehlt."; exit 1; }
   # Eine schon veröffentlichte Version nicht stillschweigend überschreiben
   if ssh "$HOST" "grep -q '\"version_code\": $CODE,' $REMOTE_DIR/latest.json 2>/dev/null"; then
-    echo "Die Version $VERSION liegt schon auf dem Update-Server. Erst die Version in app/build.gradle erhöhen."
+    echo "Die Version $VERSION liegt schon auf dem Update-Server. Erst die Version in gradle.properties erhöhen."
     exit 1
   fi
   DOWNLOAD_BASE="$BASE_URL"

@@ -10,8 +10,16 @@ Dieser Fork der Barcode-Buddy-App führt seine eigene Versionsnummer. Sie folgt 
 
 Der Versionscode der APK ist `MAJOR*10000 + MINOR*100 + PATCH` und steigt dadurch mit jeder Version. Er darf nie
 zurückgehen, sonst lässt sich ein Update nicht mehr einspielen. Gepflegt wird die Version an einer einzigen Stelle,
-`appVersion` in `app/build.gradle`. Veröffentlicht wird mit `./publish-apk.sh`: privat auf den Update-Server im Heimnetz, mit `--github` als
+`appVersion` in `gradle.properties`. Veröffentlicht wird mit `./publish-apk.sh`: privat auf den Update-Server im Heimnetz, mit `--github` als
 öffentlicher GitHub-Release.
+
+## [Unveröffentlicht]
+
+- **Uhr (Wear OS)**: Die Uhr-App wird jetzt mit demselben Schlüssel signiert wie die Handy-App und trägt dieselbe Version. Die
+  Data Layer von Google lässt Handy und Uhr nur miteinander reden, wenn Paketkennung und Signatur gleich sind. Seit dem
+  Schlüsselwechsel kamen deshalb weder Scans zur Uhr noch Häkchen vom Handy ("Mismatched certificate").
+- **Uhr**: Abgehakte Einträge stehen unten unter "Erledigt" und rutschen beim Abhaken sofort dorthin.
+- Die Version steht jetzt in `gradle.properties` und gilt für Handy und Uhr.
 
 ## [0.1.1] – Update-Weg geprüft
 

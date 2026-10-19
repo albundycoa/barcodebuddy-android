@@ -4,7 +4,7 @@ plugins {
 
 // Version der App. Der Versionscode steigt mit der Version (X*10000 + Y*100 + Z) und darf nie zurückgehen,
 // sonst lässt sich ein Update nicht mehr einspielen.
-def appVersion = "0.1.1"
+def appVersion = property("appVersion")
 def (vMajor, vMinor, vPatch) = appVersion.tokenize('.').collect { it as int }
 
 // Schlüssel für die veröffentlichten APKs: liegt außerhalb des Repositorys unter ~/.barcodebuddy-keys

@@ -119,8 +119,21 @@ public class ShoppingActivity extends Activity implements State.Listener {
 				e.addProperty("d", done);
 			}
 		}
+		state.add("shop", openFirst(shop));
 		State.save(this, state);
 		PhoneLink.setDone(this, id, done);
+	}
+
+	/** Offene Einträge zuerst, erledigte ganz unten; die Reihenfolge innerhalb beider Gruppen bleibt. */
+	private static JsonArray openFirst(JsonArray shop) {
+		JsonArray open = new JsonArray();
+		JsonArray done = new JsonArray();
+		for (int i = 0; i < shop.size(); i++) {
+			JsonObject e = shop.get(i).getAsJsonObject();
+			(e.get("d").getAsBoolean() ? done : open).add(e);
+		}
+		open.addAll(done);
+		return open;
 	}
 
 	@Override
@@ -148,6 +161,7 @@ public class ShoppingActivity extends Activity implements State.Listener {
 		String lastShop = null;
 		String lastGroup = null;
 		boolean inDone = false;
+		shop = openFirst(shop);
 		for (int i = 0; i < shop.size(); i++) {
 			JsonObject e = shop.get(i).getAsJsonObject();
 			if (e.get("d").getAsBoolean()) {
