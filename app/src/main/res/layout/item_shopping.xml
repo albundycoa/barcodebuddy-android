@@ -16,7 +16,7 @@
         android:paddingEnd="4dp"
         android:paddingBottom="8dp">
 
-        <!-- Name und Hinweise über die ganze Breite, damit lange Namen nicht neben den Knöpfen umbrechen -->
+        <!-- Alle Texte über die ganze Breite, damit lange Namen nicht neben den Knöpfen umbrechen -->
         <TextView
             android:id="@+id/item_title"
             android:layout_width="match_parent"
@@ -30,6 +30,25 @@
             android:textAppearance="?attr/textAppearanceBodySmall"
             android:textColor="?attr/colorOnSurfaceVariant" />
 
+        <TextView
+            android:id="@+id/item_price"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="?attr/selectableItemBackground"
+            android:minHeight="32dp"
+            android:gravity="center_vertical"
+            android:textAppearance="?attr/textAppearanceBodyMedium"
+            android:textColor="?attr/colorPrimary" />
+
+        <TextView
+            android:id="@+id/item_error"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textAppearance="?attr/textAppearanceBodySmall"
+            android:textColor="@color/md_error_text"
+            android:visibility="gone" />
+
+        <!-- Darunter die Bedienelemente: Zuordnen links, Menge und Löschen rechts, alle in einer Mittellinie -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -40,33 +59,14 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:orientation="vertical">
-
-                <TextView
-                    android:id="@+id/item_price"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:background="?attr/selectableItemBackground"
-                    android:minHeight="32dp"
-                    android:gravity="center_vertical"
-                    android:textAppearance="?attr/textAppearanceBodyMedium"
-                    android:textColor="?attr/colorPrimary" />
-
-                <TextView
-                    android:id="@+id/item_error"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:textAppearance="?attr/textAppearanceBodySmall"
-                    android:textColor="@color/md_error_text"
-                    android:visibility="gone" />
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/item_assign"
                     style="@style/Widget.Material3.Button.TonalButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:layout_marginBottom="4dp"
                     android:text="@string/item_assign"
                     android:visibility="gone" />
             </LinearLayout>

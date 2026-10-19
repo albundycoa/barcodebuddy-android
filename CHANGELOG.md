@@ -13,6 +13,12 @@ zurückgehen, sonst lässt sich ein Update nicht mehr einspielen. Gepflegt wird 
 `appVersion` in `gradle.properties`. Veröffentlicht wird mit `./publish-apk.sh`: privat auf den Update-Server im Heimnetz, mit `--github` als
 öffentlicher GitHub-Release.
 
+## [0.4.3] – Karten: Knöpfe in einer Linie
+
+- In der Liste „Gescannt“ stehen jetzt auch der Preis und Fehlermeldungen oben bei den Texten. Darunter sitzen „Anlegen / zuordnen“ und die
+  Knöpfe − und + (mit Menge und Papierkorb) in einer gemeinsamen Mittellinie.
+- Uhr: keine Änderung.
+
 ## [0.4.2] – Übersichtlichere Karten
 
 - In der Liste „Gescannt“ stehen Name und Hinweise (z. B. „Unbekanntes Produkt · Vorschlag von OpenFoodFacts“, Barcode) jetzt über der
