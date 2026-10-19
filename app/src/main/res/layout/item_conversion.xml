@@ -40,7 +40,15 @@
                 android:layout_height="40dp"
                 android:layout_marginStart="4dp"
                 android:contentDescription="@string/conversion_remove"
-                app:icon="@drawable/ic_delete" />
+                android:insetLeft="0dp"
+                android:insetTop="0dp"
+                android:insetRight="0dp"
+                android:insetBottom="0dp"
+                android:paddingStart="0dp"
+                android:paddingEnd="0dp"
+                app:icon="@drawable/ic_delete"
+                app:iconGravity="textStart"
+                app:iconPadding="0dp" />
         </LinearLayout>
 
         <LinearLayout
