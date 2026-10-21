@@ -58,6 +58,8 @@ final class State {
 	static void save(Context context, String json) {
 		prefs(context).edit().putString(KEY, json).apply();
 		notifyChanged();
+		// Zifferblätter mit den Komplikationen für Scan- und Einkaufsliste bekommen die neuen Zahlen
+		Complications.refresh(context);
 	}
 
 	/** Letzter Bestand vom Handy (Bestandsseite), oder null, wenn noch keiner ankam. */

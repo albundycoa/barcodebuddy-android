@@ -13,6 +13,15 @@ zurückgehen, sonst lässt sich ein Update nicht mehr einspielen. Gepflegt wird 
 `appVersion` in `gradle.properties`. Veröffentlicht wird mit `./publish-apk.sh`: privat auf den Update-Server im Heimnetz, mit `--github` als
 öffentlicher GitHub-Release.
 
+## [0.12.0] – Uhr: Komplikationen für Zifferblätter
+
+- **Komplikationen**: Die Uhr-App bietet zwei Datenquellen für jedes Zifferblatt mit freien Komplikationsfeldern an: „Gescannt“ (Anzahl der gescannten
+  Artikel, lang: „3 Artikel · 12,50 €“) und „Einkaufsliste“ (Anzahl offener Einträge, lang: „9 offen · 15,62 €“). Ein Tipp darauf öffnet die jeweilige
+  Liste direkt. Die Zahlen aktualisieren sich, sobald das Handy neue Daten schickt.
+- So nutzt du es für den Einkauf: Zifferblatt (z. B. eine Kopie deines Wetter-Zifferblatts) lange drücken → Anpassen → ein Komplikationsfeld wählen → „Gescannt“
+  oder „Einkaufsliste“ der Einkaufs-App. Die ganze Liste selbst kann ein Zifferblatt nicht zeigen, nur Zahl und Summe.
+- Handy: keine Änderung (nur die gemeinsame Versionsnummer).
+
 ## [0.11.0] – Uhr: Einkaufsliste anlassen
 
 - Das Anlassen des Displays (gedimmt in Ruhe, hell bei Bewegung, Tippen oder Änderung) gibt es jetzt auch bei der **Einkaufsliste** der Uhr. In den

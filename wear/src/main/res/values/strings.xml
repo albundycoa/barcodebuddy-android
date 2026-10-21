@@ -33,4 +33,6 @@
     <string name="setting_keep_scans">Scanliste anlassen</string>
     <string name="setting_keep_shopping">Einkaufsliste anlassen</string>
     <string name="setting_keep_scans_hint">Das Display bleibt bei der Liste an: gedimmt, solange du die Uhr unten hältst, und hell beim Anheben oder Tippen. Das braucht mehr Akku.</string>
+    <string name="complication_scans">Gescannt</string>
+    <string name="complication_shopping">Einkaufsliste</string>
 </resources>
