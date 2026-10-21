@@ -184,6 +184,8 @@
                     app:icon="@drawable/ic_send" />
             </LinearLayout>
         </LinearLayout>
+
+        <include layout="@layout/view_bottom_nav" />
     </LinearLayout>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

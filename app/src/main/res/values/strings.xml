@@ -494,6 +494,36 @@ Die App zählt mit und vergleicht am Ende mit Grocy.</string>
 
     <!-- Ablauf-Übersicht -->
     <string name="action_expiry">Ablauf-Übersicht</string>
+    <!-- Bestandsübersicht und untere Navigation -->
+    <string name="nav_shopping">Einkauf</string>
+    <string name="nav_stock">Bestand</string>
+    <string name="stock_overview_title">Bestand</string>
+    <plurals name="stock_products">
+        <item quantity="one">%d Produkt</item>
+        <item quantity="other">%d Produkte</item>
+    </plurals>
+    <string name="stock_header">Bestandsübersicht · %1$s · %2$s Gesamtwert</string>
+    <string name="stock_loading">Bestand wird geladen …</string>
+    <string name="stock_overview_empty">Nichts im Bestand.</string>
+    <string name="stock_no_match">Keine Treffer.</string>
+    <string name="stock_search_hint">Produkt oder Gruppe suchen</string>
+    <string name="stock_overview_amount">%1$s %2$s</string>
+    <string name="stock_opened">%1$s geöffnet</string>
+    <string name="stock_overview_due">MHD %1$s · %2$s</string>
+    <string name="stock_consume_all">Alle</string>
+    <string name="stock_consume_one_desc">Schnellverbrauch buchen</string>
+    <string name="stock_consume_all_desc">Alles verbrauchen</string>
+    <string name="stock_open_desc">Öffnen buchen</string>
+    <string name="stock_consume_all_title">Alles verbrauchen?</string>
+    <string name="stock_consume_all_message">%1$s (%2$s) wird komplett aus dem Bestand gebucht.</string>
+    <string name="stock_booked_consume">%1$s: %2$s verbraucht</string>
+    <string name="stock_booked_open">%1$s: %2$s geöffnet</string>
+    <string name="stock_undo">Rückgängig</string>
+    <string name="stock_undone">Buchung rückgängig gemacht</string>
+    <string name="stock_err">Buchung fehlgeschlagen: %1$s</string>
+    <string name="stock_sort_name">Nach Name</string>
+    <string name="stock_sort_value">Nach Wert</string>
+    <string name="stock_sort_due">Nach Ablauf</string>
     <string name="expiry_title">Ablauf-Übersicht</string>
     <string name="expiry_loading">Haltbarkeiten werden geladen …</string>
     <string name="expiry_header">%1$d Einträge · %2$s · %3$d abgelaufen</string>

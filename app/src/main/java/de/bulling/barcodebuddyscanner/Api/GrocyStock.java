@@ -5,7 +5,11 @@ import com.google.gson.JsonObject;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
+import de.bulling.barcodebuddyscanner.Helper.StockOverview;
 
 import de.bulling.barcodebuddyscanner.Helper.Texts;
 import de.bulling.barcodebuddyscanner.R;
@@ -57,6 +61,108 @@ public final class GrocyStock {
 		body.addProperty("transaction_type", "consume");
 		body.addProperty("spoiled", false);
 		client.post("stock/products/" + productId + "/consume", body.toString());
+	}
+
+	/** Wie {@link #consume}, liefert aber die Nummer der Buchung, mit der sie sich zurücknehmen lässt (null = unbekannt). */
+	public static String consumeBooking(GrocyClient client, long productId, double amount) throws IOException {
+		return transactionId(client.post("stock/products/" + productId + "/consume", consumeBody(amount).toString()));
+	}
+
+	/** Öffnet die Menge (in Lagereinheiten); liefert die Buchungsnummer zum Zurücknehmen (null = unbekannt). */
+	public static String open(GrocyClient client, long productId, double amount) throws IOException {
+		return transactionId(client.post("stock/products/" + productId + "/open", openBody(amount).toString()));
+	}
+
+	/** Nimmt eine Buchung zurück (Grocy: "Undo" im Bestandsjournal). */
+	public static void undo(GrocyClient client, String transactionId) throws IOException {
+		client.post("stock/transactions/" + transactionId + "/undo", "{}");
+	}
+
+	static JsonObject consumeBody(double amount) {
+		JsonObject body = new JsonObject();
+		body.addProperty("amount", amount);
+		body.addProperty("transaction_type", "consume");
+		body.addProperty("spoiled", false);
+		return body;
+	}
+
+	static JsonObject openBody(double amount) {
+		JsonObject body = new JsonObject();
+		body.addProperty("amount", amount);
+		return body;
+	}
+
+	/** Grocy antwortet mit den gebuchten Zeilen; alle teilen sich eine "transaction_id". */
+	static String transactionId(JsonElement response) {
+		if (response == null || !response.isJsonArray() || response.getAsJsonArray().size() == 0) {
+			return null;
+		}
+		JsonElement first = response.getAsJsonArray().get(0);
+		if (!first.isJsonObject()) {
+			return null;
+		}
+		return text(first.getAsJsonObject(), "transaction_id");
+	}
+
+	/** Alle Chargen im Bestand (auch ohne Haltbarkeitsdatum) mit Menge, Preis je Lagereinheit und geöffnet-Kennzeichen. */
+	public static List<StockOverview.StockRow> loadStockRows(GrocyClient client) throws IOException {
+		JsonElement response = client.get("objects/stock");
+		if (response == null || !response.isJsonArray()) {
+			throw new IOException(Texts.get(R.string.err_unexpected_response));
+		}
+		List<StockOverview.StockRow> rows = new ArrayList<>();
+		try {
+			for (JsonElement e : response.getAsJsonArray()) {
+				JsonObject row = e.getAsJsonObject();
+				String price = text(row, "price");
+				Double priceValue = null;
+				if (price != null && !price.isEmpty()) {
+					try {
+						priceValue = Double.parseDouble(price);
+					} catch (NumberFormatException ignored) {
+						// Preis unbekannt
+					}
+				}
+				rows.add(new StockOverview.StockRow(row.get("product_id").getAsLong(), number(row, "amount"),
+						number(row, "open") != 0, priceValue, due(text(row, "best_before_date"))));
+			}
+		} catch (RuntimeException e) {
+			throw new IOException(Texts.get(R.string.err_unexpected_response), e);
+		}
+		return rows;
+	}
+
+	/**
+	 * Produkteinstellungen für die Bestandsübersicht: Schnellverbrauchs- und Schnelleröffnungsmenge (nur, wenn sie in der
+	 * Lagereinheit angegeben sind, sonst 1), Öffnen erlaubt, Tara-Gewicht.
+	 */
+	public static Map<Long, StockOverview.Product> loadProductSetups(GrocyClient client) throws IOException {
+		JsonElement response = client.get("objects/products");
+		if (response == null || !response.isJsonArray()) {
+			throw new IOException(Texts.get(R.string.err_unexpected_response));
+		}
+		Map<Long, StockOverview.Product> result = new HashMap<>();
+		try {
+			for (JsonElement e : response.getAsJsonArray()) {
+				JsonObject o = e.getAsJsonObject();
+				StockOverview.Product p = new StockOverview.Product();
+				p.id   = o.get("id").getAsLong();
+				p.name = text(o, "name");
+				String stockUnit   = text(o, "qu_id_stock");
+				String consumeUnit = text(o, "qu_id_consume");
+				boolean sameUnit = consumeUnit == null || consumeUnit.isEmpty() || consumeUnit.equals(stockUnit);
+				double quick = number(o, "quick_consume_amount");
+				double quickOpen = number(o, "quick_open_amount");
+				p.consumeAmount = sameUnit && quick > 0 ? quick : 1;
+				p.openAmount    = sameUnit && quickOpen > 0 ? quickOpen : 1;
+				p.canOpen       = number(o, "disable_open") == 0;
+				p.tare          = number(o, "enable_tare_weight_handling") != 0;
+				result.put(p.id, p);
+			}
+		} catch (RuntimeException e) {
+			throw new IOException(Texts.get(R.string.err_unexpected_response), e);
+		}
+		return result;
 	}
 
 	/** Setzt das Produkt mit der Menge (in Lagereinheiten) auf die Einkaufsliste. */

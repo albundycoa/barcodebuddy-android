@@ -138,6 +138,12 @@
             android:theme="@style/AppTheme.NoActionBar"
             android:windowSoftInputMode="adjustResize" />
         <activity
+            android:name=".StockOverviewActivity"
+            android:screenOrientation="portrait"
+            android:label="@string/stock_overview_title"
+            android:theme="@style/AppTheme.NoActionBar"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
             android:name=".StockCheckActivity"
             android:screenOrientation="portrait"
             android:label="@string/stock_title"
@@ -163,6 +169,7 @@
             android:theme="@style/AppTheme.NoActionBar" />
         <activity
             android:name=".MainActivity"
+            android:launchMode="singleTop"
             android:screenOrientation="portrait"
             android:label="@string/app_name"
             android:theme="@style/AppTheme.NoActionBar"

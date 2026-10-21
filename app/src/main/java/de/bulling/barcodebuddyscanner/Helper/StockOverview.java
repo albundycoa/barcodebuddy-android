@@ -1,0 +1,180 @@
+package de.bulling.barcodebuddyscanner.Helper;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+
+/**
+ * Rechenlogik der Bestandsübersicht (wie Grocys "Stock overview"): Aus den Bestandszeilen (eine je Charge) wird eine Zeile
+ * je Produkt mit Menge, davon geöffnet, Wert (Menge mal Einkaufspreis je Lagereinheit) und nächstem Haltbarkeitsdatum.
+ * Dazu Suche, Sortierung und die Regeln, wann Verbrauchen und Öffnen möglich sind. Ohne Android, getestet.
+ */
+public final class StockOverview {
+
+	private StockOverview() {
+	}
+
+	/** Eine Charge im Bestand, so wie Grocy sie liefert. */
+	public static final class StockRow {
+		public long    productId;
+		/** Menge in Lagereinheiten */
+		public double  amount;
+		public boolean open;
+		/** Einkaufspreis je Lagereinheit, null = unbekannt */
+		public Double  price;
+		/** Mindesthaltbarkeitsdatum "yyyy-MM-dd", null = keines oder unbegrenzt */
+		public String  due;
+
+		public StockRow(long productId, double amount, boolean open, Double price, String due) {
+			this.productId = productId;
+			this.amount    = amount;
+			this.open      = open;
+			this.price     = price;
+			this.due       = due;
+		}
+	}
+
+	/** Was zu einem Produkt gebraucht wird, damit Knöpfe und Anzeige stimmen. */
+	public static final class Product {
+		public long    id;
+		public String  name;
+		public String  group;
+		/** Name der Lagereinheit, z. B. "Stück" */
+		public String  unit;
+		/** Menge, die der Knopf "verbrauchen" bucht (Schnellverbrauch, mindestens etwas), in Lagereinheiten */
+		public double  consumeAmount = 1;
+		/** Menge, die der Knopf "öffnen" bucht, in Lagereinheiten */
+		public double  openAmount = 1;
+		/** Öffnen ist für dieses Produkt erlaubt */
+		public boolean canOpen = true;
+		/** Produkt mit Tara-Gewicht: Verbrauchen und Öffnen gehen nur über Grocy selbst */
+		public boolean tare;
+	}
+
+	/** Eine Zeile der Übersicht. */
+	public static final class Entry {
+		public final Product product;
+		public double amount;
+		public double opened;
+		public double value;
+		public String nextDue;
+
+		Entry(Product product) {
+			this.product = product;
+		}
+
+		/** Der Knopf mit der Schnellverbrauchsmenge ist bedienbar (wie in Grocy). */
+		public boolean canConsumeQuick() {
+			return !product.tare && amount > 0 && amount + 1e-9 >= product.consumeAmount;
+		}
+
+		public boolean canConsumeAll() {
+			return !product.tare && amount > 0;
+		}
+
+		/** Öffnen geht, wenn es erlaubt ist, genug da ist und nicht schon alles geöffnet ist. */
+		public boolean canOpenNow() {
+			return product.canOpen && !product.tare && amount + 1e-9 >= product.openAmount && opened + 1e-9 < amount;
+		}
+	}
+
+	public enum Sort { NAME, VALUE, DUE }
+
+	/**
+	 * Fasst die Chargen je Produkt zusammen. Produkte ohne Eintrag in {@code products} bekommen einen Platzhalternamen,
+	 * damit Bestand nie verschwindet. Chargen mit Menge 0 oder weniger zählen nicht.
+	 */
+	public static List<Entry> build(List<StockRow> rows, Map<Long, Product> products) {
+		Map<Long, Entry> byProduct = new LinkedHashMap<>();
+		for (StockRow row : rows) {
+			if (row.amount <= 0) {
+				continue;
+			}
+			Entry entry = byProduct.get(row.productId);
+			if (entry == null) {
+				Product product = products.get(row.productId);
+				if (product == null) {
+					product = new Product();
+					product.id   = row.productId;
+					product.name = "#" + row.productId;
+				}
+				entry = new Entry(product);
+				byProduct.put(row.productId, entry);
+			}
+			entry.amount += row.amount;
+			if (row.open) {
+				entry.opened += row.amount;
+			}
+			if (row.price != null) {
+				entry.value += row.amount * row.price;
+			}
+			if (row.due != null && (entry.nextDue == null || row.due.compareTo(entry.nextDue) < 0)) {
+				entry.nextDue = row.due;
+			}
+		}
+		for (Entry entry : byProduct.values()) {
+			// Wie Grocy: der Wert je Produkt wird auf Cent gerundet, die Gesamtsumme besteht aus diesen Werten
+			entry.value = Math.round(entry.value * 100) / 100.0;
+		}
+		return new ArrayList<>(byProduct.values());
+	}
+
+	public static double totalValue(List<Entry> entries) {
+		double sum = 0;
+		for (Entry entry : entries) {
+			sum += entry.value;
+		}
+		return sum;
+	}
+
+	/** Suche in Produktname und Produktgruppe, ohne Beachtung der Groß-/Kleinschreibung; leere Suche zeigt alles. */
+	public static List<Entry> filter(List<Entry> entries, String query) {
+		String needle = query == null ? "" : query.trim().toLowerCase(Locale.GERMAN);
+		if (needle.isEmpty()) {
+			return new ArrayList<>(entries);
+		}
+		List<Entry> result = new ArrayList<>();
+		for (Entry entry : entries) {
+			String name  = entry.product.name == null ? "" : entry.product.name.toLowerCase(Locale.GERMAN);
+			String group = entry.product.group == null ? "" : entry.product.group.toLowerCase(Locale.GERMAN);
+			if (name.contains(needle) || group.contains(needle)) {
+				result.add(entry);
+			}
+		}
+		return result;
+	}
+
+	public static void sort(List<Entry> entries, Sort sort) {
+		final Comparator<Entry> byName = (a, b) -> String.valueOf(a.product.name).compareToIgnoreCase(String.valueOf(b.product.name));
+		switch (sort) {
+			case VALUE:
+				Collections.sort(entries, (a, b) -> {
+					int c = Double.compare(b.value, a.value);
+					return c != 0 ? c : byName.compare(a, b);
+				});
+				break;
+			case DUE:
+				// Früheste zuerst, Produkte ohne Datum ans Ende
+				Collections.sort(entries, (a, b) -> {
+					if (a.nextDue == null && b.nextDue == null) {
+						return byName.compare(a, b);
+					}
+					if (a.nextDue == null) {
+						return 1;
+					}
+					if (b.nextDue == null) {
+						return -1;
+					}
+					int c = a.nextDue.compareTo(b.nextDue);
+					return c != 0 ? c : byName.compare(a, b);
+				});
+				break;
+			default:
+				Collections.sort(entries, byName);
+		}
+	}
+}

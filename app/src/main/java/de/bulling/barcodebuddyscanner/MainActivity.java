@@ -108,6 +108,7 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
     private TextView btHint;
     private View setupHint;
     private TextView totalBar;
+    private com.google.android.material.bottomnavigation.BottomNavigationView bottomNav;
     private TextView progressText;
     private LinearProgressIndicator progress;
     private MaterialButton sendButton;
@@ -328,7 +329,19 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
         View appBar = findViewById(R.id.app_bar_main);
         EdgeToEdgeHelper.applyInsetsAsPadding(appBar, false, true, false, false);
         // Die Buttonleiste unten darf nicht unter der Navigationsleiste liegen
-        EdgeToEdgeHelper.applyInsetsAsPadding(findViewById(R.id.bottom_bar), true, false, true, true);
+        // Den unteren Rand (Gestenleiste) übernimmt die Navigation, die Sendeleiste sitzt direkt darüber
+        EdgeToEdgeHelper.applyInsetsAsPadding(findViewById(R.id.bottom_bar), true, false, true, false);
+        bottomNav = findViewById(R.id.bottom_nav);
+        EdgeToEdgeHelper.applyInsetsAsPadding(bottomNav, true, false, true, true);
+        bottomNav.setSelectedItemId(R.id.nav_shopping);
+        bottomNav.setOnItemSelectedListener(item -> {
+            if (item.getItemId() == R.id.nav_stock) {
+                startActivity(new Intent(this, StockOverviewActivity.class));
+                overridePendingTransition(0, 0);
+                return false;
+            }
+            return true;
+        });
 
         feedback = new ScanFeedback(this);
 
@@ -600,6 +613,10 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
     protected void onResume() {
         super.onResume();
         resumed = true;
+        if (bottomNav != null) {
+            // Zurück aus dem Bestand: wieder "Einkauf" markieren
+            bottomNav.getMenu().findItem(R.id.nav_shopping).setChecked(true);
+        }
         updateCameraState();
         // Das Menü neu aufbauen: Reihenfolge und Sichtbarkeit können sich in den Einstellungen geändert haben
         invalidateOptionsMenu();

@@ -13,6 +13,16 @@ zurückgehen, sonst lässt sich ein Update nicht mehr einspielen. Gepflegt wird 
 `appVersion` in `gradle.properties`. Veröffentlicht wird mit `./publish-apk.sh`: privat auf den Update-Server im Heimnetz, mit `--github` als
 öffentlicher GitHub-Release.
 
+## [0.6.0] – Bestandsübersicht und feste Navigation
+
+- **Bestand**: Neue Seite wie Grocys „Stock overview“ mit der Kopfzeile „Bestandsübersicht · 52 Produkte · 86,36 € Gesamtwert“ (der Wert wird
+  wie in Grocy je Produkt auf Cent gerundet). Jedes Produkt zeigt Menge (auch „davon geöffnet“), Wert, Gruppe und nächstes MHD. Je Produkt gibt es
+  die Knöpfe Verbrauch (Schnellverbrauchsmenge, Standard 1), „Alle“ verbrauchen (mit Rückfrage) und Öffnen. Jede Buchung lässt sich über die
+  Meldung unten sofort mit „Rückgängig“ zurücknehmen. Dazu Suche (Produkt oder Gruppe), Sortierung nach Name, Wert oder Ablauf und Ziehen zum
+  Aktualisieren. Auf Handys steht das Produkt als Karte mit den Knöpfen darunter, auf breiten Bildschirmen als Tabellenzeile Verbrauch – Produkt – Menge – Wert.
+- **Feste Navigation** unten: „Einkauf“ (Einkaufsliste und Gescannt, wie bisher der Start der App) und „Bestand“.
+- Uhr: keine Änderung.
+
 ## [0.5.1] – Pfandrückgabe, Komma-Eingabe, Pfand-Liste
 
 - **Pfand zurück**: In der Liste „Gescannt“ steht ganz oben die Zeile „Pfand zurück“ (sobald du Pfand eingerichtet hast). Antippen, Betrag vom
