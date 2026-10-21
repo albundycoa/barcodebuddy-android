@@ -32,6 +32,15 @@
             android:textColor="#FFFFFF"
             android:textSize="17sp" />
 
+        <Switch
+            android:id="@+id/switch_keep_shopping"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:text="@string/setting_keep_shopping"
+            android:textColor="#FFFFFF"
+            android:textSize="17sp" />
+
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

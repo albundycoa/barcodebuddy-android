@@ -4,7 +4,7 @@ import android.app.Activity;
 import android.os.Bundle;
 import android.widget.Switch;
 
-/** Einstellungen der Uhr: Display bei der Scanliste anlassen (gedimmt) oder wie gewohnt ausgehen lassen. */
+/** Einstellungen der Uhr: Display bei Scanliste und Einkaufsliste anlassen (gedimmt) oder wie gewohnt ausgehen lassen. */
 public class SettingsActivity extends Activity {
 
 	@Override
@@ -14,5 +14,8 @@ public class SettingsActivity extends Activity {
 		Switch keep = findViewById(R.id.switch_keep_scans);
 		keep.setChecked(Settings.keepScansVisible(this));
 		keep.setOnCheckedChangeListener((button, checked) -> Settings.setKeepScansVisible(this, checked));
+		Switch keepShopping = findViewById(R.id.switch_keep_shopping);
+		keepShopping.setChecked(Settings.keepShoppingVisible(this));
+		keepShopping.setOnCheckedChangeListener((button, checked) -> Settings.setKeepShoppingVisible(this, checked));
 	}
 }

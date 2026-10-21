@@ -42,11 +42,13 @@ public class ShoppingActivity extends Activity implements State.Listener {
 	private RecyclerView.Adapter<RecyclerView.ViewHolder> adapter;
 	private TextView empty;
 	private WearableRecyclerView list;
+	private ScreenKeeper screenKeeper;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_list);
+		screenKeeper = new ScreenKeeper(this);
 		list = findViewById(R.id.list);
 		empty = findViewById(R.id.empty);
 		list.setEdgeItemsCenteringEnabled(false);
@@ -142,16 +144,29 @@ public class ShoppingActivity extends Activity implements State.Listener {
 		State.addListener(this);
 		onStateChanged();
 		PhoneLink.requestSync(this);
+		if (Settings.keepShoppingVisible(this)) {
+			screenKeeper.start();
+		}
 	}
 
 	@Override
 	protected void onStop() {
+		screenKeeper.stop();
 		State.removeListener(this);
 		super.onStop();
 	}
 
+	/** Jede Berührung macht das Display wieder hell. */
+	@Override
+	public boolean dispatchTouchEvent(android.view.MotionEvent event) {
+		screenKeeper.interaction();
+		return super.dispatchTouchEvent(event);
+	}
+
 	@Override
 	public void onStateChanged() {
+		// Eine Änderung (z. B. vom Handy abgehakt) weckt das gedimmte Display kurz auf
+		screenKeeper.interaction();
 		JsonObject state = State.load(this);
 		rows.clear();
 		JsonArray shop = State.array(state, "shop");

@@ -13,6 +13,12 @@ zurückgehen, sonst lässt sich ein Update nicht mehr einspielen. Gepflegt wird 
 `appVersion` in `gradle.properties`. Veröffentlicht wird mit `./publish-apk.sh`: privat auf den Update-Server im Heimnetz, mit `--github` als
 öffentlicher GitHub-Release.
 
+## [0.11.0] – Uhr: Einkaufsliste anlassen
+
+- Das Anlassen des Displays (gedimmt in Ruhe, hell bei Bewegung, Tippen oder Änderung) gibt es jetzt auch bei der **Einkaufsliste** der Uhr. In den
+  Einstellungen der Uhr hat jede Liste ihren eigenen Schalter: „Scanliste anlassen“ und „Einkaufsliste anlassen“ (beide standardmäßig an).
+- Handy: keine Änderung (nur die gemeinsame Versionsnummer).
+
 ## [0.10.2] – Uhr: Dimmen nach Bewegung, Uhrzeit oben
 
 - Das Dimmen bei der Scanliste richtet sich jetzt nach der Bewegung statt nach der Lage der Uhr: Liegt oder hängt sie ca. 6 Sekunden still,
