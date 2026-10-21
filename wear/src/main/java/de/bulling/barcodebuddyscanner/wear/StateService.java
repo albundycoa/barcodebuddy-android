@@ -11,11 +11,19 @@ public class StateService extends WearableListenerService {
 	@Override
 	public void onDataChanged(DataEventBuffer events) {
 		for (DataEvent event : events) {
-			if (event.getType() == DataEvent.TYPE_CHANGED
-					&& "/bbs/state".equals(event.getDataItem().getUri().getPath())) {
+			if (event.getType() != DataEvent.TYPE_CHANGED) {
+				continue;
+			}
+			String path = event.getDataItem().getUri().getPath();
+			boolean stock = "/bbs/stock".equals(path);
+			if (stock || "/bbs/state".equals(path)) {
 				String json = DataMapItem.fromDataItem(event.getDataItem()).getDataMap().getString("json");
 				if (json != null) {
-					State.save(getApplicationContext(), json);
+					if (stock) {
+						State.saveStock(getApplicationContext(), json);
+					} else {
+						State.save(getApplicationContext(), json);
+					}
 				}
 			}
 		}

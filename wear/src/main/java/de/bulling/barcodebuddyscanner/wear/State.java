@@ -21,6 +21,7 @@ final class State {
 
 	private static final String PREFS = "state";
 	private static final String KEY   = "json";
+	private static final String KEY_STOCK = "stock_json";
 
 	interface Listener {
 		void onStateChanged();
@@ -56,6 +57,25 @@ final class State {
 
 	static void save(Context context, String json) {
 		prefs(context).edit().putString(KEY, json).apply();
+		notifyChanged();
+	}
+
+	/** Letzter Bestand vom Handy (Bestandsseite), oder null, wenn noch keiner ankam. */
+	static JsonObject loadStock(Context context) {
+		String json = prefs(context).getString(KEY_STOCK, null);
+		if (json == null) {
+			return null;
+		}
+		try {
+			JsonElement e = JsonParser.parseString(json);
+			return e.isJsonObject() ? e.getAsJsonObject() : null;
+		} catch (RuntimeException ex) {
+			return null;
+		}
+	}
+
+	static void saveStock(Context context, String json) {
+		prefs(context).edit().putString(KEY_STOCK, json).apply();
 		notifyChanged();
 	}
 

@@ -13,6 +13,7 @@ import java.nio.charset.StandardCharsets;
 import de.bulling.barcodebuddyscanner.Api.GrocySync;
 import de.bulling.barcodebuddyscanner.Data.ShoppingRepository;
 import de.bulling.barcodebuddyscanner.Helper.ScanNotifier;
+import de.bulling.barcodebuddyscanner.R;
 
 /**
  * Nimmt Befehle der Uhr an: Einkaufsliste abhaken, Stückzahl ändern, Scan entfernen oder den
@@ -21,6 +22,10 @@ import de.bulling.barcodebuddyscanner.Helper.ScanNotifier;
 public class WearListenerService extends WearableListenerService {
 
 	private static final String TAG = "WearListener";
+
+	private static String text(JsonObject cmd, String key) {
+		return cmd.has(key) && !cmd.get(key).isJsonNull() ? cmd.get(key).getAsString() : "";
+	}
 
 	@Override
 	public void onMessageReceived(MessageEvent event) {
@@ -51,6 +56,31 @@ public class WearListenerService extends WearableListenerService {
 				case "del":
 					repo.deleteItem(cmd.get("id").getAsLong());
 					ScanNotifier.show(app);
+					break;
+				case "stock":
+					// Die Uhr öffnet die Bestandsseite: aktuellen Bestand live aus Grocy holen und schicken
+					WearStock.refresh(app, null, null);
+					break;
+				case "consume":
+				case "open": {
+					long product = cmd.get("p").getAsLong();
+					double amount = cmd.get("x").getAsDouble();
+					// Die Uhr ist nur eine Fernbedienung: nichts Unsinniges an Grocy weiterreichen
+					if (!(amount > 0) || amount > 100000) {
+						break;
+					}
+					boolean consume = "consume".equals(action);
+					String label = getString(consume ? R.string.stock_booked_consume : R.string.stock_booked_open,
+							text(cmd, "n"), text(cmd, "t"));
+					if (consume) {
+						WearStock.consume(app, product, amount, label);
+					} else {
+						WearStock.open(app, product, amount, label);
+					}
+					break;
+				}
+				case "undo":
+					WearStock.undo(app, text(cmd, "tx"));
 					break;
 				default:
 					// "sync": die Uhr möchte nur den aktuellen Stand

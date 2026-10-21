@@ -27,15 +27,14 @@ import com.google.android.material.textfield.TextInputEditText;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import de.bulling.barcodebuddyscanner.Api.GrocyClient;
 import de.bulling.barcodebuddyscanner.Api.GrocyStock;
 import de.bulling.barcodebuddyscanner.Api.GrocySync;
+import de.bulling.barcodebuddyscanner.Api.StockOverviewLoader;
 import de.bulling.barcodebuddyscanner.Data.ShoppingRepository;
 import de.bulling.barcodebuddyscanner.Helper.DueDates;
 import de.bulling.barcodebuddyscanner.Helper.EdgeToEdgeHelper;
@@ -180,46 +179,25 @@ public class StockOverviewActivity extends AppCompatActivity {
 			header.setText(R.string.stock_loading);
 		}
 		repo.getProducts("", cached -> GROCY_IO.execute(() -> {
-			List<StockOverview.StockRow> stock = null;
-			Map<Long, StockOverview.Product> setups = new HashMap<>();
+			List<Entry> entries = null;
 			try {
-				stock = GrocyStock.loadStockRows(grocy);
+				entries = StockOverviewLoader.load(grocy, cached);
 			} catch (IOException ignored) {
 				// unten gemeldet
 			}
-			if (stock != null) {
-				try {
-					setups = GrocyStock.loadProductSetups(grocy);
-				} catch (IOException ignored) {
-					// ohne Einstellungen gelten die Standardwerte, die Buchung selbst prüft Grocy
-				}
-			}
-			final List<StockOverview.StockRow> rows = stock;
-			final Map<Long, StockOverview.Product> products = setups;
+			final List<Entry> result = entries;
 			main.post(() -> {
 				loading = false;
 				refresh.setRefreshing(false);
 				if (isFinishing() || isDestroyed()) {
 					return;
 				}
-				if (rows == null) {
+				if (result == null) {
 					header.setText(R.string.grocy_err_unreachable);
 					return;
 				}
-				// Name, Gruppe und Einheit stehen schon in der lokalen Kopie
-				for (ShoppingRepository.ProductRow row : cached) {
-					StockOverview.Product product = products.get(row.id);
-					if (product == null) {
-						product = new StockOverview.Product();
-						product.id = row.id;
-						products.put(row.id, product);
-					}
-					product.name  = row.name;
-					product.group = row.group;
-					product.unit  = row.stockUnit;
-				}
 				all.clear();
-				all.addAll(StockOverview.build(rows, products));
+				all.addAll(result);
 				applyFilter();
 			});
 		}));

@@ -51,6 +51,43 @@ final class PhoneLink {
 		send(context, c);
 	}
 
+	/** Bittet das Handy um den aktuellen Bestand aus Grocy (kommt als Datenelement zurück). */
+	static void requestStock(Context context) {
+		final Context app = context.getApplicationContext();
+		Wearable.getDataClient(app).getDataItems(android.net.Uri.parse("wear://*/bbs/stock"))
+				.addOnSuccessListener(items -> {
+					for (com.google.android.gms.wearable.DataItem item : items) {
+						String json = com.google.android.gms.wearable.DataMapItem.fromDataItem(item).getDataMap().getString("json");
+						if (json != null) {
+							State.saveStock(app, json);
+						}
+					}
+					items.release();
+				});
+		JsonObject c = new JsonObject();
+		c.addProperty("a", "stock");
+		send(context, c);
+	}
+
+	/** Verbrauchen ("consume") oder Öffnen ("open") der Menge in Lagereinheiten; name und text bilden die Meldung. */
+	static void book(Context context, String action, long productId, double amount, String name, String text) {
+		JsonObject c = new JsonObject();
+		c.addProperty("a", action);
+		c.addProperty("p", productId);
+		c.addProperty("x", amount);
+		c.addProperty("n", name);
+		c.addProperty("t", text);
+		send(context, c);
+	}
+
+	/** Nimmt die letzte Buchung zurück (Nummer aus der Meldung des Handys). */
+	static void undo(Context context, String transaction) {
+		JsonObject c = new JsonObject();
+		c.addProperty("a", "undo");
+		c.addProperty("tx", transaction);
+		send(context, c);
+	}
+
 	static void setDone(Context context, long id, boolean done) {
 		JsonObject c = new JsonObject();
 		c.addProperty("a", "done");

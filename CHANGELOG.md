@@ -13,6 +13,14 @@ zurückgehen, sonst lässt sich ein Update nicht mehr einspielen. Gepflegt wird 
 `appVersion` in `gradle.properties`. Veröffentlicht wird mit `./publish-apk.sh`: privat auf den Update-Server im Heimnetz, mit `--github` als
 öffentlicher GitHub-Release.
 
+## [0.7.0] – Bestand auf der Uhr
+
+- **Uhr: Bestand**: Neuer Knopf „Bestand“ auf der Startseite der Uhr. Die Liste zeigt jedes Produkt mit Menge und Wert, oben „52 Produkte · 86,36 €“.
+  Antippen öffnet das Produkt mit „Verbrauchen 1“ (Schnellverbrauchsmenge), „Alle verbrauchen“ (erst nach einer zweiten Bestätigung) und
+  „Öffnen“. Gebucht wird über das Handy (nur es hat die Zugangsdaten für Grocy); danach erscheint die Meldung auf der Uhr mit „Rückgängig“.
+- Namen im Bestand werden jetzt nach deutscher Sortierung geordnet („Äpfel“ steht bei A).
+- **Die Uhr braucht dieses Update**: Menü „Uhr-App aktualisieren“ auf dem Handy, danach auf der Uhr bestätigen.
+
 ## [0.6.0] – Bestandsübersicht und feste Navigation
 
 - **Bestand**: Neue Seite wie Grocys „Stock overview“ mit der Kopfzeile „Bestandsübersicht · 52 Produkte · 86,36 € Gesamtwert“ (der Wert wird

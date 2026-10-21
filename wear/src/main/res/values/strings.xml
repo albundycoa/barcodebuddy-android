@@ -18,4 +18,15 @@
     <string name="update_failed">Update vom Handy nicht angekommen</string>
     <string name="update_failed_reason">Update nicht installiert: %1$s</string>
     <string name="update_open_app">Update bereit. Öffne die App zum Installieren.</string>
+    <string name="stock">Bestand</string>
+    <string name="stock_header">%1$d Produkte · %2$s</string>
+    <string name="stock_empty">Nichts im Bestand.</string>
+    <string name="stock_loading">Bestand wird geladen …</string>
+    <string name="stock_consume">Verbrauchen %1$s</string>
+    <string name="stock_all">Alle verbrauchen</string>
+    <string name="stock_all_confirm">Wirklich alle?</string>
+    <string name="stock_open">Öffnen %1$s</string>
+    <string name="stock_undo">Rückgängig</string>
+    <string name="stock_busy">Wird gebucht …</string>
+    <string name="stock_gone">Produkt nicht mehr im Bestand.</string>
 </resources>

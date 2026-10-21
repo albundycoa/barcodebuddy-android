@@ -149,7 +149,10 @@ public final class StockOverview {
 	}
 
 	public static void sort(List<Entry> entries, Sort sort) {
-		final Comparator<Entry> byName = (a, b) -> String.valueOf(a.product.name).compareToIgnoreCase(String.valueOf(b.product.name));
+		// Deutsche Sortierung: "Äpfel" steht bei A, Groß-/Kleinschreibung zählt nicht
+		final java.text.Collator collator = java.text.Collator.getInstance(Locale.GERMAN);
+		collator.setStrength(java.text.Collator.SECONDARY);
+		final Comparator<Entry> byName = (a, b) -> collator.compare(String.valueOf(a.product.name), String.valueOf(b.product.name));
 		switch (sort) {
 			case VALUE:
 				Collections.sort(entries, (a, b) -> {

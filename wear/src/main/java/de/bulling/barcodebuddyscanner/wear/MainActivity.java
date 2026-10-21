@@ -8,7 +8,7 @@ import android.widget.TextView;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
-/** Startseite der Uhr: Einkaufsliste oder gescannte Artikel. */
+/** Startseite der Uhr: Einkaufsliste, gescannte Artikel oder Bestand. */
 public class MainActivity extends Activity implements State.Listener {
 
 	private TextView textShopping;
@@ -26,6 +26,7 @@ public class MainActivity extends Activity implements State.Listener {
 		textBattery = findViewById(R.id.text_battery);
 		findViewById(R.id.button_shopping).setOnClickListener(v -> startActivity(new Intent(this, ShoppingActivity.class)));
 		findViewById(R.id.button_scans).setOnClickListener(v -> startActivity(new Intent(this, ScansActivity.class)));
+		findViewById(R.id.button_stock).setOnClickListener(v -> startActivity(new Intent(this, StockActivity.class)));
 	}
 
 	@Override
