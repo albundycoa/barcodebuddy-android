@@ -13,6 +13,14 @@ zurückgehen, sonst lässt sich ein Update nicht mehr einspielen. Gepflegt wird 
 `appVersion` in `gradle.properties`. Veröffentlicht wird mit `./publish-apk.sh`: privat auf den Update-Server im Heimnetz, mit `--github` als
 öffentlicher GitHub-Release.
 
+## [0.10.1] – Uhr: Display bei der Scanliste selbst anlassen
+
+- Der Ambient-Modus von Wear OS ließ die Scanliste auf der Uhr zurück zum Zifferblatt fallen. Stattdessen hält die App jetzt das Display selbst an,
+  solange die Seite „Gescannt“ offen ist (Schalter „Scanliste anlassen“ in den Einstellungen der Uhr): gedimmt, wenn du die Uhr unten hältst, hell beim
+  Anheben (Neigungssensor), Tippen oder neuem Scan. Nach 15 Minuten gedimmt ohne Berührung oder neue Daten geht das Display wieder wie gewohnt aus.
+  Das braucht mehr Akku als sonst.
+- Handy: keine Änderung (nur die gemeinsame Versionsnummer).
+
 ## [0.10.0] – Uhr: Scanliste bleibt an
 
 - **Uhr: Einstellungen**: Neuer Knopf „Einstellungen“ auf der Startseite der Uhr mit dem Schalter „Scanliste anlassen“ (Standard: an).
