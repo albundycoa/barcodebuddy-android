@@ -47,6 +47,7 @@ public class TripDetailActivity extends AppCompatActivity {
 	private List<ShoppingItem> items = new ArrayList<>();
 	private LineAdapter        adapter;
 	private String             summary = "";
+	private double             depositReturn;
 	private long               sentAt;
 
 	private final ActivityResultLauncher<String> receiptLauncher = registerForActivityResult(
@@ -58,7 +59,7 @@ public class TripDetailActivity extends AppCompatActivity {
 
 	private void writeReceipt(Uri uri) {
 		try (OutputStream out = getContentResolver().openOutputStream(uri)) {
-			ReceiptPdf.write(this, out, items, sentAt);
+			ReceiptPdf.write(this, out, items, sentAt, depositReturn);
 			Toast.makeText(this, R.string.receipt_saved, Toast.LENGTH_LONG).show();
 		} catch (IOException | RuntimeException e) {
 			Toast.makeText(this, R.string.receipt_failed, Toast.LENGTH_LONG).show();
@@ -93,6 +94,7 @@ public class TripDetailActivity extends AppCompatActivity {
 				return;
 			}
 			sentAt = trip.sentAt;
+			depositReturn = trip.depositReturn;
 			setTitle(dateFormat.format(new Date(trip.sentAt)));
 			summary = getString(R.string.trip_summary, trip.itemCount, trip.unitCount);
 			updateSummary();
@@ -116,13 +118,16 @@ public class TripDetailActivity extends AppCompatActivity {
 			}
 			deposit += item.depositTotal();
 		}
-		total += deposit;
+		total += deposit - depositReturn;
 		String text = summary;
-		if (hasPrice || deposit > 0) {
+		if (hasPrice || deposit > 0 || depositReturn > 0) {
 			text += " · " + getString(R.string.trip_total, Money.format(total));
 		}
 		if (deposit > 0) {
 			text += " · " + getString(R.string.total_deposit, Money.format(deposit));
+		}
+		if (depositReturn > 0) {
+			text += " · " + getString(R.string.total_deposit_return, Money.format(depositReturn));
 		}
 		((TextView) findViewById(R.id.trip_summary)).setText(text);
 	}

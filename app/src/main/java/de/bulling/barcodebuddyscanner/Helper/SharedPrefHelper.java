@@ -74,6 +74,25 @@ public class SharedPrefHelper {
 		this.globalPreferences = PreferenceManager.getDefaultSharedPreferences(context);
 	}
 
+	/** Abgegebenes Pfand (Betrag vom Pfandbon) für die offene Liste; 0 = nichts eingetragen. */
+	public double getDepositReturn() {
+		try {
+			return Math.max(0, Double.parseDouble(this.globalPreferences.getString("deposit_return", "0")));
+		} catch (NumberFormatException e) {
+			return 0;
+		}
+	}
+
+	public void setDepositReturn(double amount) {
+		SharedPreferences.Editor editor = this.globalPreferences.edit();
+		if (amount > 0) {
+			editor.putString("deposit_return", String.valueOf(amount));
+		} else {
+			editor.remove("deposit_return");
+		}
+		editor.apply();
+	}
+
 	/** Pfand je Produktgruppe (Grocy-Gruppennummer -> Betrag je Lagereinheit). */
 	public java.util.Map<Long, Double> getDepositRules() {
 		return Deposit.parse(this.globalPreferences.getString("deposit_rules", ""));

@@ -30,7 +30,12 @@ public final class Money {
 		if (text == null) {
 			return null;
 		}
-		String clean = text.trim().replace("€", "").replace(" ", "").replace(',', '.');
+		String clean = text.trim().replace("€", "").replace(" ", "");
+		// "1.234,56": mit Komma ist der Punkt ein Tausenderpunkt
+		if (clean.contains(",")) {
+			clean = clean.replace(".", "");
+		}
+		clean = clean.replace(',', '.');
 		if (clean.isEmpty()) {
 			return null;
 		}

@@ -37,18 +37,29 @@ public class ItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
 		/** Geschäft des Barcodes ändern (wird in Grocy am Barcode gespeichert). */
 		void onChangeShop(ShoppingItem item);
+
+		/** Abgegebenes Pfand (Betrag vom Pfandbon) eintragen oder ändern. */
+		void onEditDepositReturn();
 	}
 
 	private static final int TYPE_HEADER = 0;
 	private static final int TYPE_ITEM   = 1;
+	private static final int TYPE_RETURN = 2;
 
 	private static class Row {
 		final String       header;
 		final ShoppingItem item;
+		/** Die Zeile für das abgegebene Pfand ganz oben */
+		final boolean      depositReturn;
 
 		Row(String header, ShoppingItem item) {
+			this(header, item, false);
+		}
+
+		Row(String header, ShoppingItem item, boolean depositReturn) {
 			this.header = header;
 			this.item   = item;
+			this.depositReturn = depositReturn;
 		}
 	}
 
@@ -57,15 +68,26 @@ public class ItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 	private final List<Row>  rows     = new ArrayList<>();
 	private       boolean    editable = true;
 	private       boolean    cacheAvailable;
+	private       boolean    showDepositReturn;
+	private       double     depositReturn;
 
 	public ItemAdapter(Context context, Actions actions) {
 		this.context = context.getApplicationContext();
 		this.actions = actions;
 	}
 
+	/** Zeile "Pfand zurück" ganz oben: nur wer Pfand eingerichtet hat (oder schon etwas eingetragen hat), sieht sie. */
+	public void setDepositReturn(boolean show, double amount) {
+		showDepositReturn = show;
+		depositReturn     = amount;
+	}
+
 	public void submit(ShoppingRepository.OpenList list) {
 		rows.clear();
 		cacheAvailable = list.cacheAvailable;
+		if (showDepositReturn) {
+			rows.add(new Row(null, null, true));
+		}
 		// In Scanreihenfolge: der neueste Scan steht oben (die Liste kommt bereits so sortiert aus der Datenbank)
 		for (ShoppingItem item : list.items) {
 			rows.add(new Row(null, item));
@@ -88,7 +110,8 @@ public class ItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
 	@Override
 	public int getItemViewType(int position) {
-		return rows.get(position).item == null ? TYPE_HEADER : TYPE_ITEM;
+		Row row = rows.get(position);
+		return row.depositReturn ? TYPE_RETURN : row.item == null ? TYPE_HEADER : TYPE_ITEM;
 	}
 
 	@Override
@@ -103,12 +126,23 @@ public class ItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 		if (viewType == TYPE_HEADER) {
 			return new HeaderHolder(inflater.inflate(R.layout.item_section, parent, false));
 		}
+		if (viewType == TYPE_RETURN) {
+			return new ReturnHolder(inflater.inflate(R.layout.item_deposit_return, parent, false));
+		}
 		return new ItemHolder(inflater.inflate(R.layout.item_shopping, parent, false));
 	}
 
 	@Override
 	public void onBindViewHolder(@NonNull RecyclerView.ViewHolder viewHolder, int position) {
 		Row row = rows.get(position);
+		if (row.depositReturn) {
+			ReturnHolder holder = (ReturnHolder) viewHolder;
+			holder.amount.setText(depositReturn > 0 ? context.getString(R.string.deposit_return_amount, Money.format(depositReturn))
+					: context.getString(R.string.deposit_return_enter));
+			holder.itemView.setEnabled(editable);
+			holder.itemView.setOnClickListener(v -> actions.onEditDepositReturn());
+			return;
+		}
 		if (row.item == null) {
 			((HeaderHolder) viewHolder).title.setText(row.header);
 			return;
@@ -194,6 +228,15 @@ public class ItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 	/** 8.0 -> "8", 0.5 -> "0,5" */
 	private static String trim(double value) {
 		return value == Math.rint(value) ? String.valueOf((long) value) : String.valueOf(value).replace('.', ',');
+	}
+
+	static class ReturnHolder extends RecyclerView.ViewHolder {
+		final TextView amount;
+
+		ReturnHolder(View view) {
+			super(view);
+			amount = view.findViewById(R.id.return_amount);
+		}
 	}
 
 	static class HeaderHolder extends RecyclerView.ViewHolder {

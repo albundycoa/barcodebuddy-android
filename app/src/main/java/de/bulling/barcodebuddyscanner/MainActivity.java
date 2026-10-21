@@ -405,6 +405,9 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
     private void refreshList() {
         repo.getOpenList(list -> {
             currentItems = list.items;
+            SharedPrefHelper prefs = new SharedPrefHelper(this);
+            double depositReturn = prefs.getDepositReturn();
+            adapter.setDepositReturn(!prefs.getDepositRules().isEmpty() || depositReturn > 0, depositReturn);
             adapter.submit(list);
             updateListState();
         });
@@ -625,6 +628,7 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
     private void showEntryAmountDialog(final ShoppingEntry entry) {
         final EditText input = new EditText(this);
         input.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
+        de.bulling.barcodebuddyscanner.Helper.AmountInput.apply(input);
         input.setText(entry.amount == Math.rint(entry.amount) ? String.valueOf((long) entry.amount)
                 : String.valueOf(entry.amount).replace('.', ','));
         input.setSelectAllOnFocus(true);
@@ -637,11 +641,9 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
                 .setMessage(getString(R.string.entry_amount_in, entry.unit == null ? "" : entry.unit).trim())
                 .setView(box)
                 .setPositiveButton(R.string.inventory_edit_save, (d, w) -> {
-                    try {
-                        changeEntryAmount(entry,
-                                Double.parseDouble(input.getText().toString().trim().replace(',', '.')));
-                    } catch (NumberFormatException ignored) {
-                        // ungültige Eingabe: Menge bleibt wie sie war
+                    Double value = Money.parse(input.getText().toString());
+                    if (value != null) {
+                        changeEntryAmount(entry, value);
                     }
                 })
                 .setNegativeButton(android.R.string.cancel, null)
@@ -760,14 +762,18 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
 
     /** Gesamtbetrag oben: was der Einkauf voraussichtlich kostet. */
     private void updateTotalBar() {
-        if (currentItems.isEmpty()) {
+        double depositReturn = new SharedPrefHelper(this).getDepositReturn();
+        if (currentItems.isEmpty() && depositReturn <= 0) {
             totalBar.setVisibility(View.GONE);
             return;
         }
-        ReceiptPdf.Totals totals = ReceiptPdf.totals(currentItems);
+        ReceiptPdf.Totals totals = ReceiptPdf.totals(currentItems, depositReturn);
         String text = getString(R.string.total_estimate, Money.format(totals.sum));
         if (totals.deposit > 0) {
             text += "  ·  " + getString(R.string.total_deposit, Money.format(totals.deposit));
+        }
+        if (totals.depositReturn > 0) {
+            text += "  ·  " + getString(R.string.total_deposit_return, Money.format(totals.depositReturn));
         }
         if (totals.withoutPrice > 0) {
             text += "  ·  " + getString(R.string.total_missing, totals.withoutPrice);
@@ -796,7 +802,8 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
 
     private void writeReceipt(Uri uri) {
         try (OutputStream out = getContentResolver().openOutputStream(uri)) {
-            ReceiptPdf.write(this, out, currentItems, System.currentTimeMillis());
+            ReceiptPdf.write(this, out, currentItems, System.currentTimeMillis(),
+                    new SharedPrefHelper(this).getDepositReturn());
             Toast.makeText(this, R.string.receipt_saved, Toast.LENGTH_LONG).show();
         } catch (IOException | RuntimeException e) {
             Toast.makeText(this, R.string.receipt_failed, Toast.LENGTH_LONG).show();
@@ -878,6 +885,41 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
                 })
                 .setNegativeButton(android.R.string.cancel, null)
                 .show();
+    }
+
+    @Override
+    public void onEditDepositReturn() {
+        final SharedPrefHelper prefs = new SharedPrefHelper(this);
+        final double current = prefs.getDepositReturn();
+        final EditText input = new EditText(this);
+        input.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
+        de.bulling.barcodebuddyscanner.Helper.AmountInput.apply(input);
+        input.setHint(R.string.deposit_return_field);
+        if (current > 0) {
+            input.setText(Money.formatPlain(current));
+        }
+        input.setSelectAllOnFocus(true);
+        FrameLayout box = new FrameLayout(this);
+        int pad = (int) (20 * getResources().getDisplayMetrics().density);
+        box.setPadding(pad, pad / 2, pad, 0);
+        box.addView(input);
+        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.deposit_return_title)
+                .setMessage(R.string.deposit_return_message)
+                .setView(box)
+                .setPositiveButton(R.string.deposit_save, (d, w) -> {
+                    Double value = Money.parse(input.getText().toString());
+                    prefs.setDepositReturn(value == null ? 0 : value);
+                    refreshList();
+                })
+                .setNegativeButton(android.R.string.cancel, null);
+        if (current > 0) {
+            builder.setNeutralButton(R.string.deposit_delete, (d, w) -> {
+                prefs.setDepositReturn(0);
+                refreshList();
+            });
+        }
+        builder.show();
     }
 
     @Override
@@ -988,6 +1030,8 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
         final View content = getLayoutInflater().inflate(R.layout.dialog_price, null);
         final TextInputEditText unitInput = content.findViewById(R.id.price_unit_input);
         final TextInputEditText totalInput = content.findViewById(R.id.price_total_input);
+        de.bulling.barcodebuddyscanner.Helper.AmountInput.apply(unitInput);
+        de.bulling.barcodebuddyscanner.Helper.AmountInput.apply(totalInput);
         TextInputLayout unitLayout = content.findViewById(R.id.price_unit_layout);
         TextView stockHint = content.findViewById(R.id.price_stock_hint);
 

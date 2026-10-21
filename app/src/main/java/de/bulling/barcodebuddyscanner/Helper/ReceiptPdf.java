@@ -36,6 +36,8 @@ public final class ReceiptPdf {
 		public double sum;
 		/** Darin enthaltenes Pfand */
 		public double deposit;
+		/** Abgegebenes Pfand (Pfandbon), schon von der Summe abgezogen */
+		public double depositReturn;
 		public int    withoutPrice;
 	}
 
@@ -49,6 +51,11 @@ public final class ReceiptPdf {
 	}
 
 	public static Totals totals(List<ShoppingItem> items) {
+		return totals(items, 0);
+	}
+
+	/** Wie {@link #totals(List)}, dazu das abgegebene Pfand: Es wird von der Summe abgezogen. */
+	public static Totals totals(List<ShoppingItem> items, double depositReturn) {
 		Totals totals = new Totals();
 		for (ShoppingItem item : items) {
 			Double line = lineTotal(item);
@@ -60,6 +67,8 @@ public final class ReceiptPdf {
 			totals.sum     += item.depositTotal();
 			totals.deposit += item.depositTotal();
 		}
+		totals.depositReturn = Math.max(0, depositReturn);
+		totals.sum -= totals.depositReturn;
 		return totals;
 	}
 
@@ -76,6 +85,12 @@ public final class ReceiptPdf {
 
 	public static void write(Context context, OutputStream out, List<ShoppingItem> items, long timestamp)
 			throws IOException {
+		write(context, out, items, timestamp, 0);
+	}
+
+	/** Beleg mit dem beim Einkauf abgegebenen Pfand (Betrag vom Pfandbon), das von der Gesamtsumme abgeht. */
+	public static void write(Context context, OutputStream out, List<ShoppingItem> items, long timestamp,
+							 double depositReturn) throws IOException {
 		// Geschäfte in der Reihenfolge ihres ersten Auftretens, Artikel je Geschäft nach Name
 		Map<String, List<ShoppingItem>> groups = new LinkedHashMap<>();
 		for (ShoppingItem item : items) {
@@ -141,6 +156,14 @@ public final class ReceiptPdf {
 						canvas.drawText(context.getString(R.string.receipt_missing_prices, subtotal.withoutPrice),
 								MARGIN, y, small);
 					}
+					if (groups.size() == 1 && depositReturn > 0) {
+						y += 18;
+						canvas.drawText(context.getString(R.string.receipt_deposit_return), MARGIN, y, text);
+						drawRight(canvas, "−" + Money.format(depositReturn), PAGE_WIDTH - MARGIN, y, text);
+						y += 18;
+						canvas.drawText(context.getString(R.string.receipt_total), MARGIN, y, bold);
+						drawRight(canvas, Money.format(subtotal.sum - depositReturn), PAGE_WIDTH - MARGIN, y, bold);
+					}
 				}
 				canvas.drawText(note, MARGIN, PAGE_HEIGHT - MARGIN, small);
 				document.finishPage(page);
@@ -166,7 +189,12 @@ public final class ReceiptPdf {
 			}
 			canvas.drawLine(MARGIN, y - 8, PAGE_WIDTH - MARGIN, y - 8, line);
 			y += 10;
-			Totals all = totals(items);
+			Totals all = totals(items, depositReturn);
+			if (depositReturn > 0) {
+				canvas.drawText(context.getString(R.string.receipt_deposit_return), MARGIN, y, text);
+				drawRight(canvas, "−" + Money.format(depositReturn), PAGE_WIDTH - MARGIN, y, text);
+				y += 20;
+			}
 			canvas.drawText(context.getString(R.string.receipt_total), MARGIN, y, bold);
 			drawRight(canvas, Money.format(all.sum), PAGE_WIDTH - MARGIN, y, bold);
 			if (all.withoutPrice > 0) {

@@ -91,6 +91,7 @@ public class ProductCreateActivity extends AppCompatActivity {
 		((TextView) findViewById(R.id.barcode_info)).setText(getString(R.string.product_create_barcode, barcode));
 		nameLayout = findViewById(R.id.name_layout);
 		priceLayout = findViewById(R.id.price_layout);
+		de.bulling.barcodebuddyscanner.Helper.AmountInput.apply(priceLayout.getEditText());
 		String suggestion = getIntent().getStringExtra(EXTRA_NAME);
 		if (suggestion != null && !suggestion.equals(barcode)) {
 			nameLayout.getEditText().setText(suggestion);
@@ -170,6 +171,7 @@ public class ProductCreateActivity extends AppCompatActivity {
 		row.from.layout.setHint(R.string.conversion_from);
 		row.to.layout.setHint(R.string.conversion_to);
 		row.factor = row.root.findViewById(R.id.conv_factor);
+		de.bulling.barcodebuddyscanner.Helper.AmountInput.apply(row.factor.getEditText());
 		row.error = row.root.findViewById(R.id.conv_error);
 		fill(row.from, unitOptions);
 		fill(row.to, unitOptions);
@@ -184,11 +186,7 @@ public class ProductCreateActivity extends AppCompatActivity {
 	// ---------------------------------------------------------------- Speichern
 
 	private static Double parse(String text) {
-		try {
-			return Double.parseDouble(text.trim().replace(',', '.'));
-		} catch (NumberFormatException e) {
-			return null;
-		}
+		return de.bulling.barcodebuddyscanner.Helper.Money.parse(text);
 	}
 
 	private boolean require(Picker picker) {

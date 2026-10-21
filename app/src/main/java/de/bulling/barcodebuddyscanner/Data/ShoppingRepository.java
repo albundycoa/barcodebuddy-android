@@ -407,6 +407,7 @@ public final class ShoppingRepository {
 				List<ShoppingItem> open = readItems(db, 0);
 				final Map<Long, Double> deposits = openDeposits(db);
 				long tripId = -1;
+				double depositReturnTaken = 0;
 				int  items  = 0;
 				int  units  = 0;
 				for (ShoppingItem it : open) {
@@ -420,6 +421,11 @@ public final class ShoppingRepository {
 						tv.put("item_count", 0);
 						tv.put("unit_count", 0);
 						tv.put("complete", 0);
+						// Das abgegebene Pfand gehört zu diesem Einkauf und ist damit verbraucht
+						depositReturnTaken = new SharedPrefHelper(appContext).getDepositReturn();
+						if (depositReturnTaken > 0) {
+							tv.put("deposit_return", depositReturnTaken);
+						}
 						tripId = db.insert(ShoppingDb.T_TRIPS, null, tv);
 					}
 					if (sent == it.quantity) {
@@ -453,6 +459,9 @@ public final class ShoppingRepository {
 					db.update(ShoppingDb.T_TRIPS, tv, "id = ?", new String[]{String.valueOf(tripId)});
 				}
 				db.setTransactionSuccessful();
+				if (depositReturnTaken > 0) {
+					new SharedPrefHelper(appContext).setDepositReturn(0);
+				}
 				return new ArchiveResult(units, remaining);
 			} finally {
 				db.endTransaction();
@@ -1271,6 +1280,8 @@ public final class ShoppingRepository {
 		trip.itemCount = c.getInt(c.getColumnIndexOrThrow("item_count"));
 		trip.unitCount = c.getInt(c.getColumnIndexOrThrow("unit_count"));
 		trip.complete  = c.getInt(c.getColumnIndexOrThrow("complete")) != 0;
+		trip.depositReturn = c.isNull(c.getColumnIndexOrThrow("deposit_return")) ? 0
+				: c.getDouble(c.getColumnIndexOrThrow("deposit_return"));
 		return trip;
 	}
 }

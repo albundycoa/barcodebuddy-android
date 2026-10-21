@@ -16,6 +16,13 @@ public class MoneyTest {
 	}
 
 	@Test
+	public void parsesThousandsSeparatorWithComma() {
+		assertEquals(1234.56, Money.parse("1.234,56"), 1e-9);
+		assertEquals(2.2, Money.parse("2,20"), 1e-9);
+		assertEquals(0.2, Money.parse("0,20 €"), 1e-9);
+	}
+
+	@Test
 	public void rejectsEmptyAndInvalidInput() {
 		assertNull(Money.parse(null));
 		assertNull(Money.parse(""));

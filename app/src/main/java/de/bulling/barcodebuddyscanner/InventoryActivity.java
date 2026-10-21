@@ -581,6 +581,7 @@ public class InventoryActivity extends AppCompatActivity {
 		}
 		final EditText input = new EditText(this);
 		input.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
+		de.bulling.barcodebuddyscanner.Helper.AmountInput.apply(input);
 		input.setText(InventorySession.format(e.counted));
 		input.setSelectAllOnFocus(true);
 		FrameLayout box = new FrameLayout(this);
@@ -592,11 +593,9 @@ public class InventoryActivity extends AppCompatActivity {
 				.setMessage(editMessage(e))
 				.setView(box)
 				.setPositiveButton(R.string.inventory_edit_save, (d, w) -> {
-					try {
-						double value = Double.parseDouble(input.getText().toString().trim().replace(',', '.'));
+					Double value = de.bulling.barcodebuddyscanner.Helper.Money.parse(input.getText().toString());
+					if (value != null) {
 						session.setCounted(e.key, value);
-					} catch (NumberFormatException ignored) {
-						// ungültige Eingabe: Menge bleibt wie sie war
 					}
 					render();
 				})
@@ -790,6 +789,7 @@ public class InventoryActivity extends AppCompatActivity {
 	private void showAdjustInput(final Entry e) {
 		final EditText input = new EditText(this);
 		input.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
+		de.bulling.barcodebuddyscanner.Helper.AmountInput.apply(input);
 		input.setText(InventorySession.format(e.lastAmount));
 		input.setSelectAllOnFocus(true);
 		FrameLayout box = new FrameLayout(this);
@@ -801,10 +801,9 @@ public class InventoryActivity extends AppCompatActivity {
 				.setMessage(getString(R.string.inventory_edit_message, unitOf(e)))
 				.setView(box)
 				.setPositiveButton(R.string.inventory_edit_save, (d, w) -> {
-					try {
-						applyAdjust(e, Double.parseDouble(input.getText().toString().trim().replace(',', '.')));
-					} catch (NumberFormatException ignored) {
-						// ungültige Eingabe: Menge bleibt wie sie war
+					Double value = de.bulling.barcodebuddyscanner.Helper.Money.parse(input.getText().toString());
+					if (value != null) {
+						applyAdjust(e, value);
 					}
 				})
 				.setNegativeButton(android.R.string.cancel, null)

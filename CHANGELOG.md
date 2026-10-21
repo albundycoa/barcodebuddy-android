@@ -13,6 +13,17 @@ zurückgehen, sonst lässt sich ein Update nicht mehr einspielen. Gepflegt wird 
 `appVersion` in `gradle.properties`. Veröffentlicht wird mit `./publish-apk.sh`: privat auf den Update-Server im Heimnetz, mit `--github` als
 öffentlicher GitHub-Release.
 
+## [0.5.1] – Pfandrückgabe, Komma-Eingabe, Pfand-Liste
+
+- **Pfand zurück**: In der Liste „Gescannt“ steht ganz oben die Zeile „Pfand zurück“ (sobald du Pfand eingerichtet hast). Antippen, Betrag vom
+  Pfandbon eintragen (z. B. 3,75). Er wird von der Summe abgezogen (Anzeige „Pfand zurück −3,75 €“), mit dem Einkauf im Verlauf gespeichert
+  und im Kassenbon als Abzug aufgeführt. Nur in der App, an Grocy und Barcode Buddy geht nichts davon.
+- **Beträge mit Komma**: In allen Betragsfeldern (Preis, Gesamtpreis, Pfand, Produkt anlegen, Umrechnungen, Mengen in Einkaufsliste und Inventur)
+  kannst du jetzt „2,20“ oder „2.20“ tippen; auch „1.234,56“ wird verstanden.
+- **Menü Pfand** ist jetzt eine Liste nur der Gruppen mit Pfand: Mit dem Plus eine Gruppe wählen und den Betrag eintragen, Zeile antippen zum
+  Ändern oder Löschen, das Papierkorb-Symbol löscht mit „Rückgängig“. Der schon eingetragene Wert (z. B. Getränkepfand 0,25 €) bleibt erhalten.
+- Uhr: keine Änderung.
+
 ## [0.5.0] – Pfand, Scanreihenfolge, Geschäft ändern
 
 - **Scanreihenfolge**: Die Liste „Gescannt“ ist nicht mehr nach Geschäften gruppiert, sondern nach Scanzeit sortiert. Jeder neue Scan steht

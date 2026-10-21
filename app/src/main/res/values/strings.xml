@@ -85,10 +85,29 @@
     <!-- Pfand -->
     <string name="action_deposit">Pfand</string>
     <string name="deposit_title">Pfand</string>
-    <string name="deposit_hint">Trage bei einer Produktgruppe den Pfand je Stück ein, zum Beispiel 0,25 für eine Flasche. Das Pfand wird nur in der App mitgerechnet (Liste, Verlauf, Beleg) und nie auf den Produktpreis in Grocy aufgeschlagen. Leer lassen heißt: kein Pfand.</string>
-    <string name="deposit_amount_hint">0,00</string>
-    <string name="deposit_currency">€</string>
-    <string name="deposit_empty">Es gibt noch keine Produktgruppen aus Grocy. Sie erscheinen nach der nächsten Synchronisierung mit Grocy.</string>
+    <string name="deposit_hint">Hier stehen die Produktgruppen mit Pfand. Der Betrag gilt je Stück (zum Beispiel 0,25 für eine Flasche) und wird nur in der App mitgerechnet, nie auf den Produktpreis in Grocy aufgeschlagen.</string>
+    <string name="deposit_empty">Noch kein Pfand angelegt. Mit dem Plus eine Produktgruppe hinzufügen.</string>
+    <string name="deposit_add">Pfand hinzufügen</string>
+    <string name="deposit_edit_title">Pfand ändern</string>
+    <string name="deposit_group_hint">Produktgruppe</string>
+    <string name="deposit_amount_label">Pfand je Stück</string>
+    <string name="deposit_save">Speichern</string>
+    <string name="deposit_delete">Löschen</string>
+    <string name="deposit_deleted">Pfand für %1$s entfernt</string>
+    <string name="deposit_undo">Rückgängig</string>
+    <string name="deposit_err_group">Bitte eine Produktgruppe wählen</string>
+    <string name="deposit_err_amount">Bitte einen Betrag über 0 eingeben</string>
+    <string name="deposit_all_used">Alle Produktgruppen haben schon Pfand</string>
+    <string name="deposit_no_groups">Es gibt noch keine Produktgruppen aus Grocy. Sie erscheinen nach der nächsten Synchronisierung.</string>
+    <string name="deposit_group_missing">Gruppe %1$d (in Grocy nicht mehr vorhanden)</string>
+    <string name="deposit_return_title">Pfand zurück</string>
+    <string name="deposit_return_message">Betrag vom Pfandbon. Er wird von der Summe abgezogen und mit dem Einkauf im Verlauf gespeichert.</string>
+    <string name="deposit_return_field">Betrag in €</string>
+    <string name="deposit_return_amount">−%1$s</string>
+    <string name="deposit_return_enter">Eintragen</string>
+    <string name="deposit_return_hint">Leergut abgegeben? Betrag vom Pfandbon eintragen</string>
+    <string name="total_deposit_return">Pfand zurück −%1$s</string>
+    <string name="receipt_deposit_return">Pfandrückgabe</string>
     <string name="item_deposit_line">Pfand: %1$d × %2$s = %3$s</string>
     <string name="total_deposit">davon Pfand %1$s</string>
     <string name="receipt_deposit">%1$d × %2$s Pfand</string>

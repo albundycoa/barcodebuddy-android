@@ -7,7 +7,7 @@ import android.database.sqlite.SQLiteOpenHelper;
 class ShoppingDb extends SQLiteOpenHelper {
 
 	private static final String DB_NAME    = "shopping.db";
-	private static final int    DB_VERSION = 12;
+	private static final int    DB_VERSION = 13;
 
 	static final String T_ITEMS      = "items";
 	static final String T_TRIPS      = "trips";
@@ -35,7 +35,8 @@ class ShoppingDb extends SQLiteOpenHelper {
 				+ "sent_at INTEGER NOT NULL, "
 				+ "item_count INTEGER NOT NULL, "
 				+ "unit_count INTEGER NOT NULL, "
-				+ "complete INTEGER NOT NULL)");
+				+ "complete INTEGER NOT NULL, "
+				+ "deposit_return REAL)");
 		db.execSQL("CREATE TABLE " + T_ITEMS + " ("
 				+ "id INTEGER PRIMARY KEY AUTOINCREMENT, "
 				+ "trip_id INTEGER NOT NULL DEFAULT 0, "
@@ -88,6 +89,10 @@ class ShoppingDb extends SQLiteOpenHelper {
 		if (oldVersion >= 5 && oldVersion < 10) {
 			// Von Hand geänderte Menge eines Eintrags der Einkaufsliste, bis Grocy sie übernommen hat
 			db.execSQL("ALTER TABLE " + T_SHOPPING + " ADD COLUMN manual_amount REAL");
+		}
+		if (oldVersion < 13) {
+			// Pfandrückgabe (Betrag vom Pfandbon) je Verlaufseintrag
+			db.execSQL("ALTER TABLE " + T_TRIPS + " ADD COLUMN deposit_return REAL");
 		}
 		if (oldVersion < 12) {
 			// Pfand je Scan im Verlauf festhalten; die Produktgruppe kommt mit der nächsten Synchronisierung

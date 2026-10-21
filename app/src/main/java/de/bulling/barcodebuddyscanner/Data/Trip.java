@@ -11,4 +11,6 @@ public class Trip {
 	public int     unitCount;
 	/** false = ein Teil der Artikel konnte nicht gesendet werden und blieb in der Liste */
 	public boolean complete;
+	/** Beim Einkauf abgegebenes Pfand (Betrag vom Pfandbon), 0 = keins */
+	public double  depositReturn;
 }
