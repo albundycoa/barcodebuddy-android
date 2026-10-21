@@ -8,9 +8,25 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:clipToPadding="false"
-        android:paddingTop="40dp"
+        android:paddingTop="46dp"
         android:paddingBottom="40dp"
         android:scrollbars="vertical" />
+
+    <!-- Uhrzeit ganz oben: Bleibt das Display an, fehlt sonst die Zeit des Systems -->
+    <TextClock
+        android:id="@+id/clock"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|center_horizontal"
+        android:layout_marginTop="10dp"
+        android:background="#000000"
+        android:format12Hour="HH:mm"
+        android:format24Hour="HH:mm"
+        android:paddingStart="10dp"
+        android:paddingEnd="10dp"
+        android:textColor="#FFFFFF"
+        android:textSize="16sp"
+        android:textStyle="bold" />
 
     <TextView
         android:id="@+id/empty"

@@ -13,6 +13,14 @@ zurückgehen, sonst lässt sich ein Update nicht mehr einspielen. Gepflegt wird 
 `appVersion` in `gradle.properties`. Veröffentlicht wird mit `./publish-apk.sh`: privat auf den Update-Server im Heimnetz, mit `--github` als
 öffentlicher GitHub-Release.
 
+## [0.10.2] – Uhr: Dimmen nach Bewegung, Uhrzeit oben
+
+- Das Dimmen bei der Scanliste richtet sich jetzt nach der Bewegung statt nach der Lage der Uhr: Liegt oder hängt sie ca. 6 Sekunden still,
+  wird das Display dunkel, bei jeder Bewegung (Anheben), Berührung oder einem neuen Scan wird es wieder hell. (Vorher wurde nicht gedimmt, wenn
+  das Display nach oben zeigte.)
+- **Uhrzeit** ganz oben in den Listen der Uhr (Einkaufsliste, Gescannt, Bestand), weil bei angelassenem Display die Systemzeit fehlt.
+- Handy: keine Änderung (nur die gemeinsame Versionsnummer).
+
 ## [0.10.1] – Uhr: Display bei der Scanliste selbst anlassen
 
 - Der Ambient-Modus von Wear OS ließ die Scanliste auf der Uhr zurück zum Zifferblatt fallen. Stattdessen hält die App jetzt das Display selbst an,
