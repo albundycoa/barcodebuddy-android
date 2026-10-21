@@ -1,14 +1,16 @@
 package de.bulling.barcodebuddyscanner.wear;
 
-import android.app.Activity;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import androidx.activity.ComponentActivity;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.wear.ambient.AmbientLifecycleObserver;
+import androidx.wear.ambient.AmbientLifecycleObserverKt;
 import androidx.wear.widget.WearableRecyclerView;
 
 import com.google.gson.JsonArray;
@@ -17,8 +19,11 @@ import com.google.gson.JsonObject;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Gescannte Artikel des laufenden Einkaufs: Stückzahl ändern oder den Artikel entfernen. */
-public class ScansActivity extends Activity implements State.Listener {
+/**
+ * Gescannte Artikel des laufenden Einkaufs: Stückzahl ändern oder den Artikel entfernen. Auf Wunsch (Einstellung der Uhr)
+ * bleibt die Liste im Ambient-Modus sichtbar: Das Display wird gedimmt statt auszugehen und beim Anheben der Uhr wieder hell.
+ */
+public class ScansActivity extends ComponentActivity implements State.Listener {
 
 	private static final int TYPE_TOTAL = 0;
 	private static final int TYPE_SCAN  = 1;
@@ -71,6 +76,33 @@ public class ScansActivity extends Activity implements State.Listener {
 			}
 		};
 		list.setAdapter(adapter);
+		keepVisibleInAmbientMode();
+	}
+
+	/** Hält die Scanliste im Ambient-Modus auf dem Display (gedimmt), wenn die Einstellung an ist. */
+	private void keepVisibleInAmbientMode() {
+		if (!Settings.keepScansVisible(this)) {
+			return;
+		}
+		final View content = findViewById(android.R.id.content);
+		AmbientLifecycleObserver ambient = AmbientLifecycleObserverKt.AmbientLifecycleObserver(this,
+				new AmbientLifecycleObserver.AmbientLifecycleCallback() {
+					@Override
+					public void onEnterAmbient(AmbientLifecycleObserver.AmbientDetails details) {
+						// Weniger Helligkeit der Oberfläche schont das Display, das System dimmt den Rest
+						content.setAlpha(0.55f);
+					}
+
+					@Override
+					public void onUpdateAmbient() {
+					}
+
+					@Override
+					public void onExitAmbient() {
+						content.setAlpha(1f);
+					}
+				});
+		getLifecycle().addObserver(ambient);
 	}
 
 	private void bindScan(View view, JsonObject scan) {

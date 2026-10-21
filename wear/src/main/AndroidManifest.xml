@@ -3,6 +3,9 @@
 
     <uses-feature android:name="android.hardware.type.watch" />
 
+    <!-- Die Scanliste bleibt auf Wunsch im Ambient-Modus (gedimmt) sichtbar, statt zum Zifferblatt zurückzukehren -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
     <!-- Die vom Handy gesendete neue Version der Uhr-App installieren (ApkReceiverService, UpdateInstaller) -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
@@ -77,6 +80,9 @@
             android:exported="false" />
         <activity
             android:name=".ScansActivity"
+            android:exported="false" />
+        <activity
+            android:name=".SettingsActivity"
             android:exported="false" />
         <activity
             android:name=".StockActivity"

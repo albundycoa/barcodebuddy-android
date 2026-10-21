@@ -27,6 +27,7 @@ public class MainActivity extends Activity implements State.Listener {
 		findViewById(R.id.button_shopping).setOnClickListener(v -> startActivity(new Intent(this, ShoppingActivity.class)));
 		findViewById(R.id.button_scans).setOnClickListener(v -> startActivity(new Intent(this, ScansActivity.class)));
 		findViewById(R.id.button_stock).setOnClickListener(v -> startActivity(new Intent(this, StockActivity.class)));
+		findViewById(R.id.button_settings).setOnClickListener(v -> startActivity(new Intent(this, SettingsActivity.class)));
 	}
 
 	@Override

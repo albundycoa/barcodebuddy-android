@@ -13,6 +13,13 @@ zurückgehen, sonst lässt sich ein Update nicht mehr einspielen. Gepflegt wird 
 `appVersion` in `gradle.properties`. Veröffentlicht wird mit `./publish-apk.sh`: privat auf den Update-Server im Heimnetz, mit `--github` als
 öffentlicher GitHub-Release.
 
+## [0.10.0] – Uhr: Scanliste bleibt an
+
+- **Uhr: Einstellungen**: Neuer Knopf „Einstellungen“ auf der Startseite der Uhr mit dem Schalter „Scanliste anlassen“ (Standard: an).
+- Ist er an, bleibt die Scanliste der Uhr im Ambient-Modus sichtbar: Das Display wird gedimmt statt auszugehen und wird beim Anheben der Uhr wieder hell.
+  Aus: die Uhr verhält sich wie bisher. Das System kann den Ambient-Modus nur anzeigen, wenn er auf der Uhr erlaubt ist (Always-on-Display).
+- Handy: keine Änderung (nur die gemeinsame Versionsnummer).
+
 ## [0.9.0] – Einkaufsliste im Bestand sehen und ändern
 
 - **Im Bestand sichtbar**: Steht ein Produkt auf der Einkaufsliste, zeigt die Zeile „Auf der Liste: 2 Pack“ (bei mehreren Einheiten alle), und der

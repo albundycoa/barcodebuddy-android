@@ -29,4 +29,7 @@
     <string name="stock_undo">Rückgängig</string>
     <string name="stock_busy">Wird gebucht …</string>
     <string name="stock_gone">Produkt nicht mehr im Bestand.</string>
+    <string name="settings">Einstellungen</string>
+    <string name="setting_keep_scans">Scanliste anlassen</string>
+    <string name="setting_keep_scans_hint">Das Display bleibt bei der Scanliste gedimmt an und wird beim Anheben der Uhr wieder hell.</string>
 </resources>
