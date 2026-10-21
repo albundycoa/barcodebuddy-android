@@ -44,6 +44,14 @@
             android:textAppearance="?attr/textAppearanceBodyLarge" />
 
         <TextView
+            android:id="@+id/stock_listed"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textAppearance="?attr/textAppearanceBodyMedium"
+            android:textColor="?attr/colorTertiary"
+            android:visibility="gone" />
+
+        <TextView
             android:id="@+id/stock_detail"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

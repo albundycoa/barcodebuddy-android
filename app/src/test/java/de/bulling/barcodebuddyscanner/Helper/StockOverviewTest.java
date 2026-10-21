@@ -74,6 +74,26 @@ public class StockOverviewTest {
 	}
 
 	@Test
+	public void listEntriesAreAttachedAndDescribed() {
+		List<StockRow> rows = new ArrayList<>();
+		rows.add(new StockRow(1, 1, false, 1.0, null));
+		rows.add(new StockRow(2, 1, false, 1.0, null));
+		Map<Long, List<StockOverview.ListRow>> onList = new HashMap<>();
+		List<StockOverview.ListRow> forOne = new ArrayList<>();
+		forOne.add(new StockOverview.ListRow(10, 2, 3, "Pack"));
+		forOne.add(new StockOverview.ListRow(11, 6, 2, "Stück"));
+		onList.put(1L, forOne);
+		List<Entry> entries = StockOverview.build(rows, products(product(1, "Cola", null), product(2, "Nudeln", null)), onList);
+		Entry cola = entries.get(0);
+		assertTrue(cola.onList());
+		assertEquals("2 Pack, 6 Stück", cola.listText());
+		assertEquals(11, cola.listRow(2).id);
+		assertNull(cola.listRow(99));
+		assertFalse(entries.get(1).onList());
+		assertEquals("", entries.get(1).listText());
+	}
+
+	@Test
 	public void searchMatchesNameAndGroup() {
 		List<StockRow> rows = new ArrayList<>();
 		rows.add(new StockRow(1, 1, false, 1.0, null));

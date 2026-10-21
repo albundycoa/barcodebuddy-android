@@ -67,6 +67,8 @@ public class StockOverviewActivity extends AppCompatActivity {
 	private final Handler main = new Handler(Looper.getMainLooper());
 	private final List<Entry> all   = new ArrayList<>();
 	private final List<Entry> shown = new ArrayList<>();
+	/** Einheitennamen aus Grocy (Nummer -> Name), für Maske und Anzeige */
+	private final Map<Long, String> unitNames = new HashMap<>();
 
 	private GrocyClient           grocy;
 	private ShoppingRepository    repo;
@@ -184,10 +186,17 @@ public class StockOverviewActivity extends AppCompatActivity {
 		if (all.isEmpty()) {
 			header.setText(R.string.stock_loading);
 		}
-		repo.getProducts("", cached -> GROCY_IO.execute(() -> {
+		repo.getOptions("units", units -> repo.getProducts("", cached -> {
+			final Map<Long, String> names = new HashMap<>();
+			for (ShoppingRepository.Option option : units) {
+				names.put(option.id, option.name);
+			}
+			unitNames.clear();
+			unitNames.putAll(names);
+			GROCY_IO.execute(() -> {
 			List<Entry> entries = null;
 			try {
-				entries = StockOverviewLoader.load(grocy, cached);
+				entries = StockOverviewLoader.load(grocy, cached, names);
 			} catch (IOException ignored) {
 				// unten gemeldet
 			}
@@ -205,6 +214,7 @@ public class StockOverviewActivity extends AppCompatActivity {
 				all.clear();
 				all.addAll(result);
 				applyFilter();
+			});
 			});
 		}));
 	}
@@ -263,55 +273,93 @@ public class StockOverviewActivity extends AppCompatActivity {
 		}
 	}
 
-	/** Maske von unten: Produkt mit Menge und Einheit auf die Einkaufsliste setzen. */
+	/**
+	 * Maske von unten: Produkt mit Menge und Einheit auf die Einkaufsliste setzen. Steht es schon darauf, zeigt sie die
+	 * bisherige Menge zum Ändern (und zum Entfernen); beim Wechsel der Einheit erscheint die Menge dieser Einheit.
+	 */
 	private void showShoppingSheet(final Entry entry) {
-		repo.getOptions("units", units -> {
-			Map<Long, String> names = new HashMap<>();
-			for (ShoppingRepository.Option option : units) {
-				names.put(option.id, option.name);
-			}
-			final List<UnitChoice> choices = new ArrayList<>();
-			// Zuerst die Einkaufseinheit (z. B. Pack), danach die Lagereinheit (z. B. Stück)
-			if (entry.product.quPurchase > 0 && names.containsKey(entry.product.quPurchase)) {
-				choices.add(new UnitChoice(entry.product.quPurchase, names.get(entry.product.quPurchase)));
-			}
-			if (entry.product.quStock > 0 && entry.product.quStock != entry.product.quPurchase
-					&& names.containsKey(entry.product.quStock)) {
-				choices.add(new UnitChoice(entry.product.quStock, names.get(entry.product.quStock)));
-			}
-			if (choices.isEmpty()) {
-				choices.add(new UnitChoice(0, entry.product.unit == null ? "" : entry.product.unit));
-			}
+		final List<UnitChoice> choices = new ArrayList<>();
+		// Zuerst die Einkaufseinheit (z. B. Pack), danach die Lagereinheit (z. B. Stück), dazu Einheiten vorhandener Einträge
+		addChoice(choices, entry.product.quPurchase);
+		addChoice(choices, entry.product.quStock);
+		for (StockOverview.ListRow row : entry.list) {
+			addChoice(choices, row.quId);
+		}
+		if (choices.isEmpty()) {
+			choices.add(new UnitChoice(0, entry.product.unit == null ? "" : entry.product.unit));
+		}
 
-			final BottomSheetDialog sheet = new BottomSheetDialog(this);
-			View view = getLayoutInflater().inflate(R.layout.sheet_shopping_add, null);
-			sheet.setContentView(view);
-			sheet.getBehavior().setState(com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_EXPANDED);
-			sheet.getBehavior().setSkipCollapsed(true);
-			((TextView) view.findViewById(R.id.sheet_product)).setText(entry.product.name);
-			final TextInputEditText amountInput = view.findViewById(R.id.sheet_amount);
-			final TextInputLayout amountLayout = view.findViewById(R.id.sheet_amount_layout);
-			AmountInput.apply(amountInput);
-			amountInput.setText("1");
-			final MaterialAutoCompleteTextView unitInput = view.findViewById(R.id.sheet_unit);
-			unitInput.setAdapter(new android.widget.ArrayAdapter<>(this,
-					com.google.android.material.R.layout.m3_auto_complete_simple_item, choices));
-			final UnitChoice[] selected = {choices.get(0)};
-			unitInput.setText(selected[0].name, false);
-			unitInput.setOnItemClickListener((parent, v, position, id) -> selected[0] = choices.get(position));
-			view.findViewById(R.id.sheet_cancel).setOnClickListener(v -> sheet.dismiss());
-			view.findViewById(R.id.sheet_add).setOnClickListener(v -> {
-				Double amount = Money.parse(String.valueOf(amountInput.getText()));
-				if (amount == null || amount <= 0) {
-					amountLayout.setError(getString(R.string.stock_list_err_amount));
-					return;
+		final BottomSheetDialog sheet = new BottomSheetDialog(this);
+		View view = getLayoutInflater().inflate(R.layout.sheet_shopping_add, null);
+		sheet.setContentView(view);
+		sheet.getBehavior().setState(com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_EXPANDED);
+		sheet.getBehavior().setSkipCollapsed(true);
+		((TextView) view.findViewById(R.id.sheet_product)).setText(entry.product.name);
+		final TextInputEditText amountInput = view.findViewById(R.id.sheet_amount);
+		final TextInputLayout amountLayout = view.findViewById(R.id.sheet_amount_layout);
+		final MaterialButton addButton = view.findViewById(R.id.sheet_add);
+		final View removeButton = view.findViewById(R.id.sheet_remove);
+		AmountInput.apply(amountInput);
+		final MaterialAutoCompleteTextView unitInput = view.findViewById(R.id.sheet_unit);
+		unitInput.setAdapter(new android.widget.ArrayAdapter<>(this,
+				com.google.android.material.R.layout.m3_auto_complete_simple_item, choices));
+
+		// Vorausgewählt: die Einheit des vorhandenen Eintrags, sonst die Einkaufseinheit
+		UnitChoice first = choices.get(0);
+		if (entry.onList()) {
+			for (UnitChoice choice : choices) {
+				if (choice.id == entry.list.get(0).quId) {
+					first = choice;
 				}
-				sheet.dismiss();
-				addToShoppingList(entry, amount, selected[0]);
-			});
-			sheet.show();
-			amountInput.requestFocus();
+			}
+		}
+		final UnitChoice[] selected = {first};
+		final Runnable fill = () -> {
+			StockOverview.ListRow row = entry.listRow(selected[0].id);
+			amountInput.setText(row == null ? "1" : Money.formatPlain(row.amount).replaceAll(",?0+$", ""));
+			amountInput.selectAll();
+			amountLayout.setError(null);
+			addButton.setText(row == null ? R.string.stock_list_add : R.string.stock_list_save);
+			removeButton.setVisibility(row == null ? View.GONE : View.VISIBLE);
+		};
+		unitInput.setText(first.name, false);
+		fill.run();
+		unitInput.setOnItemClickListener((parent, v, position, id) -> {
+			selected[0] = choices.get(position);
+			fill.run();
 		});
+		view.findViewById(R.id.sheet_cancel).setOnClickListener(v -> sheet.dismiss());
+		removeButton.setOnClickListener(v -> {
+			StockOverview.ListRow row = entry.listRow(selected[0].id);
+			sheet.dismiss();
+			if (row != null) {
+				removeFromShoppingList(entry, row);
+			}
+		});
+		addButton.setOnClickListener(v -> {
+			Double amount = Money.parse(String.valueOf(amountInput.getText()));
+			if (amount == null || amount <= 0) {
+				amountLayout.setError(getString(R.string.stock_list_err_amount));
+				return;
+			}
+			sheet.dismiss();
+			addToShoppingList(entry, amount, selected[0]);
+		});
+		sheet.show();
+		amountInput.requestFocus();
+	}
+
+	private void addChoice(List<UnitChoice> choices, long quId) {
+		String name = unitNames.get(quId);
+		if (quId <= 0 || name == null) {
+			return;
+		}
+		for (UnitChoice choice : choices) {
+			if (choice.id == quId) {
+				return;
+			}
+		}
+		choices.add(new UnitChoice(quId, name));
 	}
 
 	private void addToShoppingList(Entry entry, final double amount, final UnitChoice unit) {
@@ -327,13 +375,33 @@ public class StockOverviewActivity extends AppCompatActivity {
 				}
 				main.post(() -> {
 					Snackbar.make(findViewById(R.id.list), done, Snackbar.LENGTH_LONG).setAnchorView(nav).show();
-					// Die Einkaufsliste auf dem Handy aktualisieren
-					GrocySync.start(getApplicationContext(), null);
+					afterListChange();
 				});
 			} catch (IOException e) {
 				main.post(() -> showError(e));
 			}
 		});
+	}
+
+	private void removeFromShoppingList(Entry entry, final StockOverview.ListRow row) {
+		final String done = getString(R.string.stock_list_removed, entry.product.name);
+		GROCY_IO.execute(() -> {
+			try {
+				GrocyStock.removeFromShoppingList(grocy, row.id);
+				main.post(() -> {
+					Snackbar.make(findViewById(R.id.list), done, Snackbar.LENGTH_LONG).setAnchorView(nav).show();
+					afterListChange();
+				});
+			} catch (IOException e) {
+				main.post(() -> showError(e));
+			}
+		});
+	}
+
+	/** Markierungen in der Übersicht neu laden und die Einkaufsliste auf dem Handy aktualisieren. */
+	private void afterListChange() {
+		load();
+		GrocySync.start(getApplicationContext(), null);
 	}
 
 	private void book(Entry entry, final Booking booking, final String doneText) {
@@ -466,6 +534,10 @@ public class StockOverviewActivity extends AppCompatActivity {
 			holder.consume.setOnClickListener(v -> consumeQuick(entry));
 			holder.all.setOnClickListener(v -> confirmConsumeAll(entry));
 			holder.open.setOnClickListener(v -> open(entry));
+			holder.listed.setVisibility(entry.onList() ? View.VISIBLE : View.GONE);
+			holder.listed.setText(getString(R.string.stock_overview_on_list, entry.listText()));
+			// Steht das Produkt schon auf der Liste, zeigt der Knopf die Menge
+			holder.list.setText(entry.onList() ? InventorySession.format(entry.list.get(0).amount) : "");
 			holder.list.setEnabled(!busy);
 			holder.list.setOnClickListener(v -> showShoppingSheet(entry));
 		}
@@ -484,6 +556,7 @@ public class StockOverviewActivity extends AppCompatActivity {
 			final MaterialButton all;
 			final MaterialButton open;
 			final MaterialButton list;
+			final TextView       listed;
 
 			ViewHolder(View view) {
 				super(view);
@@ -495,6 +568,7 @@ public class StockOverviewActivity extends AppCompatActivity {
 				all     = view.findViewById(R.id.btn_all);
 				open    = view.findViewById(R.id.btn_open);
 				list    = view.findViewById(R.id.btn_list);
+				listed  = view.findViewById(R.id.stock_listed);
 			}
 		}
 	}

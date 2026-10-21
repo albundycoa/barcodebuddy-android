@@ -217,8 +217,50 @@ public final class GrocyStock {
 	}
 
 	/**
-	 * Setzt das Produkt mit Menge und Einheit auf die Einkaufsliste, so wie Grocys eigenes Formular: Die Menge steht in der
-	 * gewählten Einheit. Steht das Produkt schon mit derselben Einheit auf der Liste, wird die Menge dazugezählt.
+	 * Offene Einträge der Standardeinkaufsliste je Produktnummer (erledigte zählen nicht). Einheitennamen kommen aus
+	 * {@code unitNames}, fehlende bleiben leer.
+	 */
+	static Map<Long, List<StockOverview.ListRow>> parseShoppingRows(JsonElement rows, Map<Long, String> unitNames) {
+		Map<Long, List<StockOverview.ListRow>> result = new HashMap<>();
+		if (rows == null || !rows.isJsonArray()) {
+			return result;
+		}
+		for (JsonElement e : rows.getAsJsonArray()) {
+			if (!e.isJsonObject()) {
+				continue;
+			}
+			JsonObject o = e.getAsJsonObject();
+			long listId = o.has("shopping_list_id") ? (long) number(o, "shopping_list_id") : 1;
+			if (!o.has("id") || !o.has("product_id") || number(o, "done") != 0 || (listId != 1 && listId != 0)) {
+				continue;
+			}
+			long product = (long) number(o, "product_id");
+			long quId = (long) number(o, "qu_id");
+			List<StockOverview.ListRow> list = result.get(product);
+			if (list == null) {
+				list = new ArrayList<>();
+				result.put(product, list);
+			}
+			list.add(new StockOverview.ListRow(o.get("id").getAsLong(), number(o, "amount"), quId, unitNames.get(quId)));
+		}
+		return result;
+	}
+
+	/** Lädt die offenen Einträge der Einkaufsliste live aus Grocy. */
+	public static Map<Long, List<StockOverview.ListRow>> loadShoppingRows(GrocyClient client, Map<Long, String> unitNames)
+			throws IOException {
+		return parseShoppingRows(client.get("objects/shopping_list"), unitNames);
+	}
+
+	/** Entfernt einen Eintrag von der Einkaufsliste. */
+	public static void removeFromShoppingList(GrocyClient client, long entryId) throws IOException {
+		client.delete("objects/shopping_list/" + entryId);
+	}
+
+	/**
+	 * Legt fest, wie viel von dem Produkt in der gewählten Einheit auf der Einkaufsliste steht, so wie Grocys eigenes Formular:
+	 * Die Menge steht in der gewählten Einheit. Gibt es schon einen Eintrag mit derselben Einheit, wird seine Menge auf den
+	 * neuen Wert gesetzt (nicht addiert, die Maske zeigt ja die bisherige Menge), sonst entsteht ein neuer Eintrag.
 	 */
 	public static void addToShoppingList(GrocyClient client, long productId, double amount, long quId) throws IOException {
 		JsonElement existing = client.get("objects/shopping_list?query%5B%5D=product_id%3D" + productId
@@ -226,7 +268,7 @@ public final class GrocyStock {
 		ListEntry merge = findMergeable(existing, quId);
 		if (merge != null) {
 			JsonObject body = new JsonObject();
-			body.addProperty("amount", merge.amount + amount);
+			body.addProperty("amount", amount);
 			client.put("objects/shopping_list/" + merge.id, body.toString());
 		} else {
 			client.post("objects/shopping_list", newListEntryBody(productId, amount, quId).toString());

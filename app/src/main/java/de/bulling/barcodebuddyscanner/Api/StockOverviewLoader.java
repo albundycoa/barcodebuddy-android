@@ -20,6 +20,12 @@ public final class StockOverviewLoader {
 	/** @throws IOException wenn Grocy den Bestand nicht liefert; fehlen nur die Produkteinstellungen, gelten Standardwerte */
 	public static List<StockOverview.Entry> load(GrocyClient grocy, List<ShoppingRepository.ProductRow> cached)
 			throws IOException {
+		return load(grocy, cached, new HashMap<>());
+	}
+
+	/** Wie {@link #load(GrocyClient, List)}, dazu die Einträge der Einkaufsliste (Einheitennamen aus {@code unitNames}). */
+	public static List<StockOverview.Entry> load(GrocyClient grocy, List<ShoppingRepository.ProductRow> cached,
+												 Map<Long, String> unitNames) throws IOException {
 		List<StockOverview.StockRow> stock = GrocyStock.loadStockRows(grocy);
 		Map<Long, StockOverview.Product> products;
 		try {
@@ -39,6 +45,13 @@ public final class StockOverviewLoader {
 			product.group = row.group;
 			product.unit  = row.stockUnit;
 		}
-		return StockOverview.build(stock, products);
+		Map<Long, java.util.List<StockOverview.ListRow>> onList;
+		try {
+			onList = GrocyStock.loadShoppingRows(grocy, unitNames);
+		} catch (IOException e) {
+			// ohne Einkaufsliste zeigt die Übersicht einfach keine Markierung
+			onList = new HashMap<>();
+		}
+		return StockOverview.build(stock, products, onList);
 	}
 }

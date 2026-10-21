@@ -2,6 +2,7 @@ package de.bulling.barcodebuddyscanner.Helper;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -59,6 +60,22 @@ public final class StockOverview {
 		public long    quStock;
 	}
 
+	/** Ein Eintrag des Produkts auf der Einkaufsliste (Menge in der Einheit des Eintrags). */
+	public static final class ListRow {
+		public final long   id;
+		public final double amount;
+		public final long   quId;
+		/** Name der Einheit, leer wenn unbekannt */
+		public final String unit;
+
+		public ListRow(long id, double amount, long quId, String unit) {
+			this.id     = id;
+			this.amount = amount;
+			this.quId   = quId;
+			this.unit   = unit == null ? "" : unit;
+		}
+	}
+
 	/** Eine Zeile der Übersicht. */
 	public static final class Entry {
 		public final Product product;
@@ -66,6 +83,35 @@ public final class StockOverview {
 		public double opened;
 		public double value;
 		public String nextDue;
+		/** Einträge dieses Produkts auf der Einkaufsliste (offene, in der Standardliste), leer = nicht auf der Liste */
+		public final List<ListRow> list = new ArrayList<>();
+
+		/** Steht das Produkt auf der Einkaufsliste? */
+		public boolean onList() {
+			return !list.isEmpty();
+		}
+
+		/** Der Eintrag mit dieser Einheit, null wenn das Produkt mit dieser Einheit nicht auf der Liste steht. */
+		public ListRow listRow(long quId) {
+			for (ListRow row : list) {
+				if (row.quId == quId) {
+					return row;
+				}
+			}
+			return null;
+		}
+
+		/** "2 Pack" oder, bei mehreren Einheiten, "2 Pack, 6 Stück"; leer wenn nicht auf der Liste. */
+		public String listText() {
+			StringBuilder text = new StringBuilder();
+			for (ListRow row : list) {
+				if (text.length() > 0) {
+					text.append(", ");
+				}
+				text.append((InventorySession.format(row.amount) + " " + row.unit).trim());
+			}
+			return text.toString();
+		}
 
 		Entry(Product product) {
 			this.product = product;
@@ -93,6 +139,11 @@ public final class StockOverview {
 	 * damit Bestand nie verschwindet. Chargen mit Menge 0 oder weniger zählen nicht.
 	 */
 	public static List<Entry> build(List<StockRow> rows, Map<Long, Product> products) {
+		return build(rows, products, new HashMap<>());
+	}
+
+	/** Wie {@link #build(List, Map)}, dazu die Einträge der Einkaufsliste je Produktnummer. */
+	public static List<Entry> build(List<StockRow> rows, Map<Long, Product> products, Map<Long, List<ListRow>> onList) {
 		Map<Long, Entry> byProduct = new LinkedHashMap<>();
 		for (StockRow row : rows) {
 			if (row.amount <= 0) {
@@ -121,6 +172,10 @@ public final class StockOverview {
 			}
 		}
 		for (Entry entry : byProduct.values()) {
+			List<ListRow> listed = onList.get(entry.product.id);
+			if (listed != null) {
+				entry.list.addAll(listed);
+			}
 			// Wie Grocy: der Wert je Produkt wird auf Cent gerundet, die Gesamtsumme besteht aus diesen Werten
 			entry.value = Math.round(entry.value * 100) / 100.0;
 		}

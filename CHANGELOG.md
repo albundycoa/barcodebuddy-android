@@ -13,6 +13,15 @@ zurückgehen, sonst lässt sich ein Update nicht mehr einspielen. Gepflegt wird 
 `appVersion` in `gradle.properties`. Veröffentlicht wird mit `./publish-apk.sh`: privat auf den Update-Server im Heimnetz, mit `--github` als
 öffentlicher GitHub-Release.
 
+## [0.9.0] – Einkaufsliste im Bestand sehen und ändern
+
+- **Im Bestand sichtbar**: Steht ein Produkt auf der Einkaufsliste, zeigt die Zeile „Auf der Liste: 2 Pack“ (bei mehreren Einheiten alle), und der
+  Einkaufswagen-Knopf zeigt die Menge. Gezählt werden die offenen Einträge der Standardliste; erledigte nicht.
+- **Maske ändern**: Ein Klick auf den Einkaufswagen öffnet bei einem Produkt auf der Liste dieselbe Maske mit der bisherigen Menge. Menge ändern und
+  „Speichern“ (die Menge wird auf den neuen Wert gesetzt, nicht addiert). „Entfernen“ nimmt den Eintrag von der Liste. Wechselst du die Einheit, erscheint
+  die Menge dieser Einheit, oder 1, wenn das Produkt mit ihr noch nicht auf der Liste steht.
+- Uhr: keine funktionale Änderung (nur die gemeinsame Versionsnummer).
+
 ## [0.8.0] – Produkt auf die Einkaufsliste setzen
 
 - **Bestand → Einkaufswagen-Knopf**: Jedes Produkt der Bestandsseite hat einen Knopf, der von unten eine Maske öffnet. Dort stehen das Produkt, die
