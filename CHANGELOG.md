@@ -13,6 +13,14 @@ zurückgehen, sonst lässt sich ein Update nicht mehr einspielen. Gepflegt wird 
 `appVersion` in `gradle.properties`. Veröffentlicht wird mit `./publish-apk.sh`: privat auf den Update-Server im Heimnetz, mit `--github` als
 öffentlicher GitHub-Release.
 
+## [0.8.0] – Produkt auf die Einkaufsliste setzen
+
+- **Bestand → Einkaufswagen-Knopf**: Jedes Produkt der Bestandsseite hat einen Knopf, der von unten eine Maske öffnet. Dort stehen das Produkt, die
+  Menge (Standard 1, Komma oder Punkt) und die Einheit (Einkaufseinheit zuerst, dazu die Lagereinheit). „Hinzufügen“ trägt es wie Grocys eigenes Formular
+  in die Einkaufsliste ein; steht das Produkt schon mit derselben Einheit drauf, wird die Menge dazugezählt. Die Liste auf dem Handy aktualisiert sich danach.
+- Die Knöpfe der Bestandszeile sind enger gesetzt, damit „Alle“ in einer Zeile bleibt.
+- Uhr: keine funktionale Änderung (nur die gemeinsame Versionsnummer).
+
 ## [0.7.0] – Bestand auf der Uhr
 
 - **Uhr: Bestand**: Neuer Knopf „Bestand“ auf der Startseite der Uhr. Die Liste zeigt jedes Produkt mit Menge und Wert, oben „52 Produkte · 86,36 €“.

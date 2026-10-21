@@ -157,6 +157,8 @@ public final class GrocyStock {
 				p.openAmount    = sameUnit && quickOpen > 0 ? quickOpen : 1;
 				p.canOpen       = number(o, "disable_open") == 0;
 				p.tare          = number(o, "enable_tare_weight_handling") != 0;
+				p.quStock       = (long) number(o, "qu_id_stock");
+				p.quPurchase    = (long) number(o, "qu_id_purchase");
 				result.put(p.id, p);
 			}
 		} catch (RuntimeException e) {
@@ -172,6 +174,63 @@ public final class GrocyStock {
 		body.addProperty("list_id", 1);
 		body.addProperty("product_amount", amount);
 		client.post("stock/shoppinglist/add-product", body.toString());
+	}
+
+	/** Ein vorhandener Eintrag der Einkaufsliste, zu dem eine neue Menge dazugezählt werden kann. */
+	static final class ListEntry {
+		final long   id;
+		final double amount;
+
+		ListEntry(long id, double amount) {
+			this.id     = id;
+			this.amount = amount;
+		}
+	}
+
+	/**
+	 * Sucht in den Zeilen der Einkaufsliste einen Eintrag desselben Produkts in derselben Einheit. Nur dann lassen sich die
+	 * Mengen einfach addieren (wie in Grocy), sonst entsteht eine eigene Zeile.
+	 */
+	static ListEntry findMergeable(JsonElement rows, long quId) {
+		if (rows == null || !rows.isJsonArray()) {
+			return null;
+		}
+		for (JsonElement e : rows.getAsJsonArray()) {
+			if (!e.isJsonObject()) {
+				continue;
+			}
+			JsonObject o = e.getAsJsonObject();
+			if ((long) number(o, "qu_id") == quId && o.has("id")) {
+				return new ListEntry(o.get("id").getAsLong(), number(o, "amount"));
+			}
+		}
+		return null;
+	}
+
+	static JsonObject newListEntryBody(long productId, double amount, long quId) {
+		JsonObject body = new JsonObject();
+		body.addProperty("product_id", productId);
+		body.addProperty("amount", amount);
+		body.addProperty("qu_id", quId);
+		body.addProperty("shopping_list_id", 1);
+		return body;
+	}
+
+	/**
+	 * Setzt das Produkt mit Menge und Einheit auf die Einkaufsliste, so wie Grocys eigenes Formular: Die Menge steht in der
+	 * gewählten Einheit. Steht das Produkt schon mit derselben Einheit auf der Liste, wird die Menge dazugezählt.
+	 */
+	public static void addToShoppingList(GrocyClient client, long productId, double amount, long quId) throws IOException {
+		JsonElement existing = client.get("objects/shopping_list?query%5B%5D=product_id%3D" + productId
+				+ "&query%5B%5D=shopping_list_id%3D1");
+		ListEntry merge = findMergeable(existing, quId);
+		if (merge != null) {
+			JsonObject body = new JsonObject();
+			body.addProperty("amount", merge.amount + amount);
+			client.put("objects/shopping_list/" + merge.id, body.toString());
+		} else {
+			client.post("objects/shopping_list", newListEntryBody(productId, amount, quId).toString());
+		}
 	}
 
 	/** Alle Chargen im Bestand, Chargen ohne Haltbarkeitsdatum oder mit unbegrenztem Datum fehlen. */

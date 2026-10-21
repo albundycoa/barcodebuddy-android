@@ -64,7 +64,11 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:contentDescription="@string/stock_consume_one_desc"
+                android:maxLines="1"
                 android:minWidth="0dp"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                app:iconPadding="4dp"
                 app:icon="@drawable/ic_consume" />
 
             <com.google.android.material.button.MaterialButton
@@ -75,8 +79,12 @@
                 android:layout_marginStart="8dp"
                 android:layout_weight="1"
                 android:contentDescription="@string/stock_consume_all_desc"
+                android:maxLines="1"
                 android:minWidth="0dp"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
                 android:text="@string/stock_consume_all"
+                app:iconPadding="4dp"
                 app:icon="@drawable/ic_consume" />
 
             <com.google.android.material.button.MaterialButton
@@ -87,8 +95,27 @@
                 android:layout_marginStart="8dp"
                 android:layout_weight="1"
                 android:contentDescription="@string/stock_open_desc"
+                android:maxLines="1"
                 android:minWidth="0dp"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                app:iconPadding="4dp"
                 app:icon="@drawable/ic_open" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_list"
+                style="@style/Widget.Material3.Button.OutlinedButton.Icon"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_weight="0.7"
+                android:contentDescription="@string/stock_list_desc"
+                android:maxLines="1"
+                android:minWidth="0dp"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                app:iconPadding="4dp"
+                app:icon="@drawable/ic_cart" />
         </LinearLayout>
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

@@ -20,14 +20,19 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.snackbar.Snackbar;
+import com.google.android.material.textfield.MaterialAutoCompleteTextView;
 import com.google.android.material.textfield.TextInputEditText;
+import com.google.android.material.textfield.TextInputLayout;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -36,6 +41,7 @@ import de.bulling.barcodebuddyscanner.Api.GrocyStock;
 import de.bulling.barcodebuddyscanner.Api.GrocySync;
 import de.bulling.barcodebuddyscanner.Api.StockOverviewLoader;
 import de.bulling.barcodebuddyscanner.Data.ShoppingRepository;
+import de.bulling.barcodebuddyscanner.Helper.AmountInput;
 import de.bulling.barcodebuddyscanner.Helper.DueDates;
 import de.bulling.barcodebuddyscanner.Helper.EdgeToEdgeHelper;
 import de.bulling.barcodebuddyscanner.Helper.InventorySession;
@@ -241,6 +247,95 @@ public class StockOverviewActivity extends AppCompatActivity {
 				getString(R.string.stock_booked_open, entry.product.name, amountText(entry, amount)));
 	}
 
+	/** Eine Einheit zur Auswahl in der Maske; id 0 = unbekannt (dann gilt Grocys Standard). */
+	private static final class UnitChoice {
+		final long   id;
+		final String name;
+
+		UnitChoice(long id, String name) {
+			this.id   = id;
+			this.name = name;
+		}
+
+		@Override
+		public String toString() {
+			return name;
+		}
+	}
+
+	/** Maske von unten: Produkt mit Menge und Einheit auf die Einkaufsliste setzen. */
+	private void showShoppingSheet(final Entry entry) {
+		repo.getOptions("units", units -> {
+			Map<Long, String> names = new HashMap<>();
+			for (ShoppingRepository.Option option : units) {
+				names.put(option.id, option.name);
+			}
+			final List<UnitChoice> choices = new ArrayList<>();
+			// Zuerst die Einkaufseinheit (z. B. Pack), danach die Lagereinheit (z. B. Stück)
+			if (entry.product.quPurchase > 0 && names.containsKey(entry.product.quPurchase)) {
+				choices.add(new UnitChoice(entry.product.quPurchase, names.get(entry.product.quPurchase)));
+			}
+			if (entry.product.quStock > 0 && entry.product.quStock != entry.product.quPurchase
+					&& names.containsKey(entry.product.quStock)) {
+				choices.add(new UnitChoice(entry.product.quStock, names.get(entry.product.quStock)));
+			}
+			if (choices.isEmpty()) {
+				choices.add(new UnitChoice(0, entry.product.unit == null ? "" : entry.product.unit));
+			}
+
+			final BottomSheetDialog sheet = new BottomSheetDialog(this);
+			View view = getLayoutInflater().inflate(R.layout.sheet_shopping_add, null);
+			sheet.setContentView(view);
+			sheet.getBehavior().setState(com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_EXPANDED);
+			sheet.getBehavior().setSkipCollapsed(true);
+			((TextView) view.findViewById(R.id.sheet_product)).setText(entry.product.name);
+			final TextInputEditText amountInput = view.findViewById(R.id.sheet_amount);
+			final TextInputLayout amountLayout = view.findViewById(R.id.sheet_amount_layout);
+			AmountInput.apply(amountInput);
+			amountInput.setText("1");
+			final MaterialAutoCompleteTextView unitInput = view.findViewById(R.id.sheet_unit);
+			unitInput.setAdapter(new android.widget.ArrayAdapter<>(this,
+					com.google.android.material.R.layout.m3_auto_complete_simple_item, choices));
+			final UnitChoice[] selected = {choices.get(0)};
+			unitInput.setText(selected[0].name, false);
+			unitInput.setOnItemClickListener((parent, v, position, id) -> selected[0] = choices.get(position));
+			view.findViewById(R.id.sheet_cancel).setOnClickListener(v -> sheet.dismiss());
+			view.findViewById(R.id.sheet_add).setOnClickListener(v -> {
+				Double amount = Money.parse(String.valueOf(amountInput.getText()));
+				if (amount == null || amount <= 0) {
+					amountLayout.setError(getString(R.string.stock_list_err_amount));
+					return;
+				}
+				sheet.dismiss();
+				addToShoppingList(entry, amount, selected[0]);
+			});
+			sheet.show();
+			amountInput.requestFocus();
+		});
+	}
+
+	private void addToShoppingList(Entry entry, final double amount, final UnitChoice unit) {
+		final long productId = entry.product.id;
+		final String done = getString(R.string.stock_list_done, entry.product.name,
+				(InventorySession.format(amount) + " " + unit.name).trim());
+		GROCY_IO.execute(() -> {
+			try {
+				if (unit.id > 0) {
+					GrocyStock.addToShoppingList(grocy, productId, amount, unit.id);
+				} else {
+					GrocyStock.addToShoppingList(grocy, productId, amount);
+				}
+				main.post(() -> {
+					Snackbar.make(findViewById(R.id.list), done, Snackbar.LENGTH_LONG).setAnchorView(nav).show();
+					// Die Einkaufsliste auf dem Handy aktualisieren
+					GrocySync.start(getApplicationContext(), null);
+				});
+			} catch (IOException e) {
+				main.post(() -> showError(e));
+			}
+		});
+	}
+
 	private void book(Entry entry, final Booking booking, final String doneText) {
 		if (busy) {
 			return;
@@ -371,6 +466,8 @@ public class StockOverviewActivity extends AppCompatActivity {
 			holder.consume.setOnClickListener(v -> consumeQuick(entry));
 			holder.all.setOnClickListener(v -> confirmConsumeAll(entry));
 			holder.open.setOnClickListener(v -> open(entry));
+			holder.list.setEnabled(!busy);
+			holder.list.setOnClickListener(v -> showShoppingSheet(entry));
 		}
 
 		@Override
@@ -386,6 +483,7 @@ public class StockOverviewActivity extends AppCompatActivity {
 			final MaterialButton consume;
 			final MaterialButton all;
 			final MaterialButton open;
+			final MaterialButton list;
 
 			ViewHolder(View view) {
 				super(view);
@@ -396,6 +494,7 @@ public class StockOverviewActivity extends AppCompatActivity {
 				consume = view.findViewById(R.id.btn_consume);
 				all     = view.findViewById(R.id.btn_all);
 				open    = view.findViewById(R.id.btn_open);
+				list    = view.findViewById(R.id.btn_list);
 			}
 		}
 	}

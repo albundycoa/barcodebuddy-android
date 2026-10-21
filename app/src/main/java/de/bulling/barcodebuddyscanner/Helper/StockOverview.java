@@ -53,6 +53,10 @@ public final class StockOverview {
 		public boolean canOpen = true;
 		/** Produkt mit Tara-Gewicht: Verbrauchen und Öffnen gehen nur über Grocy selbst */
 		public boolean tare;
+		/** Nummer der Einkaufseinheit in Grocy (z. B. Pack), 0 = unbekannt */
+		public long    quPurchase;
+		/** Nummer der Lagereinheit in Grocy (z. B. Stück), 0 = unbekannt */
+		public long    quStock;
 	}
 
 	/** Eine Zeile der Übersicht. */

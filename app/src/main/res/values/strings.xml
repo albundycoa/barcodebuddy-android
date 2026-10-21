@@ -498,6 +498,13 @@ Die App zählt mit und vergleicht am Ende mit Grocy.</string>
     <string name="nav_shopping">Einkauf</string>
     <string name="nav_stock">Bestand</string>
     <string name="stock_overview_title">Bestand</string>
+    <string name="stock_list_title">Auf die Einkaufsliste</string>
+    <string name="stock_list_amount">Menge</string>
+    <string name="stock_list_unit">Einheit</string>
+    <string name="stock_list_add">Hinzufügen</string>
+    <string name="stock_list_desc">Auf die Einkaufsliste setzen</string>
+    <string name="stock_list_err_amount">Bitte eine Menge über 0 eingeben</string>
+    <string name="stock_list_done">%1$s: %2$s auf die Einkaufsliste gesetzt</string>
     <plurals name="stock_products">
         <item quantity="one">%d Produkt</item>
         <item quantity="other">%d Produkte</item>
