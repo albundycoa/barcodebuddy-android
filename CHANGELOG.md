@@ -13,6 +13,16 @@ zurückgehen, sonst lässt sich ein Update nicht mehr einspielen. Gepflegt wird 
 `appVersion` in `gradle.properties`. Veröffentlicht wird mit `./publish-apk.sh`: privat auf den Update-Server im Heimnetz, mit `--github` als
 öffentlicher GitHub-Release.
 
+## [0.15.0] – Uhr: Zifferblatt „Einkauf“
+
+- **Zifferblatt** im Watch Face Format (eigene kleine App `watchface`, nur Beschreibung ohne Code, daher auf Wear OS 5/6 und One UI Watch 8 zugelassen):
+  Datum und Uhrzeit klein oben, darunter zwei Karten im Design der Handy-App mit den Komplikationen **Gescannt** (Anzahl, Summe) und **Einkaufsliste** (offene
+  Einträge, Summe). Ein Tipp auf eine Karte öffnet die jeweilige Liste auf der Uhr. Im Ruhemodus (Always-on) bleiben nur Datum und Uhrzeit. Beide Karten lassen
+  sich im Zifferblatt-Editor (lange drücken → Anpassen) durch andere Komplikationen ersetzen.
+- Installieren: `./gradlew :watchface:assembleDebug`, dann `adb -s <uhr> install -r watchface/build/outputs/apk/debug/watchface-debug.apk`, danach in der Auswahl der
+  Uhr „Einkauf“ wählen. Es ist eine eigene App (`de.bulling.barcodebuddyscanner.watchface`), ein Update kommt nicht über das Handy; die Zahlen liefert die Uhr-App.
+- Handy und Uhr-App: keine Änderung (nur die gemeinsame Versionsnummer).
+
 ## [0.14.0] – Uhr: Kachel für Scans und Einkaufsliste
 
 - **Kachel**: Neben dem Zifferblatt gibt es eine Kachel „Einkauf“ im Design der Handy-App. Zwei Reiter wechseln zwischen **Gescannt** (Anzahl und Summe) und

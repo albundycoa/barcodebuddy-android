@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?>
+<WatchFace width="450" height="450">
+    <Metadata key="CLOCK_TYPE" value="DIGITAL" />
+    <Metadata key="PREVIEW_TIME" value="10:08:32" />
+    <Scene backgroundColor="#ff000000">
+
+        <!-- Datum und Uhrzeit, klein und oben -->
+        <PartText x="95" y="34" width="260" height="34">
+            <Text align="CENTER">
+                <Font family="SYNC_TO_DEVICE" size="26" color="#ff80cbc4">
+                    <Template>%s %d.%d.<Parameter expression="[DAY_OF_WEEK_S]" /><Parameter expression="[DAY]" /><Parameter expression="[MONTH]" /></Template>
+                </Font>
+            </Text>
+        </PartText>
+        <DigitalClock x="0" y="0" width="450" height="450">
+            <TimeText x="95" y="66" width="260" height="76" format="hh:mm" hourFormat="SYNC_TO_DEVICE" align="CENTER">
+                <Font family="SYNC_TO_DEVICE" size="62" weight="BOLD" color="#ffffffff" />
+            </TimeText>
+        </DigitalClock>
+
+        <!-- Im Ruhemodus (Always-on) bleiben nur Datum und Uhrzeit sichtbar -->
+            <!-- Oben: Komplikation, standardmäßig "Gescannt" der Uhr-App -->
+            <ComplicationSlot slotId="0" isCustomizable="TRUE" supportedTypes="LONG_TEXT SHORT_TEXT EMPTY"
+                x="45" y="158" width="360" height="100">
+                <DefaultProviderPolicy
+                    defaultSystemProvider="EMPTY"
+                    defaultSystemProviderType="EMPTY"
+                    primaryProvider="de.bulling.barcodebuddyscanner/de.bulling.barcodebuddyscanner.wear.ScansComplicationService"
+                    primaryProviderType="LONG_TEXT" />
+                <BoundingBox x="0" y="0" width="360" height="100" />
+                <Complication type="LONG_TEXT">
+                    <Group x="0" y="0" width="360" height="100">
+                        <Variant mode="AMBIENT" target="alpha" value="0" />
+                    <PartDraw x="0" y="0" width="360" height="100">
+                        <RoundRectangle x="0" y="0" width="360" height="100" cornerRadiusX="28" cornerRadiusY="28">
+                            <Fill color="#ff14201f" />
+                            <Stroke thickness="2" color="#ff2c3c3a" />
+                        </RoundRectangle>
+                    </PartDraw>
+                    <PartText x="20" y="10" width="320" height="34">
+                        <Text align="START" ellipsis="TRUE">
+                            <Font family="SYNC_TO_DEVICE" size="24" weight="BOLD" color="#ff80cbc4">
+                                <Template>%s<Parameter expression="[COMPLICATION.TITLE]" /></Template>
+                            </Font>
+                        </Text>
+                    </PartText>
+                    <PartText x="20" y="48" width="320" height="42">
+                        <Text align="START" ellipsis="TRUE">
+                            <Font family="SYNC_TO_DEVICE" size="32" color="#ffe6f2f0">
+                                <Template>%s<Parameter expression="[COMPLICATION.TEXT]" /></Template>
+                            </Font>
+                        </Text>
+                    </PartText>
+                                    </Group>
+                </Complication>
+                <Complication type="SHORT_TEXT">
+                    <Group x="0" y="0" width="360" height="100">
+                        <Variant mode="AMBIENT" target="alpha" value="0" />
+                    <PartDraw x="0" y="0" width="360" height="100">
+                        <RoundRectangle x="0" y="0" width="360" height="100" cornerRadiusX="28" cornerRadiusY="28">
+                            <Fill color="#ff14201f" />
+                            <Stroke thickness="2" color="#ff2c3c3a" />
+                        </RoundRectangle>
+                    </PartDraw>
+                    <PartText x="20" y="30" width="320" height="42">
+                        <Text align="CENTER" ellipsis="TRUE">
+                            <Font family="SYNC_TO_DEVICE" size="36" color="#ffe6f2f0">
+                                <Template>%s<Parameter expression="[COMPLICATION.TEXT]" /></Template>
+                            </Font>
+                        </Text>
+                    </PartText>
+                                    </Group>
+                </Complication>
+            </ComplicationSlot>
+
+            <!-- Unten: Komplikation, standardmäßig "Einkaufsliste" der Uhr-App -->
+            <ComplicationSlot slotId="1" isCustomizable="TRUE" supportedTypes="LONG_TEXT SHORT_TEXT EMPTY"
+                x="57" y="268" width="336" height="100">
+                <DefaultProviderPolicy
+                    defaultSystemProvider="EMPTY"
+                    defaultSystemProviderType="EMPTY"
+                    primaryProvider="de.bulling.barcodebuddyscanner/de.bulling.barcodebuddyscanner.wear.ShoppingComplicationService"
+                    primaryProviderType="LONG_TEXT" />
+                <BoundingBox x="0" y="0" width="336" height="100" />
+                <Complication type="LONG_TEXT">
+                    <Group x="0" y="0" width="336" height="100">
+                        <Variant mode="AMBIENT" target="alpha" value="0" />
+                    <PartDraw x="0" y="0" width="336" height="100">
+                        <RoundRectangle x="0" y="0" width="336" height="100" cornerRadiusX="28" cornerRadiusY="28">
+                            <Fill color="#ff14201f" />
+                            <Stroke thickness="2" color="#ff2c3c3a" />
+                        </RoundRectangle>
+                    </PartDraw>
+                    <PartText x="20" y="10" width="296" height="34">
+                        <Text align="START" ellipsis="TRUE">
+                            <Font family="SYNC_TO_DEVICE" size="24" weight="BOLD" color="#ff80cbc4">
+                                <Template>%s<Parameter expression="[COMPLICATION.TITLE]" /></Template>
+                            </Font>
+                        </Text>
+                    </PartText>
+                    <PartText x="20" y="48" width="296" height="42">
+                        <Text align="START" ellipsis="TRUE">
+                            <Font family="SYNC_TO_DEVICE" size="32" color="#ffe6f2f0">
+                                <Template>%s<Parameter expression="[COMPLICATION.TEXT]" /></Template>
+                            </Font>
+                        </Text>
+                    </PartText>
+                                    </Group>
+                </Complication>
+                <Complication type="SHORT_TEXT">
+                    <Group x="0" y="0" width="336" height="100">
+                        <Variant mode="AMBIENT" target="alpha" value="0" />
+                    <PartDraw x="0" y="0" width="336" height="100">
+                        <RoundRectangle x="0" y="0" width="336" height="100" cornerRadiusX="28" cornerRadiusY="28">
+                            <Fill color="#ff14201f" />
+                            <Stroke thickness="2" color="#ff2c3c3a" />
+                        </RoundRectangle>
+                    </PartDraw>
+                    <PartText x="20" y="30" width="296" height="42">
+                        <Text align="CENTER" ellipsis="TRUE">
+                            <Font family="SYNC_TO_DEVICE" size="36" color="#ffe6f2f0">
+                                <Template>%s<Parameter expression="[COMPLICATION.TEXT]" /></Template>
+                            </Font>
+                        </Text>
+                    </PartText>
+                                    </Group>
+                </Complication>
+            </ComplicationSlot>
+    </Scene>
+</WatchFace>

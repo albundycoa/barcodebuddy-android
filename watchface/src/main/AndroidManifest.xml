@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-feature android:name="android.hardware.type.watch" />
+
+    <!-- Zifferblatt im Watch Face Format: ohne Code, nur Ressourcen (res/raw/watchface.xml) -->
+    <application
+        android:allowBackup="false"
+        android:hasCode="false"
+        android:label="@string/watchface_name">
+
+        <property
+            android:name="com.google.wear.watchface.format.version"
+            android:value="2" />
+    </application>
+</manifest>

@@ -1,0 +1,55 @@
+plugins {
+    id 'com.android.application'
+}
+
+def appVersion = property("appVersion")
+def (vMajor, vMinor, vPatch) = appVersion.tokenize('.').collect { it as int }
+
+// Gleicher Schlüssel wie Handy- und Uhr-App
+def keyDir = new File(System.getProperty('user.home'), '.barcodebuddy-keys')
+def keyProps = new Properties()
+def keyFile = new File(keyDir, 'keystore.properties')
+if (keyFile.exists()) {
+    keyFile.withInputStream { keyProps.load(it) }
+}
+
+// Zifferblatt im Watch Face Format: nur Ressourcen und Beschreibung, kein Code. Auf Uhren mit Wear OS 5/6 (One UI Watch 8) sind
+// nur solche Zifferblätter zugelassen. Es zeigt Uhrzeit und Datum und nimmt die Komplikationen "Gescannt" und "Einkaufsliste"
+// der Uhr-App auf; die Daten kommen aus der Uhr-App (Paket de.bulling.barcodebuddyscanner), nicht aus diesem Paket.
+android {
+    namespace 'de.bulling.barcodebuddyscanner.watchface'
+    compileSdk 37
+
+    defaultConfig {
+        applicationId "de.bulling.barcodebuddyscanner.watchface"
+        minSdkVersion 33
+        targetSdkVersion 34
+        versionCode vMajor * 10000 + vMinor * 100 + vPatch
+        versionName appVersion
+    }
+
+    signingConfigs {
+        shared {
+            if (keyFile.exists()) {
+                storeFile file(keyProps['storeFile'])
+                storePassword keyProps['storePassword']
+                keyAlias keyProps['keyAlias']
+                keyPassword keyProps['keyPassword']
+            }
+        }
+    }
+
+    buildTypes {
+        debug {
+            if (keyFile.exists()) {
+                signingConfig signingConfigs.shared
+            }
+        }
+        release {
+            minifyEnabled false
+            if (keyFile.exists()) {
+                signingConfig signingConfigs.shared
+            }
+        }
+    }
+}

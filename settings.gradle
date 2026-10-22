@@ -3,4 +3,5 @@ plugins {
 }
 include ':app'
 include ':wear'
+include ':watchface'
 rootProject.name='Barcode Buddy Scanner'
