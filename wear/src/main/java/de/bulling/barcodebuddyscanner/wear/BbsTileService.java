@@ -232,7 +232,7 @@ public class BbsTileService extends TileService {
 				.setWidth(dp(width))
 				.setHeight(dp(38))
 				.setVerticalAlignment(LayoutElementBuilders.VERTICAL_ALIGN_CENTER)
-				.setModifiers(boxModifiers(selected ? DANGER_BG : CARD, selected ? DANGER : CARD_LINE, 12, selected ? null : clickableAction(id), 8))
+				.setModifiers(boxModifiers(selected ? DANGER_BG : CARD, selected ? DANGER : CARD_LINE, 12, clickableAction(id), 8))
 				.addContent(content.build())
 				.build();
 	}

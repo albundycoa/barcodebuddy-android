@@ -13,6 +13,11 @@ zurückgehen, sonst lässt sich ein Update nicht mehr einspielen. Gepflegt wird 
 `appVersion` in `gradle.properties`. Veröffentlicht wird mit `./publish-apk.sh`: privat auf den Update-Server im Heimnetz, mit `--github` als
 öffentlicher GitHub-Release.
 
+## [0.15.1] – Uhr: Kachel, Fehlscan wieder abwählen
+
+- Kachel: Ein angetippter Scan (mit „Entfernen“) lässt sich durch erneutes Antippen der Zeile wieder abwählen, ohne zu löschen.
+- Handy: keine Änderung (nur die gemeinsame Versionsnummer).
+
 ## [0.15.0] – Uhr: Zifferblatt „Einkauf“
 
 - **Zifferblatt** im Watch Face Format (eigene kleine App `watchface`, nur Beschreibung ohne Code, daher auf Wear OS 5/6 und One UI Watch 8 zugelassen):
