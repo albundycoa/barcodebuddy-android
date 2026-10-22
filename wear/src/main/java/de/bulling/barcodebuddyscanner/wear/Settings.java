@@ -9,6 +9,7 @@ final class Settings {
 	private static final String PREFS = "settings";
 	private static final String KEY_KEEP_SCANS = "keep_scans_visible";
 	private static final String KEY_KEEP_SHOPPING = "keep_shopping_visible";
+	private static final String KEY_FACE_TAB = "face_tab";
 
 	private Settings() {
 	}
@@ -32,6 +33,15 @@ final class Settings {
 
 	static void setKeepShoppingVisible(Context context, boolean keep) {
 		prefs(context).edit().putBoolean(KEY_KEEP_SHOPPING, keep).apply();
+	}
+
+	/** Reiter von Zifferblatt und Kachel: 0 = Scans, 1 = Einkaufsliste. */
+	static int faceTab(Context context) {
+		return prefs(context).getInt(KEY_FACE_TAB, 0);
+	}
+
+	static void setFaceTab(Context context, int tab) {
+		prefs(context).edit().putInt(KEY_FACE_TAB, tab).apply();
 	}
 
 	private static SharedPreferences prefs(Context context) {

@@ -13,6 +13,16 @@ zurückgehen, sonst lässt sich ein Update nicht mehr einspielen. Gepflegt wird 
 `appVersion` in `gradle.properties`. Veröffentlicht wird mit `./publish-apk.sh`: privat auf den Update-Server im Heimnetz, mit `--github` als
 öffentlicher GitHub-Release.
 
+## [0.14.0] – Uhr: Kachel für Scans und Einkaufsliste
+
+- **Kachel**: Neben dem Zifferblatt gibt es eine Kachel „Einkauf“ im Design der Handy-App. Zwei Reiter wechseln zwischen **Gescannt** (Anzahl und Summe) und
+  **Einkauf** (offene Einträge). In der Einkaufsliste hakt ein Tipp einen Eintrag ab (oder macht es rückgängig), bei den Scans wird ein Fehlscan zuerst
+  angetippt und dann mit „Entfernen“ gelöscht, damit ein versehentliches Berühren nichts löscht. „▼“ blättert, drei Zeilen pro Seite. Der gewählte Reiter bleibt gemerkt.
+  Einrichten: Zifferblatt lange drücken oder vom Zifferblatt nach links wischen → Kachel hinzufügen → „Einkauf“.
+- Ein eigenes Zifferblatt mit Liste ist auf der Galaxy Watch mit One UI Watch 8 (Wear OS 6) nicht möglich: Das System lässt dort nur Zifferblätter im Watch Face Format
+  zu, die keine eigene Anzeige-Logik haben. Zifferblatt-Komplikationen („Gescannt“, „Einkaufsliste“) gibt es weiter.
+- Handy: keine Änderung (nur die gemeinsame Versionsnummer).
+
 ## [0.13.0] – Einkaufsliste bearbeiten: löschen, Produkte und freie Einträge hinzufügen
 
 - **Handy**: In der Einkaufsliste gibt es oben eine Zeile „Hinzufügen“. Sie öffnet eine Suche über alle Grocy-Produkte (Treffer zeigen Gruppe und, falls schon

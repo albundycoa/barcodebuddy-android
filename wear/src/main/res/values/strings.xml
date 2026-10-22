@@ -49,4 +49,5 @@
     <string name="delete_title">Entfernen?</string>
     <string name="delete_yes">Entfernen</string>
     <string name="delete_no">Abbrechen</string>
+    <string name="tile_label">Einkauf</string>
 </resources>

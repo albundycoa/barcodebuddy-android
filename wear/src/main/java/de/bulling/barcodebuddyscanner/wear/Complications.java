@@ -12,6 +12,7 @@ final class Complications {
 	}
 
 	static void refresh(Context context) {
+		BbsTileService.refresh(context);
 		Context app = context.getApplicationContext();
 		try {
 			ComplicationDataSourceUpdateRequester

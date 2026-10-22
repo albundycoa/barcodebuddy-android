@@ -101,6 +101,21 @@
                 android:value="0" />
         </service>
 
+        <!-- Kachel: Scans und Einkaufsliste zum Wischen neben dem Zifferblatt, mit Abhaken und Entfernen von Fehlscans -->
+        <service
+            android:name=".BbsTileService"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher"
+            android:label="@string/tile_label"
+            android:permission="com.google.android.wearable.permission.BIND_TILE_PROVIDER">
+            <intent-filter>
+                <action android:name="androidx.wear.tiles.action.BIND_TILE_PROVIDER" />
+            </intent-filter>
+            <meta-data
+                android:name="androidx.wear.tiles.PREVIEW"
+                android:resource="@drawable/tile_preview" />
+        </service>
+
         <receiver
             android:name=".UpdateInstaller$InstallResultReceiver"
             android:exported="false" />
