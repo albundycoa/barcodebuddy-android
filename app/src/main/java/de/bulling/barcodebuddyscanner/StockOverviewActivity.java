@@ -257,119 +257,30 @@ public class StockOverviewActivity extends AppCompatActivity {
 				getString(R.string.stock_booked_open, entry.product.name, amountText(entry, amount)));
 	}
 
-	/** Eine Einheit zur Auswahl in der Maske; id 0 = unbekannt (dann gilt Grocys Standard). */
-	private static final class UnitChoice {
-		final long   id;
-		final String name;
-
-		UnitChoice(long id, String name) {
-			this.id   = id;
-			this.name = name;
-		}
-
-		@Override
-		public String toString() {
-			return name;
-		}
-	}
-
-	/**
-	 * Maske von unten: Produkt mit Menge und Einheit auf die Einkaufsliste setzen. Steht es schon darauf, zeigt sie die
-	 * bisherige Menge zum Ändern (und zum Entfernen); beim Wechsel der Einheit erscheint die Menge dieser Einheit.
-	 */
+	/** Maske von unten: Produkt mit Menge und Einheit auf die Einkaufsliste setzen oder die vorhandene Menge ändern. */
 	private void showShoppingSheet(final Entry entry) {
-		final List<UnitChoice> choices = new ArrayList<>();
-		// Zuerst die Einkaufseinheit (z. B. Pack), danach die Lagereinheit (z. B. Stück), dazu Einheiten vorhandener Einträge
-		addChoice(choices, entry.product.quPurchase);
-		addChoice(choices, entry.product.quStock);
-		for (StockOverview.ListRow row : entry.list) {
-			addChoice(choices, row.quId);
-		}
-		if (choices.isEmpty()) {
-			choices.add(new UnitChoice(0, entry.product.unit == null ? "" : entry.product.unit));
-		}
+		ShoppingAmountSheet.show(this, entry.product.name, entry.product.quPurchase, entry.product.quStock, entry.product.unit,
+				unitNames, entry.list, new ShoppingAmountSheet.Listener() {
+					@Override
+					public void onSave(double amount, long quId, String unitName) {
+						addToShoppingList(entry, amount, quId, unitName);
+					}
 
-		final BottomSheetDialog sheet = new BottomSheetDialog(this);
-		View view = getLayoutInflater().inflate(R.layout.sheet_shopping_add, null);
-		sheet.setContentView(view);
-		sheet.getBehavior().setState(com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_EXPANDED);
-		sheet.getBehavior().setSkipCollapsed(true);
-		((TextView) view.findViewById(R.id.sheet_product)).setText(entry.product.name);
-		final TextInputEditText amountInput = view.findViewById(R.id.sheet_amount);
-		final TextInputLayout amountLayout = view.findViewById(R.id.sheet_amount_layout);
-		final MaterialButton addButton = view.findViewById(R.id.sheet_add);
-		final View removeButton = view.findViewById(R.id.sheet_remove);
-		AmountInput.apply(amountInput);
-		final MaterialAutoCompleteTextView unitInput = view.findViewById(R.id.sheet_unit);
-		unitInput.setAdapter(new android.widget.ArrayAdapter<>(this,
-				com.google.android.material.R.layout.m3_auto_complete_simple_item, choices));
-
-		// Vorausgewählt: die Einheit des vorhandenen Eintrags, sonst die Einkaufseinheit
-		UnitChoice first = choices.get(0);
-		if (entry.onList()) {
-			for (UnitChoice choice : choices) {
-				if (choice.id == entry.list.get(0).quId) {
-					first = choice;
-				}
-			}
-		}
-		final UnitChoice[] selected = {first};
-		final Runnable fill = () -> {
-			StockOverview.ListRow row = entry.listRow(selected[0].id);
-			amountInput.setText(row == null ? "1" : Money.formatPlain(row.amount).replaceAll(",?0+$", ""));
-			amountInput.selectAll();
-			amountLayout.setError(null);
-			addButton.setText(row == null ? R.string.stock_list_add : R.string.stock_list_save);
-			removeButton.setVisibility(row == null ? View.GONE : View.VISIBLE);
-		};
-		unitInput.setText(first.name, false);
-		fill.run();
-		unitInput.setOnItemClickListener((parent, v, position, id) -> {
-			selected[0] = choices.get(position);
-			fill.run();
-		});
-		view.findViewById(R.id.sheet_cancel).setOnClickListener(v -> sheet.dismiss());
-		removeButton.setOnClickListener(v -> {
-			StockOverview.ListRow row = entry.listRow(selected[0].id);
-			sheet.dismiss();
-			if (row != null) {
-				removeFromShoppingList(entry, row);
-			}
-		});
-		addButton.setOnClickListener(v -> {
-			Double amount = Money.parse(String.valueOf(amountInput.getText()));
-			if (amount == null || amount <= 0) {
-				amountLayout.setError(getString(R.string.stock_list_err_amount));
-				return;
-			}
-			sheet.dismiss();
-			addToShoppingList(entry, amount, selected[0]);
-		});
-		sheet.show();
-		amountInput.requestFocus();
+					@Override
+					public void onRemove(StockOverview.ListRow row) {
+						removeFromShoppingList(entry, row);
+					}
+				});
 	}
 
-	private void addChoice(List<UnitChoice> choices, long quId) {
-		String name = unitNames.get(quId);
-		if (quId <= 0 || name == null) {
-			return;
-		}
-		for (UnitChoice choice : choices) {
-			if (choice.id == quId) {
-				return;
-			}
-		}
-		choices.add(new UnitChoice(quId, name));
-	}
-
-	private void addToShoppingList(Entry entry, final double amount, final UnitChoice unit) {
+	private void addToShoppingList(Entry entry, final double amount, final long quId, String unitName) {
 		final long productId = entry.product.id;
 		final String done = getString(R.string.stock_list_done, entry.product.name,
-				(InventorySession.format(amount) + " " + unit.name).trim());
+				(InventorySession.format(amount) + " " + unitName).trim());
 		GROCY_IO.execute(() -> {
 			try {
-				if (unit.id > 0) {
-					GrocyStock.addToShoppingList(grocy, productId, amount, unit.id);
+				if (quId > 0) {
+					GrocyStock.addToShoppingList(grocy, productId, amount, quId);
 				} else {
 					GrocyStock.addToShoppingList(grocy, productId, amount);
 				}

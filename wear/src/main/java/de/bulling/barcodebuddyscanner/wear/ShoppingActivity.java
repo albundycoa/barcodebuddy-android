@@ -23,12 +23,15 @@ public class ShoppingActivity extends Activity implements State.Listener {
 
 	private static final int TYPE_HEADER = 0;
 	private static final int TYPE_ENTRY  = 1;
+	private static final int TYPE_ADD    = 2;
 
 	/** Zeile der Liste: entweder eine Überschrift (Geschäft) oder ein Eintrag. */
 	private static final class Row {
 		String     header;
 		boolean    sub;
 		JsonObject entry;
+		/** Die Zeile "＋ Hinzufügen" ganz oben */
+		boolean    add;
 	}
 
 	private static Row header(String text, boolean sub) {
@@ -56,14 +59,15 @@ public class ShoppingActivity extends Activity implements State.Listener {
 		adapter = new RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 			@Override
 			public int getItemViewType(int position) {
-				return rows.get(position).header != null ? TYPE_HEADER : TYPE_ENTRY;
+				Row row = rows.get(position);
+				return row.add ? TYPE_ADD : row.header != null ? TYPE_HEADER : TYPE_ENTRY;
 			}
 
 			@NonNull
 			@Override
 			public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
 				LayoutInflater inflater = LayoutInflater.from(parent.getContext());
-				int layout = viewType == TYPE_HEADER ? R.layout.item_header : R.layout.item_shop;
+				int layout = viewType == TYPE_ADD ? R.layout.item_add : viewType == TYPE_HEADER ? R.layout.item_header : R.layout.item_shop;
 				return new RecyclerView.ViewHolder(inflater.inflate(layout, parent, false)) {
 				};
 			}
@@ -71,6 +75,10 @@ public class ShoppingActivity extends Activity implements State.Listener {
 			@Override
 			public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
 				Row row = rows.get(position);
+				if (row.add) {
+					holder.itemView.setOnClickListener(v -> startActivity(new android.content.Intent(ShoppingActivity.this, AddActivity.class)));
+					return;
+				}
 				if (row.header != null) {
 					TextView t = (TextView) holder.itemView;
 					t.setText(row.header);
@@ -103,6 +111,34 @@ public class ShoppingActivity extends Activity implements State.Listener {
 		check.setText(done ? "☑" : "☐");
 		check.setTextColor(done ? 0xFF80CBC4 : 0xFFFFFFFF);
 		view.setOnClickListener(v -> toggle(entry));
+		view.setOnLongClickListener(v -> {
+			confirmDelete(entry);
+			return true;
+		});
+	}
+
+	/** Lange drücken: Eintrag nach einer Rückfrage von der Einkaufsliste entfernen (das Handy löscht ihn in Grocy). */
+	private void confirmDelete(final JsonObject entry) {
+		new android.app.AlertDialog.Builder(this)
+				.setTitle(R.string.delete_title)
+				.setMessage(entry.get("n").getAsString())
+				.setPositiveButton(R.string.delete_yes, (d, w) -> {
+					long id = entry.get("id").getAsLong();
+					// Sofort aus der Anzeige nehmen; das Handy bestätigt mit dem neuen Stand
+					JsonObject state = State.load(this);
+					JsonArray shop = State.array(state, "shop");
+					JsonArray rest = new JsonArray();
+					for (int i = 0; i < shop.size(); i++) {
+						if (shop.get(i).getAsJsonObject().get("id").getAsLong() != id) {
+							rest.add(shop.get(i));
+						}
+					}
+					state.add("shop", rest);
+					State.save(this, state);
+					PhoneLink.deleteEntry(this, id);
+				})
+				.setNegativeButton(R.string.delete_no, null)
+				.show();
 	}
 
 	private void toggle(JsonObject entry) {
@@ -169,6 +205,11 @@ public class ShoppingActivity extends Activity implements State.Listener {
 		screenKeeper.interaction();
 		JsonObject state = State.load(this);
 		rows.clear();
+		if (state != null) {
+			Row add = new Row();
+			add.add = true;
+			rows.add(add);
+		}
 		JsonArray shop = State.array(state, "shop");
 		if (state != null && state.has("stotal") && shop.size() > 0) {
 			rows.add(header(getString(R.string.shopping_value, state.get("stotal").getAsString()), false));

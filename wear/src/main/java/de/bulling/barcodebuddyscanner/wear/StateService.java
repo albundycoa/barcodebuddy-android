@@ -16,10 +16,13 @@ public class StateService extends WearableListenerService {
 			}
 			String path = event.getDataItem().getUri().getPath();
 			boolean stock = "/bbs/stock".equals(path);
-			if (stock || "/bbs/state".equals(path)) {
+			boolean catalog = "/bbs/catalog".equals(path);
+			if (stock || catalog || "/bbs/state".equals(path)) {
 				String json = DataMapItem.fromDataItem(event.getDataItem()).getDataMap().getString("json");
 				if (json != null) {
-					if (stock) {
+					if (catalog) {
+						State.saveCatalog(getApplicationContext(), json);
+					} else if (stock) {
 						State.saveStock(getApplicationContext(), json);
 					} else {
 						State.save(getApplicationContext(), json);

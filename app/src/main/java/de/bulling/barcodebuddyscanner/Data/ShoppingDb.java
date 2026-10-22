@@ -7,7 +7,7 @@ import android.database.sqlite.SQLiteOpenHelper;
 class ShoppingDb extends SQLiteOpenHelper {
 
 	private static final String DB_NAME    = "shopping.db";
-	private static final int    DB_VERSION = 13;
+	private static final int    DB_VERSION = 14;
 
 	static final String T_ITEMS      = "items";
 	static final String T_TRIPS      = "trips";
@@ -23,6 +23,7 @@ class ShoppingDb extends SQLiteOpenHelper {
 	static final String T_LOCATIONS   = "g_locations";
 	static final String T_GROUP_ORDER = "group_order";
 	static final String T_OFF         = "off_cache";
+	static final String T_NOTE_GROUP  = "shopping_note_group";
 
 	ShoppingDb(Context context) {
 		super(context, DB_NAME, null, DB_VERSION);
@@ -55,6 +56,7 @@ class ShoppingDb extends SQLiteOpenHelper {
 		createGrocyTables(db);
 		createShoppingTables(db);
 		createOffTable(db);
+		createNoteGroupTable(db);
 	}
 
 	@Override
@@ -90,6 +92,10 @@ class ShoppingDb extends SQLiteOpenHelper {
 			// Von Hand geänderte Menge eines Eintrags der Einkaufsliste, bis Grocy sie übernommen hat
 			db.execSQL("ALTER TABLE " + T_SHOPPING + " ADD COLUMN manual_amount REAL");
 		}
+		if (oldVersion < 14) {
+			// Produktgruppe freier Einträge der Einkaufsliste (nur in der App, Grocy kennt sie nicht)
+			createNoteGroupTable(db);
+		}
 		if (oldVersion < 13) {
 			// Pfandrückgabe (Betrag vom Pfandbon) je Verlaufseintrag
 			db.execSQL("ALTER TABLE " + T_TRIPS + " ADD COLUMN deposit_return REAL");
@@ -114,6 +120,17 @@ class ShoppingDb extends SQLiteOpenHelper {
 			db.execSQL("ALTER TABLE " + T_BARCODES + " ADD COLUMN exact INTEGER NOT NULL DEFAULT 0");
 			db.execSQL("CREATE TABLE " + T_STOCK + " (product_id INTEGER PRIMARY KEY, amount REAL NOT NULL)");
 		}
+	}
+
+	/**
+	 * Freie Einträge der Einkaufsliste (ohne Produkt) haben in Grocy keine Produktgruppe. Hier merkt sich die App, in welche
+	 * Gruppe sie gehören, damit sie in der gewählten Reihenfolge einsortiert werden.
+	 */
+	private static void createNoteGroupTable(SQLiteDatabase db) {
+		db.execSQL("CREATE TABLE IF NOT EXISTS " + T_NOTE_GROUP + " ("
+				+ "entry_id INTEGER PRIMARY KEY, "
+				+ "group_name TEXT NOT NULL, "
+				+ "created_at INTEGER NOT NULL)");
 	}
 
 	/** Antworten von OpenFoodFacts je Barcode; name NULL = dort nicht gefunden (wird später erneut gefragt). */

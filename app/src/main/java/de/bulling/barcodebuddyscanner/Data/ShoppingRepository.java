@@ -773,7 +773,8 @@ public final class ShoppingRepository {
 		public Double  pendingAmount; // von Hand geänderte Menge, die Grocy noch nicht kennt (amount zeigt sie schon)
 		public Long    shopId;
 		public String  shopName;
-		public String  group;
+		public String  group;       // Produktgruppe; bei freien Einträgen die von Hand gewählte (oder null)
+		public long    quId;        // Einheit des Eintrags in Grocy, 0 = unbekannt
 		public String  stockUnit;
 		public Double  lastPrice;   // letzter Preis je Lagereinheit
 		public Integer bestBeforeDays;
@@ -825,7 +826,7 @@ public final class ShoppingRepository {
 		}
 
 		private int groupRank(ShoppingEntry e) {
-			if (e.isNote || e.group == null) {
+			if (e.group == null) {
 				return Integer.MAX_VALUE;
 			}
 			Integer p = groupPosition.get(e.group);
@@ -881,17 +882,21 @@ public final class ShoppingRepository {
 			}
 			db.insertWithOnConflict(ShoppingDb.T_SHOPPING, null, v, SQLiteDatabase.CONFLICT_REPLACE);
 		}
+		// Gruppen gelöschter freier Einträge aufräumen; ganz frische bleiben, falls der Abgleich vor dem Anlegen geladen hat
+		db.execSQL("DELETE FROM " + ShoppingDb.T_NOTE_GROUP + " WHERE entry_id NOT IN (SELECT id FROM " + ShoppingDb.T_SHOPPING
+				+ ") AND created_at < ?", new Object[]{System.currentTimeMillis() - 10 * 60 * 1000L});
 	}
 
 	/** Die Einkaufsliste mit Produktdaten und der Menge, die schon gescannt wurde. */
 	public void getShoppingList(Callback<ShoppingData> callback) {
 		read(() -> {
 			SQLiteDatabase db = dbHelper.getReadableDatabase();
-			String sql = "SELECT e.id, e.product_id, e.note, e.amount, e.stock_amount, e.done, e.manual, e.manual_amount, "
-					+ "u.name AS unit, p.name AS pname, p.group_name, p.shop_id, p.stock_unit, p.best_before_days, "
+			String sql = "SELECT e.id, e.product_id, e.note, e.amount, e.stock_amount, e.done, e.manual, e.manual_amount, e.qu_id, "
+					+ "u.name AS unit, p.name AS pname, COALESCE(p.group_name, ng.group_name) AS group_name, p.shop_id, p.stock_unit, p.best_before_days, "
 					+ "s.name AS shop, lp.price AS last_price, COALESCE(sc.scanned, 0) AS scanned "
 					+ "FROM g_shopping e "
 					+ "LEFT JOIN g_units u ON u.id = e.qu_id "
+					+ "LEFT JOIN shopping_note_group ng ON ng.entry_id = e.id "
 					+ "LEFT JOIN g_products p ON p.id = e.product_id "
 					+ "LEFT JOIN g_shops s ON s.id = p.shop_id "
 					+ "LEFT JOIN g_lastprice lp ON lp.product_id = e.product_id "
@@ -913,6 +918,8 @@ public final class ShoppingRepository {
 					e.amount = c.getDouble(c.getColumnIndexOrThrow("amount"));
 					e.stockAmount = c.getDouble(c.getColumnIndexOrThrow("stock_amount"));
 					e.unit = c.getString(c.getColumnIndexOrThrow("unit"));
+					int quCol = c.getColumnIndexOrThrow("qu_id");
+					e.quId = c.isNull(quCol) ? 0 : c.getLong(quCol);
 					Double pending = getDouble(c, "manual_amount");
 					if (pending != null && pending > 0 && e.amount > 0) {
 						// Die Menge in Lagereinheiten wächst und schrumpft mit
@@ -937,6 +944,31 @@ public final class ShoppingRepository {
 			}
 			return new ShoppingData(entries, readShopPositions(db), readGroupPositions(db));
 		}, callback);
+	}
+
+	/** Merkt die Produktgruppe eines freien Eintrags (null/leer entfernt sie). */
+	public void setNoteGroup(final long entryId, final String groupName) {
+		write(() -> {
+			SQLiteDatabase db = dbHelper.getWritableDatabase();
+			if (groupName == null || groupName.isEmpty()) {
+				return db.delete(ShoppingDb.T_NOTE_GROUP, "entry_id = ?", new String[]{String.valueOf(entryId)});
+			}
+			ContentValues v = new ContentValues();
+			v.put("entry_id", entryId);
+			v.put("group_name", groupName);
+			v.put("created_at", System.currentTimeMillis());
+			return db.insertWithOnConflict(ShoppingDb.T_NOTE_GROUP, null, v, SQLiteDatabase.CONFLICT_REPLACE);
+		}, null);
+	}
+
+	/** Nimmt einen Eintrag aus der lokalen Kopie der Einkaufsliste, nachdem Grocy ihn gelöscht hat. */
+	public void removeShoppingEntry(final long entryId) {
+		write(() -> {
+			SQLiteDatabase db = dbHelper.getWritableDatabase();
+			String[] arg = {String.valueOf(entryId)};
+			db.delete(ShoppingDb.T_NOTE_GROUP, "entry_id = ?", arg);
+			return db.delete(ShoppingDb.T_SHOPPING, "id = ?", arg);
+		}, null);
 	}
 
 	/** Hakt einen Eintrag von Hand ab oder öffnet ihn wieder; die App überträgt das an Grocy, sobald es geht. */

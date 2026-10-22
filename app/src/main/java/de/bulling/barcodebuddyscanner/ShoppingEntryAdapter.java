@@ -33,6 +33,13 @@ public class ShoppingEntryAdapter extends RecyclerView.Adapter<RecyclerView.View
 		void onToggle(ShoppingEntry entry);
 	}
 
+	/** Neue Einträge anlegen und Einträge löschen. */
+	public interface ListActions {
+		void onAdd();
+
+		void onDelete(ShoppingEntry entry);
+	}
+
 	/** Menge eines Eintrags ändern: um einen Schritt oder per Eingabe. */
 	public interface AmountActions {
 		void onStep(ShoppingEntry entry, double delta);
@@ -42,20 +49,29 @@ public class ShoppingEntryAdapter extends RecyclerView.Adapter<RecyclerView.View
 
 	private static final int TYPE_HEADER = 0;
 	private static final int TYPE_ENTRY  = 1;
+	private static final int TYPE_ADD    = 2;
 
 	private static class Row {
 		final String        header;
 		final ShoppingEntry entry;
+		/** Die Zeile "Zur Einkaufsliste hinzufügen" ganz oben */
+		final boolean       add;
 
 		Row(String header, ShoppingEntry entry) {
+			this(header, entry, false);
+		}
+
+		Row(String header, ShoppingEntry entry, boolean add) {
 			this.header = header;
 			this.entry  = entry;
+			this.add    = add;
 		}
 	}
 
 	private final Context   context;
 	private final Actions   actions;
 	private       AmountActions amountActions;
+	private       ListActions   listActions;
 	private final List<Row> rows = new ArrayList<>();
 	private       int       doneCount;
 	private       int       totalCount;
@@ -69,6 +85,10 @@ public class ShoppingEntryAdapter extends RecyclerView.Adapter<RecyclerView.View
 		this.amountActions = amountActions;
 	}
 
+	public void setListActions(ListActions listActions) {
+		this.listActions = listActions;
+	}
+
 	public int getDoneCount() {
 		return doneCount;
 	}
@@ -79,6 +99,9 @@ public class ShoppingEntryAdapter extends RecyclerView.Adapter<RecyclerView.View
 
 	public void submit(ShoppingData data) {
 		rows.clear();
+		if (listActions != null) {
+			rows.add(new Row(null, null, true));
+		}
 		doneCount = 0;
 		totalCount = data.entries.size();
 
@@ -122,12 +145,13 @@ public class ShoppingEntryAdapter extends RecyclerView.Adapter<RecyclerView.View
 	}
 
 	private String groupTitle(ShoppingEntry e) {
-		return e.group != null && !e.isNote ? e.group : context.getString(R.string.section_no_group);
+		return e.group != null ? e.group : context.getString(R.string.section_no_group);
 	}
 
 	@Override
 	public int getItemViewType(int position) {
-		return rows.get(position).entry == null ? TYPE_HEADER : TYPE_ENTRY;
+		Row row = rows.get(position);
+		return row.add ? TYPE_ADD : row.entry == null ? TYPE_HEADER : TYPE_ENTRY;
 	}
 
 	@Override
@@ -142,12 +166,20 @@ public class ShoppingEntryAdapter extends RecyclerView.Adapter<RecyclerView.View
 		if (viewType == TYPE_HEADER) {
 			return new HeaderHolder(inflater.inflate(R.layout.item_section, parent, false));
 		}
+		if (viewType == TYPE_ADD) {
+			return new RecyclerView.ViewHolder(inflater.inflate(R.layout.item_add_entry, parent, false)) {
+			};
+		}
 		return new EntryHolder(inflater.inflate(R.layout.item_entry, parent, false));
 	}
 
 	@Override
 	public void onBindViewHolder(@NonNull RecyclerView.ViewHolder viewHolder, int position) {
 		Row row = rows.get(position);
+		if (row.add) {
+			viewHolder.itemView.setOnClickListener(v -> listActions.onAdd());
+			return;
+		}
 		if (row.entry == null) {
 			((HeaderHolder) viewHolder).title.setText(row.header);
 			return;
@@ -166,7 +198,7 @@ public class ShoppingEntryAdapter extends RecyclerView.Adapter<RecyclerView.View
 				: h.amount.getPaintFlags() & ~Paint.STRIKE_THRU_TEXT_FLAG);
 
 		// Menge ändern geht nur bei offenen Einträgen mit Produkt
-		boolean editable = !done && !e.isNote && amountActions != null;
+		boolean editable = !done && amountActions != null;
 		int editVisibility = editable ? View.VISIBLE : View.GONE;
 		h.minus.setVisibility(editVisibility);
 		h.plus.setVisibility(editVisibility);
@@ -210,6 +242,8 @@ public class ShoppingEntryAdapter extends RecyclerView.Adapter<RecyclerView.View
 		h.itemView.setClickable(false);
 		h.title.setOnClickListener(toggle);
 		h.check.setOnClickListener(toggle);
+		h.delete.setVisibility(listActions != null ? View.VISIBLE : View.GONE);
+		h.delete.setOnClickListener(v -> listActions.onDelete(e));
 	}
 
 	private static String trim(double value) {
@@ -234,6 +268,7 @@ public class ShoppingEntryAdapter extends RecyclerView.Adapter<RecyclerView.View
 		final TextView         total;
 		final TextView         info;
 		final MaterialCheckBox check;
+		final View             delete;
 
 		EntryHolder(View view) {
 			super(view);
@@ -245,6 +280,7 @@ public class ShoppingEntryAdapter extends RecyclerView.Adapter<RecyclerView.View
 			total  = view.findViewById(R.id.entry_total);
 			info   = view.findViewById(R.id.entry_info);
 			check  = view.findViewById(R.id.entry_check);
+			delete = view.findViewById(R.id.entry_delete);
 		}
 	}
 }

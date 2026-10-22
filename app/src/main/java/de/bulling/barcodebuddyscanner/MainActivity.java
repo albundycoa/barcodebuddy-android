@@ -380,6 +380,19 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
                 showEntryAmountDialog(entry);
             }
         });
+        entryAdapter.setListActions(new ShoppingEntryAdapter.ListActions() {
+            @Override
+            public void onAdd() {
+                if (shoppingData != null) {
+                    AddToList.show(MainActivity.this, repo, shoppingData.entries);
+                }
+            }
+
+            @Override
+            public void onDelete(ShoppingEntry entry) {
+                confirmDeleteEntry(entry);
+            }
+        });
         itemList.setLayoutManager(new LinearLayoutManager(this));
         itemList.setAdapter(adapter);
 
@@ -668,6 +681,27 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
     }
 
     /** Eintrag von Hand abhaken oder wieder öffnen. */
+    /** Eintrag von der Einkaufsliste entfernen, nach einer Rückfrage (wirkt in Grocy). */
+    private void confirmDeleteEntry(final ShoppingEntry entry) {
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.shopping_delete_title)
+                .setMessage(getString(R.string.shopping_delete_message, entry.name))
+                .setPositiveButton(R.string.shopping_delete_button, (d, w) ->
+                        de.bulling.barcodebuddyscanner.Helper.ShoppingEdit.delete(this, entry.id, error -> {
+                            if (error != null) {
+                                new MaterialAlertDialogBuilder(this)
+                                        .setTitle(R.string.product_create_failed_title)
+                                        .setMessage(getString(R.string.product_create_failed, error))
+                                        .setPositiveButton(android.R.string.ok, null)
+                                        .show();
+                            } else {
+                                Toast.makeText(this, getString(R.string.shopping_deleted, entry.name), Toast.LENGTH_SHORT).show();
+                            }
+                        }))
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
     private void onToggleEntry(ShoppingEntry entry) {
         if (sending) {
             return;

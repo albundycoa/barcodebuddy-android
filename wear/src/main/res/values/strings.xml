@@ -35,4 +35,18 @@
     <string name="setting_keep_scans_hint">Das Display bleibt bei der Liste an: gedimmt, solange du die Uhr unten hältst, und hell beim Anheben oder Tippen. Das braucht mehr Akku.</string>
     <string name="complication_scans">Gescannt</string>
     <string name="complication_shopping">Einkaufsliste</string>
+    <string name="add_row">＋ Hinzufügen</string>
+    <string name="add_search_hint">Produkt suchen</string>
+    <string name="add_free">Freier Eintrag: „%1$s“</string>
+    <string name="add_free_sub">Für etwas, das es noch nicht gibt</string>
+    <string name="add_more">Noch dazu</string>
+    <string name="add_confirm">Hinzufügen</string>
+    <string name="add_sent">%1$s: gesendet</string>
+    <string name="free_entry">Freier Eintrag</string>
+    <string name="free_entry_in">Freier Eintrag · %1$s</string>
+    <string name="group_title">Produktgruppe</string>
+    <string name="group_none">Keine Gruppe</string>
+    <string name="delete_title">Entfernen?</string>
+    <string name="delete_yes">Entfernen</string>
+    <string name="delete_no">Abbrechen</string>
 </resources>

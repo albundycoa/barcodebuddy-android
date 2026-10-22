@@ -13,6 +13,16 @@ zurückgehen, sonst lässt sich ein Update nicht mehr einspielen. Gepflegt wird 
 `appVersion` in `gradle.properties`. Veröffentlicht wird mit `./publish-apk.sh`: privat auf den Update-Server im Heimnetz, mit `--github` als
 öffentlicher GitHub-Release.
 
+## [0.13.0] – Einkaufsliste bearbeiten: löschen, Produkte und freie Einträge hinzufügen
+
+- **Handy**: In der Einkaufsliste gibt es oben eine Zeile „Hinzufügen“. Sie öffnet eine Suche über alle Grocy-Produkte (Treffer zeigen Gruppe und, falls schon
+  auf der Liste, die vorhandene Menge); ein Treffer führt zur Mengenwahl (Einkaufseinheit, zählt zu einem vorhandenen Eintrag dazu). Findet man nichts, legt
+  „Freier Eintrag“ einen Eintrag ohne Produkt an und lässt dabei die **Produktgruppe** wählen (in deiner Reihenfolge), damit er richtig einsortiert wird.
+  Jeder Eintrag hat ein Löschen-Symbol (mit Rückfrage), bei freien Einträgen lässt sich auch die Menge ändern.
+- **Uhr**: Oben in der Einkaufsliste steht „＋ Hinzufügen“ (Produktsuche mit Tastatur oder Diktat, freie Einträge mit Gruppenwahl, dann Menge). Ein Eintrag lässt sich
+  durch langes Drücken nach einer Rückfrage entfernen. Das Handy führt alles in Grocy aus und schickt die neue Liste zurück.
+- Die Uhr bekommt den Produktkatalog automatisch vom Handy.
+
 ## [0.12.0] – Uhr: Komplikationen für Zifferblätter
 
 - **Komplikationen**: Die Uhr-App bietet zwei Datenquellen für jedes Zifferblatt mit freien Komplikationsfeldern an: „Gescannt“ (Anzahl der gescannten

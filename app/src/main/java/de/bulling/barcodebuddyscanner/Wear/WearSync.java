@@ -53,6 +53,34 @@ public final class WearSync {
 	private static void load(Context app) {
 		final ShoppingRepository repo = ShoppingRepository.get(app);
 		repo.getOpenList(list -> repo.getShoppingList(shopping -> send(app, list, shopping)));
+		sendCatalog(app, repo);
+	}
+
+	/** Pfad des Katalogs aus Produkten und Gruppen, mit dem die Uhr Einträge zur Einkaufsliste hinzufügt. */
+	public static final String PATH_CATALOG = "/bbs/catalog";
+
+	private static String lastCatalog = "";
+
+	private static void sendCatalog(final Context app, final ShoppingRepository repo) {
+		repo.getProducts("", products -> repo.getGroups(groups -> {
+			java.util.List<de.bulling.barcodebuddyscanner.Helper.WearCatalogJson.Product> list = new ArrayList<>();
+			for (ShoppingRepository.ProductRow p : products) {
+				list.add(new de.bulling.barcodebuddyscanner.Helper.WearCatalogJson.Product(p.id, p.name, p.group));
+			}
+			String json = de.bulling.barcodebuddyscanner.Helper.WearCatalogJson.build(list, groups);
+			if (json.equals(lastCatalog)) {
+				return;
+			}
+			lastCatalog = json;
+			PutDataMapRequest request = PutDataMapRequest.create(PATH_CATALOG);
+			request.getDataMap().putString("json", json);
+			try {
+				Wearable.getDataClient(app).putDataItem(request.asPutDataRequest())
+						.addOnFailureListener(e -> Log.d(TAG, "Katalog nicht an die Uhr übertragbar: " + e.getMessage()));
+			} catch (RuntimeException e) {
+				Log.d(TAG, "Wear nicht verfügbar", e);
+			}
+		}));
 	}
 
 	private static void send(Context app, ShoppingRepository.OpenList list, ShoppingRepository.ShoppingData shopping) {
@@ -75,7 +103,7 @@ public final class WearSync {
 			o.addProperty("a", amountText(e));
 			o.addProperty("d", e.isDone());
 			o.addProperty("c", e.isCoveredByScans());
-			if (e.group != null && !e.isNote) {
+			if (e.group != null) {
 				o.addProperty("g", e.group);
 			}
 			shop.add(o);

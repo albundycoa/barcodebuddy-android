@@ -13,6 +13,7 @@ import java.nio.charset.StandardCharsets;
 import de.bulling.barcodebuddyscanner.Api.GrocySync;
 import de.bulling.barcodebuddyscanner.Data.ShoppingRepository;
 import de.bulling.barcodebuddyscanner.Helper.ScanNotifier;
+import de.bulling.barcodebuddyscanner.Helper.ShoppingEdit;
 import de.bulling.barcodebuddyscanner.R;
 
 /**
@@ -57,6 +58,25 @@ public class WearListenerService extends WearableListenerService {
 					repo.deleteItem(cmd.get("id").getAsLong());
 					ScanNotifier.show(app);
 					break;
+				case "shop_del":
+					ShoppingEdit.delete(app, cmd.get("id").getAsLong(), error -> WearSync.push(app));
+					break;
+				case "shop_add": {
+					double delta = cmd.get("x").getAsDouble();
+					if (delta > 0 && delta <= 1000) {
+						ShoppingEdit.addMore(app, cmd.get("p").getAsLong(), delta, error -> WearSync.push(app));
+					}
+					break;
+				}
+				case "shop_note": {
+					String text = text(cmd, "t").trim();
+					double amount = cmd.has("x") ? cmd.get("x").getAsDouble() : 1;
+					if (!text.isEmpty() && text.length() <= 200 && amount > 0 && amount <= 1000) {
+						String group = text(cmd, "g");
+						ShoppingEdit.addNote(app, text, amount, group.isEmpty() ? null : group, error -> WearSync.push(app));
+					}
+					break;
+				}
 				case "stock":
 					// Die Uhr öffnet die Bestandsseite: aktuellen Bestand live aus Grocy holen und schicken
 					WearStock.refresh(app, null, null);

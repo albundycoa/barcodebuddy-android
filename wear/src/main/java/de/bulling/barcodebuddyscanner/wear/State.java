@@ -22,6 +22,7 @@ final class State {
 	private static final String PREFS = "state";
 	private static final String KEY   = "json";
 	private static final String KEY_STOCK = "stock_json";
+	private static final String KEY_CATALOG = "catalog_json";
 
 	interface Listener {
 		void onStateChanged();
@@ -74,6 +75,25 @@ final class State {
 		} catch (RuntimeException ex) {
 			return null;
 		}
+	}
+
+	/** Produkte und Produktgruppen vom Handy (für "Hinzufügen"), oder null, wenn noch keine ankamen. */
+	static JsonObject loadCatalog(Context context) {
+		String json = prefs(context).getString(KEY_CATALOG, null);
+		if (json == null) {
+			return null;
+		}
+		try {
+			JsonElement e = JsonParser.parseString(json);
+			return e.isJsonObject() ? e.getAsJsonObject() : null;
+		} catch (RuntimeException ex) {
+			return null;
+		}
+	}
+
+	static void saveCatalog(Context context, String json) {
+		prefs(context).edit().putString(KEY_CATALOG, json).apply();
+		notifyChanged();
 	}
 
 	static void saveStock(Context context, String json) {

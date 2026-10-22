@@ -51,6 +51,52 @@ final class PhoneLink {
 		send(context, c);
 	}
 
+	/** Liest den zuletzt vom Handy geschickten Produktkatalog (für "Hinzufügen"). */
+	static void requestCatalog(Context context) {
+		final Context app = context.getApplicationContext();
+		Wearable.getDataClient(app).getDataItems(android.net.Uri.parse("wear://*/bbs/catalog"))
+				.addOnSuccessListener(items -> {
+					for (com.google.android.gms.wearable.DataItem item : items) {
+						String json = com.google.android.gms.wearable.DataMapItem.fromDataItem(item).getDataMap().getString("json");
+						if (json != null) {
+							State.saveCatalog(app, json);
+						}
+					}
+					items.release();
+				});
+		// Das Handy schickt den Katalog mit jeder Änderung; ein Sync-Befehl stößt das an
+		JsonObject c = new JsonObject();
+		c.addProperty("a", "sync");
+		send(context, c);
+	}
+
+	/** Noch {@code amount} von dem Produkt auf die Einkaufsliste (in der Einkaufseinheit, zum vorhandenen Eintrag dazu). */
+	static void addProduct(Context context, long productId, double amount) {
+		JsonObject c = new JsonObject();
+		c.addProperty("a", "shop_add");
+		c.addProperty("p", productId);
+		c.addProperty("x", amount);
+		send(context, c);
+	}
+
+	/** Freien Eintrag (ohne Produkt) anlegen; group "" = keine Produktgruppe. */
+	static void addNote(Context context, String text, String group, double amount) {
+		JsonObject c = new JsonObject();
+		c.addProperty("a", "shop_note");
+		c.addProperty("t", text);
+		c.addProperty("g", group);
+		c.addProperty("x", amount);
+		send(context, c);
+	}
+
+	/** Entfernt einen Eintrag von der Einkaufsliste. */
+	static void deleteEntry(Context context, long id) {
+		JsonObject c = new JsonObject();
+		c.addProperty("a", "shop_del");
+		c.addProperty("id", id);
+		send(context, c);
+	}
+
 	/** Bittet das Handy um den aktuellen Bestand aus Grocy (kommt als Datenelement zurück). */
 	static void requestStock(Context context) {
 		final Context app = context.getApplicationContext();
