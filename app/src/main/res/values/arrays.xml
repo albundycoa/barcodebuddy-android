@@ -22,11 +22,13 @@
     <string-array name="manual_done_mode">
         <item>@string/manual_done_book</item>
         <item>@string/manual_done_mark</item>
+        <item>@string/manual_done_remove</item>
     </string-array>
 
     <string-array name="manual_done_mode_val">
         <item>book</item>
         <item>mark</item>
+        <item>remove</item>
     </string-array>
 
     <string-array name="sync_mode">

@@ -241,9 +241,13 @@ public class SharedPrefHelper {
 		PreferenceManager.getDefaultSharedPreferences(context).edit().putInt("grocy_cache_version", version).apply();
 	}
 
-	/** Von Hand abgehakte Produkte beim Senden einbuchen ("book", Standard) oder nur in Grocy abhaken ("mark"). */
-	public static boolean isManualDoneBooked(Context context) {
-		return !"mark".equals(PreferenceManager.getDefaultSharedPreferences(context).getString("manual_done_mode", "book"));
+	/**
+	 * Was beim Senden mit von Hand abgehakten Produkten geschieht: einbuchen und entfernen ("book", Standard), nur in Grocy
+	 * abhaken ("mark") oder ohne Buchung aus der Liste entfernen ("remove").
+	 */
+	public static String getManualDoneMode(Context context) {
+		String mode = PreferenceManager.getDefaultSharedPreferences(context).getString("manual_done_mode", "book");
+		return "mark".equals(mode) || "remove".equals(mode) ? mode : "book";
 	}
 
 	/** Zeitpunkt der letzten Änderung der Grocy-Datenbank beim letzten vollständigen Laden */

@@ -210,6 +210,7 @@
     <string name="manual_done_mode">Von Hand abgehakte Produkte</string>
     <string name="manual_done_book">Beim Senden einbuchen und von der Liste entfernen</string>
     <string name="manual_done_mark">Beim Senden nur in Grocy abhaken</string>
+    <string name="manual_done_remove">Beim Senden ohne Buchung aus der Liste in Grocy entfernen</string>
     <plurals name="send_manual_done">
         <item quantity="one">%1$d Eintrag der Einkaufsliste übertragen.</item>
         <item quantity="other">%1$d Einträge der Einkaufsliste übertragen.</item>

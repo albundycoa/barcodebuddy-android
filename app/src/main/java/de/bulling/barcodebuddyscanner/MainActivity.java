@@ -1184,7 +1184,7 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
         SharedPrefHelper prefs = new SharedPrefHelper(this);
         // Bekannte Produkte direkt in Grocy buchen, wenn Grocy gekoppelt und die Einstellung aktiv ist
         GrocyClient grocy = SharedPrefHelper.isDirectBookingEnabled(this) ? prefs.initGrocyClient() : null;
-        activeSender = new PurchaseSender(prefs.initBBApi(), grocy, SharedPrefHelper.isManualDoneBooked(this), repo);
+        activeSender = new PurchaseSender(prefs.initBBApi(), grocy, SharedPrefHelper.getManualDoneMode(this), repo);
         setSending(true);
         activeSender.attach(senderListener);
         activeSender.start();

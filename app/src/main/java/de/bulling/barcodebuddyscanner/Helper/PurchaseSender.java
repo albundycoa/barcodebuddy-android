@@ -96,7 +96,7 @@ public class PurchaseSender {
 	private final List<Job>           directJobs = new ArrayList<>();
 	private final List<Job>           bbJobs     = new ArrayList<>();
 	private final List<ShoppingEntry> manualJobs = new ArrayList<>();
-	private final boolean             bookManual;
+	private final String              manualMode;
 	private int                       manualIndex;
 	/** Stück, die nur über Barcode Buddy gebucht werden könnten, aber Barcode Buddy ist nicht gekoppelt */
 	private int                       skippedNoBb;
@@ -113,13 +113,21 @@ public class PurchaseSender {
 	/**
 	 * @param grocy Zugriff auf Grocy für direkte Buchungen, oder null: dann läuft alles über Barcode Buddy
 	 */
+	/** Von Hand abgehakte Einträge einbuchen und von der Einkaufsliste entfernen */
+	public static final String MANUAL_BOOK   = "book";
+	/** Von Hand abgehakte Einträge nur in Grocy abhaken */
+	public static final String MANUAL_MARK   = "mark";
+	/** Von Hand abgehakte Einträge ohne Buchung aus der Einkaufsliste in Grocy entfernen */
+	public static final String MANUAL_REMOVE = "remove";
+
 	/**
-	 * @param bookManual von Hand abgehakte Produkte der Einkaufsliste einbuchen (sonst nur in Grocy abhaken)
+	 * @param manualMode was mit von Hand abgehakten Einträgen der Einkaufsliste beim Senden geschieht: {@link #MANUAL_BOOK},
+	 *                   {@link #MANUAL_MARK} oder {@link #MANUAL_REMOVE}
 	 */
-	public PurchaseSender(BBApi api, GrocyClient grocy, boolean bookManual, ShoppingRepository repo) {
+	public PurchaseSender(BBApi api, GrocyClient grocy, String manualMode, ShoppingRepository repo) {
 		this.api        = api;
 		this.grocy      = grocy;
-		this.bookManual = bookManual;
+		this.manualMode = manualMode;
 		this.repo       = repo;
 	}
 
@@ -382,7 +390,10 @@ public class PurchaseSender {
 		GROCY_IO.execute(() -> {
 			IOException failure = null;
 			try {
-				if (entry.isNote || !bookManual) {
+				if (MANUAL_REMOVE.equals(manualMode)) {
+					// Ohne Buchung: der Eintrag verschwindet nur aus der Einkaufsliste in Grocy
+					grocy.delete("objects/shopping_list/" + entry.id);
+				} else if (entry.isNote || MANUAL_MARK.equals(manualMode)) {
 					// Notizen und "nur abhaken": den Eintrag in Grocy als erledigt markieren
 					grocy.put("objects/shopping_list/" + entry.id, "{\"done\":1}");
 				} else {

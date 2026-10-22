@@ -13,6 +13,13 @@ zurückgehen, sonst lässt sich ein Update nicht mehr einspielen. Gepflegt wird 
 `appVersion` in `gradle.properties`. Veröffentlicht wird mit `./publish-apk.sh`: privat auf den Update-Server im Heimnetz, mit `--github` als
 öffentlicher GitHub-Release.
 
+## [0.17.0] – Von Hand abgehakte Produkte beim Senden entfernen
+
+- Neue dritte Auswahl in den Einstellungen unter „Von Hand abgehakte Produkte“: **Beim Senden ohne Buchung aus der Liste in Grocy entfernen**. Beim Senden werden die
+  von Hand abgehakten Einträge dann aus der Einkaufsliste in Grocy gelöscht, ohne dass etwas in den Bestand gebucht wird. Die beiden bisherigen Auswahlen
+  (einbuchen und entfernen / nur abhaken) bleiben unverändert, Standard ist weiter das Einbuchen.
+- Uhr-App und Zifferblatt: keine Änderung (nur die gemeinsame Versionsnummer).
+
 ## [0.16.0] – Gelöschter Scan öffnet den Eintrag der Einkaufsliste wieder
 
 - Wird ein Eintrag der Einkaufsliste durch einen Scan abgehakt und du löschst den Scan (oder verringerst seine Stückzahl unter die Menge der Liste), steht der Eintrag
