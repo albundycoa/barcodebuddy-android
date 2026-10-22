@@ -55,6 +55,8 @@ public class BbsTileService extends TileService {
 	private static final int DANGER_BG = Color.parseColor("#3A1F22");
 
 	private static int page;
+	/** Seitenzahl der zuletzt ausgelieferten Anzeige, damit ▲ und ▼ im Kreis blättern */
+	private static int pageCount = 1;
 	private static long selectedScan = -1;
 	/** Kennzeichen der zuletzt ausgelieferten Anzeige; ein Klick darauf gilt genau einmal. */
 	private static long token;
@@ -106,7 +108,7 @@ public class BbsTileService extends TileService {
 				selectedScan = -1;
 				break;
 			case "page":
-				page++;
+				page = Math.floorMod(page + (int) id, pageCount);
 				selectedScan = -1;
 				break;
 			case "shop":
@@ -129,6 +131,7 @@ public class BbsTileService extends TileService {
 		int tab = FaceModel.tab(this);
 		List<FaceModel.Row> rows = FaceModel.rows(state, tab);
 		int pages = Math.max(1, (rows.size() + ROWS - 1) / ROWS);
+		pageCount = pages;
 		if (page >= pages) {
 			page = 0;
 		}
@@ -153,13 +156,19 @@ public class BbsTileService extends TileService {
 				column.addContent(row(rows.get(from + i), tab, i)).addContent(spacer(0, 3));
 			}
 			if (pages > 1) {
-				column.addContent(new Box.Builder()
-						.setWidth(dp(120))
-						.setHeight(dp(24))
-						.setHorizontalAlignment(LayoutElementBuilders.HORIZONTAL_ALIGN_CENTER)
+				column.addContent(new Row.Builder()
+						.setWidth(dp(140))
+						.setHeight(dp(26))
 						.setVerticalAlignment(LayoutElementBuilders.VERTICAL_ALIGN_CENTER)
-						.setModifiers(clickable("page:0"))
-						.addContent(text("▼ " + (page + 1) + " / " + pages, 12, ACCENT, true, 1))
+						.addContent(pageButton("▲", -1))
+						.addContent(new Box.Builder()
+								.setWidth(dp(60))
+								.setHeight(dp(26))
+								.setHorizontalAlignment(LayoutElementBuilders.HORIZONTAL_ALIGN_CENTER)
+								.setVerticalAlignment(LayoutElementBuilders.VERTICAL_ALIGN_CENTER)
+								.addContent(text((page + 1) + " / " + pages, 12, TEXT_DIM, false, 1))
+								.build())
+						.addContent(pageButton("▼", 1))
 						.build());
 			}
 		}
@@ -170,6 +179,18 @@ public class BbsTileService extends TileService {
 						.setBackground(new ModifiersBuilders.Background.Builder().setColor(argb(BG)).build())
 						.build())
 				.addContent(column.build())
+				.build();
+	}
+
+	/** ▲ blättert zurück, ▼ weiter; nach der letzten Seite geht es wieder von vorn los. */
+	private LayoutElement pageButton(String symbol, int delta) {
+		return new Box.Builder()
+				.setWidth(dp(40))
+				.setHeight(dp(26))
+				.setHorizontalAlignment(LayoutElementBuilders.HORIZONTAL_ALIGN_CENTER)
+				.setVerticalAlignment(LayoutElementBuilders.VERTICAL_ALIGN_CENTER)
+				.setModifiers(clickable("page:" + delta))
+				.addContent(text(symbol, 14, ACCENT, true, 1))
 				.build();
 	}
 

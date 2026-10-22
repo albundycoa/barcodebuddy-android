@@ -13,6 +13,11 @@ zurückgehen, sonst lässt sich ein Update nicht mehr einspielen. Gepflegt wird 
 `appVersion` in `gradle.properties`. Veröffentlicht wird mit `./publish-apk.sh`: privat auf den Update-Server im Heimnetz, mit `--github` als
 öffentlicher GitHub-Release.
 
+## [0.15.2] – Uhr: Kachel blättert in beide Richtungen
+
+- Kachel: Unter den Zeilen stehen jetzt ▲ und ▼ mit der Seitenzahl. ▲ blättert zurück, ▼ weiter; nach der letzten Seite springt ▼ wieder auf die erste.
+- Handy: keine Änderung (nur die gemeinsame Versionsnummer).
+
 ## [0.15.1] – Uhr: Kachel, Fehlscan wieder abwählen
 
 - Kachel: Ein angetippter Scan (mit „Entfernen“) lässt sich durch erneutes Antippen der Zeile wieder abwählen, ohne zu löschen.
