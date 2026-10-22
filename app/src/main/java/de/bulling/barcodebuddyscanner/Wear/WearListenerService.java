@@ -52,10 +52,12 @@ public class WearListenerService extends WearableListenerService {
 					break;
 				case "qty":
 					repo.setQuantity(cmd.get("id").getAsLong(), cmd.get("q").getAsInt());
+					GrocySync.pushShoppingDone(app);
 					ScanNotifier.show(app);
 					break;
 				case "del":
 					repo.deleteItem(cmd.get("id").getAsLong());
+					GrocySync.pushShoppingDone(app);
 					ScanNotifier.show(app);
 					break;
 				case "shop_del":

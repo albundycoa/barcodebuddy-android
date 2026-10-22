@@ -13,6 +13,13 @@ zurückgehen, sonst lässt sich ein Update nicht mehr einspielen. Gepflegt wird 
 `appVersion` in `gradle.properties`. Veröffentlicht wird mit `./publish-apk.sh`: privat auf den Update-Server im Heimnetz, mit `--github` als
 öffentlicher GitHub-Release.
 
+## [0.16.0] – Gelöschter Scan öffnet den Eintrag der Einkaufsliste wieder
+
+- Wird ein Eintrag der Einkaufsliste durch einen Scan abgehakt und du löschst den Scan (oder verringerst seine Stückzahl unter die Menge der Liste), steht der Eintrag
+  wieder offen in der Einkaufsliste (auch in Grocy). Das gilt nur für Einträge, die erst durch den Scan erledigt wurden: von Hand abgehakte oder schon vorher
+  erledigte Einträge bleiben, wie sie sind. Handy und Uhr (Scanliste, Kachel) verhalten sich gleich.
+- Uhr-App und Zifferblatt: keine Änderung (nur die gemeinsame Versionsnummer).
+
 ## [0.15.2] – Uhr: Kachel blättert in beide Richtungen
 
 - Kachel: Unter den Zeilen stehen jetzt ▲ und ▼ mit der Seitenzahl. ▲ blättert zurück, ▼ weiter; nach der letzten Seite springt ▼ wieder auf die erste.

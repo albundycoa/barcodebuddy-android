@@ -320,10 +320,12 @@ public final class ShoppingRepository {
 
 	public void setQuantity(final long itemId, final int quantity) {
 		write(() -> {
+			SQLiteDatabase db = dbHelper.getWritableDatabase();
 			ContentValues v = new ContentValues();
 			v.put("quantity", Math.max(1, quantity));
-			return dbHelper.getWritableDatabase().update(ShoppingDb.T_ITEMS, v, "id = ?",
-					new String[]{String.valueOf(itemId)});
+			int rows = db.update(ShoppingDb.T_ITEMS, v, "id = ?", new String[]{String.valueOf(itemId)});
+			reopenUncovered(db);
+			return rows;
 		}, null);
 	}
 
@@ -348,8 +350,59 @@ public final class ShoppingRepository {
 	}
 
 	public void deleteItem(final long itemId) {
-		write(() -> dbHelper.getWritableDatabase().delete(ShoppingDb.T_ITEMS, "id = ?",
-				new String[]{String.valueOf(itemId)}), null);
+		write(() -> {
+			SQLiteDatabase db = dbHelper.getWritableDatabase();
+			int rows = db.delete(ShoppingDb.T_ITEMS, "id = ?", new String[]{String.valueOf(itemId)});
+			reopenUncovered(db);
+			return rows;
+		}, null);
+	}
+
+	/**
+	 * Nach dem Entfernen oder Verringern eines Scans: Einträge der Einkaufsliste, die nur durch Scans abgehakt wurden und jetzt
+	 * nicht mehr vollständig abgedeckt sind, wieder öffnen (der Wunsch "offen" geht danach an Grocy). Von Hand abgehakte Einträge
+	 * und solche, die schon vor dem Scan abgehakt waren, bleiben unberührt.
+	 */
+	private static void reopenUncovered(SQLiteDatabase db) {
+		String sql = "SELECT e.id, e.stock_amount, e.amount, e.manual_amount, e.manual, COALESCE(sc.scanned, 0) "
+				+ "FROM " + ShoppingDb.T_SCAN_DONE + " d JOIN g_shopping e ON e.id = d.entry_id "
+				+ "LEFT JOIN (SELECT b.product_id AS pid, SUM(i.quantity * b.stock_per_scan) AS scanned "
+				+ "FROM items i JOIN g_barcodes b ON b.barcode = i.barcode WHERE i.trip_id = 0 "
+				+ "GROUP BY b.product_id) sc ON sc.pid = e.product_id";
+		List<Long> reopen = new ArrayList<>();
+		try (Cursor c = db.rawQuery(sql, null)) {
+			while (c.moveToNext()) {
+				double stock = c.getDouble(1);
+				double amount = c.getDouble(2);
+				double pending = c.isNull(3) ? 0 : c.getDouble(3);
+				if (pending > 0 && amount > 0) {
+					stock = stock * pending / amount;
+				}
+				double scanned = c.getDouble(5);
+				boolean covered = scanned > 0 && scanned + 1e-9 >= stock;
+				if (!covered) {
+					reopen.add(c.getLong(0));
+					if (c.isNull(4)) {
+						ContentValues v = new ContentValues();
+						v.put("manual", 0);
+						db.update(ShoppingDb.T_SHOPPING, v, "id = ?", new String[]{String.valueOf(c.getLong(0))});
+					}
+				}
+			}
+		}
+		for (Long id : reopen) {
+			db.delete(ShoppingDb.T_SCAN_DONE, "entry_id = ?", new String[]{String.valueOf(id)});
+		}
+	}
+
+	/** Merkt, dass dieser Eintrag erst durch einen Scan abgehakt wurde und beim Löschen des Scans wieder aufgehen soll. */
+	public void markScanDone(final long entryId) {
+		write(() -> {
+			ContentValues v = new ContentValues();
+			v.put("entry_id", entryId);
+			return dbHelper.getWritableDatabase().insertWithOnConflict(ShoppingDb.T_SCAN_DONE, null, v,
+					SQLiteDatabase.CONFLICT_REPLACE);
+		}, null);
 	}
 
 	/** Setzt einen zuvor entfernten Artikel mit allen Werten wieder ein. */
@@ -359,7 +412,12 @@ public final class ShoppingRepository {
 	}
 
 	public void clearOpenList() {
-		write(() -> dbHelper.getWritableDatabase().delete(ShoppingDb.T_ITEMS, "trip_id = 0", null), null);
+		write(() -> {
+			SQLiteDatabase db = dbHelper.getWritableDatabase();
+			int rows = db.delete(ShoppingDb.T_ITEMS, "trip_id = 0", null);
+			reopenUncovered(db);
+			return rows;
+		}, null);
 	}
 
 	// ---------------------------------------------------------------- Senden
@@ -404,6 +462,8 @@ public final class ShoppingRepository {
 			long           now = System.currentTimeMillis();
 			db.beginTransaction();
 			try {
+				// Die Scans sind danach archiviert: Einträge bleiben abgehakt, nichts muss mehr geöffnet werden
+				db.delete(ShoppingDb.T_SCAN_DONE, null, null);
 				List<ShoppingItem> open = readItems(db, 0);
 				final Map<Long, Double> deposits = openDeposits(db);
 				long tripId = -1;
@@ -882,6 +942,7 @@ public final class ShoppingRepository {
 			}
 			db.insertWithOnConflict(ShoppingDb.T_SHOPPING, null, v, SQLiteDatabase.CONFLICT_REPLACE);
 		}
+		db.execSQL("DELETE FROM " + ShoppingDb.T_SCAN_DONE + " WHERE entry_id NOT IN (SELECT id FROM " + ShoppingDb.T_SHOPPING + ")");
 		// Gruppen gelöschter freier Einträge aufräumen; ganz frische bleiben, falls der Abgleich vor dem Anlegen geladen hat
 		db.execSQL("DELETE FROM " + ShoppingDb.T_NOTE_GROUP + " WHERE entry_id NOT IN (SELECT id FROM " + ShoppingDb.T_SHOPPING
 				+ ") AND created_at < ?", new Object[]{System.currentTimeMillis() - 10 * 60 * 1000L});

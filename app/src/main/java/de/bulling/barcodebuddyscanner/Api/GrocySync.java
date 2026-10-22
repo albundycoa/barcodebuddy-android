@@ -252,6 +252,10 @@ public final class GrocySync {
 						client.put("objects/shopping_list/" + e.id, body.toString());
 						if (doneChanged) {
 							repo.setServerDone(e.id, done);
+							// Erst durch einen Scan abgehakt: beim Löschen des Scans wieder öffnen
+							if (done && e.isCoveredByScans() && (e.manual == null || e.manual == 0)) {
+								repo.markScanDone(e.id);
+							}
 						}
 						if (e.pendingAmount != null) {
 							repo.setServerAmount(e.id, e.pendingAmount);
