@@ -46,6 +46,8 @@ public class ShoppingItem {
 	public String  priceUnitName;
 	/** Letzter Einkaufspreis je Lagereinheit */
 	public Double  lastPrice;
+	/** Angebotspreis je Preiseinheit aus der Einkaufsliste (Marktguru), solange er gilt; sonst null */
+	public Double  offerPrice;
 	/** Aktueller Bestand in Lagereinheiten */
 	public Double  stock;
 	/** Standard-Haltbarkeit in Tagen, -1 = unbegrenzt, null = unbekannt */
@@ -96,10 +98,13 @@ public class ShoppingItem {
 		return stockPerScan * stockToPrice;
 	}
 
-	/** Preis je Preiseinheit: vom Nutzer geändert, sonst der letzte Einkaufspreis. */
+	/** Preis je Preiseinheit: vom Nutzer geändert, sonst der Angebotspreis, sonst der letzte Einkaufspreis. */
 	public Double effectivePrice() {
 		if (price != null) {
 			return price;
+		}
+		if (offerPrice != null) {
+			return offerPrice;
 		}
 		if (lastPrice != null && stockToPrice > 0) {
 			return lastPrice / stockToPrice;

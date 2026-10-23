@@ -205,6 +205,7 @@
     <string name="action_sync_list">Einkaufsliste aktualisieren</string>
     <string name="section_done">Erledigt</string>
     <string name="entry_price">%1$s (Einheit)</string>
+    <string name="entry_price_offer">%1$s (Angebot)</string>
     <string name="entry_scanned">%1$s von %2$s %3$s gescannt</string>
     <string name="entry_done_by_scan">Durch Scan erledigt. Entferne den Scan, um den Eintrag wieder zu öffnen.</string>
     <string name="confirm_send_message_manual">%1$d Artikel (%2$d Stück) werden gebucht, dazu %3$d von Hand abgehakte Einträge der Einkaufsliste.</string>

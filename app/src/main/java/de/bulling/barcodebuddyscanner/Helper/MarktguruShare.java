@@ -40,6 +40,20 @@ public final class MarktguruShare {
 			this.shop     = shop;
 			this.validity = validity;
 		}
+
+		/** Angebotspreis als Zahl, oder null */
+		public Double priceValue() {
+			return price == null ? null : Money.parse(price);
+		}
+
+		/** Ende der Gültigkeit als yyyy-MM-dd ("26.10. - 31.10.2026" -> "2026-10-31"), oder null */
+		public String validUntil() {
+			Matcher m = Pattern.compile("(\\d{1,2})\\.(\\d{1,2})\\.(\\d{4})$").matcher(validity == null ? "" : validity.trim());
+			if (!m.find()) {
+				return null;
+			}
+			return String.format(java.util.Locale.ROOT, "%s-%02d-%02d", m.group(3), Integer.parseInt(m.group(2)), Integer.parseInt(m.group(1)));
+		}
 	}
 
 	private static final Pattern SPLIT    = Pattern.compile("\\s-\\s+(?=\\d+x\\s)");

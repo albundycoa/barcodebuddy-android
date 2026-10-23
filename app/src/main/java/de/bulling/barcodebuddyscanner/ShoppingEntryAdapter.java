@@ -209,16 +209,17 @@ public class ShoppingEntryAdapter extends RecyclerView.Adapter<RecyclerView.View
 		h.amount.setClickable(editable);
 
 		// Letzter Preis je Einheit des Eintrags (die Menge im Eintrag und in Lagereinheiten ergeben den Faktor)
-		if (e.lastPrice != null && e.amount > 0) {
-			double perEntryUnit = e.lastPrice * e.stockAmount / e.amount;
-			h.price.setText(context.getString(R.string.entry_price, Money.format(perEntryUnit)));
+		Double perEntryUnit = e.unitPrice();
+		if (perEntryUnit != null && e.amount > 0) {
+			h.price.setText(context.getString(e.offerPrice != null ? R.string.entry_price_offer : R.string.entry_price,
+					Money.format(perEntryUnit)));
 			h.price.setVisibility(View.VISIBLE);
 		} else {
 			h.price.setVisibility(View.GONE);
 		}
 		// Steht ein Produkt mehrfach in der Liste, zeigt der Gesamtpreis, was alle zusammen kosten
-		if (e.lastPrice != null && e.amount > 1.0001 && !e.isNote) {
-			h.total.setText(context.getString(R.string.entry_total, Money.format(e.lastPrice * e.stockAmount)));
+		if (e.value() != null && e.amount > 1.0001) {
+			h.total.setText(context.getString(R.string.entry_total, Money.format(e.value())));
 			h.total.setVisibility(View.VISIBLE);
 		} else {
 			h.total.setVisibility(View.GONE);

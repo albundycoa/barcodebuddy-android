@@ -283,10 +283,13 @@ public class ShareImportActivity extends AppCompatActivity {
 			}
 			runNext(todo, index + 1, groupName, failed);
 		};
+		Double price = row.item.priceValue();
+		ShoppingEdit.Offer offer = price == null ? null
+				: new ShoppingEdit.Offer(price, row.item.validUntil(), row.item.shop.isEmpty() ? null : row.item.shop);
 		if (row.product != null) {
-			ShoppingEdit.addMore(this, row.product.id, row.item.quantity, next);
+			ShoppingEdit.addMore(this, row.product.id, row.item.quantity, offer, next);
 		} else {
-			ShoppingEdit.addNote(this, row.item.name, row.item.quantity, groupName, next);
+			ShoppingEdit.addNote(this, row.item.name, row.item.quantity, groupName, offer, next);
 		}
 	}
 

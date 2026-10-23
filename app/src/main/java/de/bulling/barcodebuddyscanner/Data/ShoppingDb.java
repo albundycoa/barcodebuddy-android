@@ -7,7 +7,7 @@ import android.database.sqlite.SQLiteOpenHelper;
 class ShoppingDb extends SQLiteOpenHelper {
 
 	private static final String DB_NAME    = "shopping.db";
-	private static final int    DB_VERSION = 15;
+	private static final int    DB_VERSION = 16;
 
 	static final String T_ITEMS      = "items";
 	static final String T_TRIPS      = "trips";
@@ -26,6 +26,8 @@ class ShoppingDb extends SQLiteOpenHelper {
 	static final String T_NOTE_GROUP  = "shopping_note_group";
 	/** Einträge der Einkaufsliste, die erst durch einen Scan abgehakt wurden (vorher offen) */
 	static final String T_SCAN_DONE   = "shopping_scan_done";
+	/** Angebotspreise (z. B. aus Marktguru) zu Produkten oder freien Eintraegen der Einkaufsliste */
+	static final String T_OFFER       = "shopping_offer";
 
 	ShoppingDb(Context context) {
 		super(context, DB_NAME, null, DB_VERSION);
@@ -60,6 +62,7 @@ class ShoppingDb extends SQLiteOpenHelper {
 		createOffTable(db);
 		createNoteGroupTable(db);
 		createScanDoneTable(db);
+		createOfferTable(db);
 	}
 
 	@Override
@@ -94,6 +97,9 @@ class ShoppingDb extends SQLiteOpenHelper {
 		if (oldVersion >= 5 && oldVersion < 10) {
 			// Von Hand geänderte Menge eines Eintrags der Einkaufsliste, bis Grocy sie übernommen hat
 			db.execSQL("ALTER TABLE " + T_SHOPPING + " ADD COLUMN manual_amount REAL");
+		}
+		if (oldVersion < 16) {
+			createOfferTable(db);
 		}
 		if (oldVersion < 15) {
 			createScanDoneTable(db);
@@ -132,6 +138,16 @@ class ShoppingDb extends SQLiteOpenHelper {
 	 * Freie Einträge der Einkaufsliste (ohne Produkt) haben in Grocy keine Produktgruppe. Hier merkt sich die App, in welche
 	 * Gruppe sie gehören, damit sie in der gewählten Reihenfolge einsortiert werden.
 	 */
+	/** entry_key: "p" + Produktnummer oder "n" + Nummer eines freien Eintrags; price je Einheit des Eintrags, valid_until als yyyy-MM-dd. */
+	private static void createOfferTable(SQLiteDatabase db) {
+		db.execSQL("CREATE TABLE IF NOT EXISTS " + T_OFFER + " ("
+				+ "entry_key TEXT PRIMARY KEY, "
+				+ "price REAL NOT NULL, "
+				+ "valid_until TEXT, "
+				+ "shop TEXT, "
+				+ "created_at INTEGER NOT NULL)");
+	}
+
 	private static void createScanDoneTable(SQLiteDatabase db) {
 		db.execSQL("CREATE TABLE IF NOT EXISTS " + T_SCAN_DONE + " (entry_id INTEGER PRIMARY KEY)");
 	}

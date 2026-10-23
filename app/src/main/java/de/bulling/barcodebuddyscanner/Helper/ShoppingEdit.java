@@ -60,24 +60,70 @@ public final class ShoppingEdit {
 	 * vorhandenen Eintrag dieser Einheit dazugezählt.
 	 */
 	public static void addMore(Context context, final long productId, final double delta, final Result result) {
+		addMore(context, productId, delta, null, result);
+	}
+
+	/**
+	 * Wie {@link #addMore(Context, long, double, Result)}, mit einem Angebot: Der Preis wird für die Berechnung der Liste und beim Einkauf
+	 * verwendet, und eine Notiz mit dem Angebot steht am Eintrag in Grocy.
+	 */
+	public static void addMore(Context context, final long productId, final double delta, final Offer offer, final Result result) {
 		run(context, result, (client, app) -> {
 			de.bulling.barcodebuddyscanner.Helper.StockOverview.Product setup = GrocyShopping.loadProduct(client, productId);
 			long quId = setup == null ? 0 : setup.quPurchase;
 			if (quId > 0) {
-				GrocyStock.addMoreToShoppingList(client, productId, delta, quId);
+				GrocyStock.addMoreToShoppingList(client, productId, delta, quId, offer == null ? null : offer.note());
 			} else {
 				GrocyStock.addToShoppingList(client, productId, delta);
+			}
+			if (offer != null) {
+				ShoppingRepository.get(app).setOffer(productId, null, offer.price, offer.validUntil, offer.shop);
 			}
 			GrocySync.start(app, null);
 		});
 	}
 
+	/** Ein Angebot: Preis je Stück, Ende der Gültigkeit (yyyy-MM-dd oder null) und Geschäft (oder null). */
+	public static final class Offer {
+		public final double price;
+		public final String validUntil;
+		public final String shop;
+
+		public Offer(double price, String validUntil, String shop) {
+			this.price      = price;
+			this.validUntil = validUntil;
+			this.shop       = shop;
+		}
+
+		/** Text für die Notiz in Grocy, z. B. "Angebot 1,99 € bei Lidl bis 31.10.2026". */
+		String note() {
+			StringBuilder note = new StringBuilder("Angebot ").append(Money.format(price));
+			if (shop != null && !shop.isEmpty()) {
+				note.append(" bei ").append(shop);
+			}
+			if (validUntil != null && validUntil.length() == 10) {
+				note.append(" bis ").append(validUntil, 8, 10).append('.').append(validUntil, 5, 7).append('.').append(validUntil, 0, 4);
+			}
+			return note.toString();
+		}
+	}
+
 	/** Legt einen freien Eintrag an, optional mit Produktgruppe (nur in der App, damit er richtig einsortiert wird). */
 	public static void addNote(Context context, final String text, final double amount, final String groupName, final Result result) {
+		addNote(context, text, amount, groupName, null, result);
+	}
+
+	/** Wie oben, mit einem Angebot (Preis für die Berechnung der Liste, Text mit dem Angebot im Namen des Eintrags in Grocy). */
+	public static void addNote(Context context, final String text, final double amount, final String groupName, final Offer offer,
+							   final Result result) {
 		run(context, result, (client, app) -> {
-			long id = GrocyShopping.addNote(client, text.trim(), amount);
+			String body = offer == null ? text.trim() : text.trim() + " (" + offer.note() + ")";
+			long id = GrocyShopping.addNote(client, body, amount);
 			// Die Gruppe zuerst merken: Der Abgleich danach holt den neuen Eintrag samt Gruppe in die Liste
 			ShoppingRepository.get(app).setNoteGroup(id, groupName);
+			if (offer != null) {
+				ShoppingRepository.get(app).setOffer(null, id, offer.price, offer.validUntil, offer.shop);
+			}
 			GrocySync.start(app, null);
 		});
 	}

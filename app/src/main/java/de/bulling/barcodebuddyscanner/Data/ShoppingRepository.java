@@ -90,7 +90,7 @@ public final class ShoppingRepository {
 					+ "p.price_unit AS g_price_unit, p.best_before_days AS g_bb_days, p.tare AS g_tare, "
 					+ "b.exact AS g_exact, st.amount AS g_stock, "
 					+ "COALESCE(b.shop_id, p.shop_id) AS g_shop_id, s.name AS g_shop_name, "
-					+ "lp.price AS g_last_price, o.name AS off_name "
+					+ "lp.price AS g_last_price, o.name AS off_name, so.price AS g_offer_price "
 					+ "FROM items i "
 					// Wie Barcode Buddy: ein führend mit Nullen aufgefüllter Code (GTIN-14) trifft auch den EAN-13
 					+ "LEFT JOIN g_barcodes b ON b.barcode = i.barcode OR b.barcode = ltrim(i.barcode, '0') "
@@ -99,6 +99,9 @@ public final class ShoppingRepository {
 					+ "LEFT JOIN g_lastprice lp ON lp.product_id = p.id "
 					+ "LEFT JOIN g_stock st ON st.product_id = p.id "
 					+ "LEFT JOIN off_cache o ON o.barcode = i.barcode "
+					// Angebotspreis aus der Einkaufsliste, solange er gilt: das Produkt wird zu diesem Preis gekauft
+					+ "LEFT JOIN shopping_offer so ON so.entry_key = 'p' || p.id "
+					+ "AND (so.valid_until IS NULL OR so.valid_until >= date('now', 'localtime')) "
 					+ "WHERE i.trip_id = 0 ORDER BY i.scanned_at DESC";
 
 	private static ShoppingRepository instance;
@@ -838,6 +841,33 @@ public final class ShoppingRepository {
 		public String  stockUnit;
 		public Double  lastPrice;   // letzter Preis je Lagereinheit
 		public Integer bestBeforeDays;
+		/** Angebotspreis je Einheit des Eintrags (aus Marktguru), solange er gilt; sonst null */
+		public Double  offerPrice;
+		public String  offerShop;
+
+		/** Preis je Einheit des Eintrags: der Angebotspreis, sonst aus dem letzten Einkaufspreis. */
+		public Double unitPrice() {
+			if (offerPrice != null) {
+				return offerPrice;
+			}
+			return lastPrice != null && amount > 0 ? lastPrice * stockAmount / amount : null;
+		}
+
+		/** Preis je Lagereinheit, so wie ihn Grocy beim Einkauf erwartet (Angebot vor letztem Preis). */
+		public Double pricePerStock() {
+			if (offerPrice != null && stockAmount > 0 && amount > 0) {
+				return offerPrice * amount / stockAmount;
+			}
+			return lastPrice;
+		}
+
+		/** Preis des ganzen Eintrags (Menge mal Preis), oder null ohne bekannten Preis. */
+		public Double value() {
+			if (offerPrice != null) {
+				return offerPrice * amount;
+			}
+			return !isNote && lastPrice != null ? lastPrice * stockAmount : null;
+		}
 
 		/** Abgehakt (von Hand oder in Grocy) oder durch Scans bereits vollständig abgedeckt. */
 		public boolean isDone() {
@@ -878,8 +908,9 @@ public final class ShoppingRepository {
 		public double totalValue() {
 			double sum = 0;
 			for (ShoppingEntry e : entries) {
-				if (!e.isNote && e.lastPrice != null) {
-					sum += e.lastPrice * e.stockAmount;
+				Double value = e.value();
+				if (value != null) {
+					sum += value;
 				}
 			}
 			return sum;
@@ -942,6 +973,10 @@ public final class ShoppingRepository {
 			}
 			db.insertWithOnConflict(ShoppingDb.T_SHOPPING, null, v, SQLiteDatabase.CONFLICT_REPLACE);
 		}
+		db.execSQL("DELETE FROM " + ShoppingDb.T_OFFER + " WHERE valid_until IS NOT NULL AND valid_until < date('now', 'localtime')");
+		db.execSQL("DELETE FROM " + ShoppingDb.T_OFFER + " WHERE created_at < ? AND ((entry_key LIKE 'p%' AND substr(entry_key, 2) NOT IN "
+				+ "(SELECT product_id FROM " + ShoppingDb.T_SHOPPING + " WHERE product_id IS NOT NULL)) OR (entry_key LIKE 'n%' AND substr(entry_key, 2) NOT IN "
+				+ "(SELECT id FROM " + ShoppingDb.T_SHOPPING + ")))", new Object[]{System.currentTimeMillis() - 10 * 60 * 1000L});
 		db.execSQL("DELETE FROM " + ShoppingDb.T_SCAN_DONE + " WHERE entry_id NOT IN (SELECT id FROM " + ShoppingDb.T_SHOPPING + ")");
 		// Gruppen gelöschter freier Einträge aufräumen; ganz frische bleiben, falls der Abgleich vor dem Anlegen geladen hat
 		db.execSQL("DELETE FROM " + ShoppingDb.T_NOTE_GROUP + " WHERE entry_id NOT IN (SELECT id FROM " + ShoppingDb.T_SHOPPING
@@ -954,8 +989,11 @@ public final class ShoppingRepository {
 			SQLiteDatabase db = dbHelper.getReadableDatabase();
 			String sql = "SELECT e.id, e.product_id, e.note, e.amount, e.stock_amount, e.done, e.manual, e.manual_amount, e.qu_id, "
 					+ "u.name AS unit, p.name AS pname, COALESCE(p.group_name, ng.group_name) AS group_name, p.shop_id, p.stock_unit, p.best_before_days, "
-					+ "s.name AS shop, lp.price AS last_price, COALESCE(sc.scanned, 0) AS scanned "
+					+ "s.name AS shop, lp.price AS last_price, COALESCE(sc.scanned, 0) AS scanned, "
+					+ "so.price AS offer_price, so.shop AS offer_shop "
 					+ "FROM g_shopping e "
+					+ "LEFT JOIN shopping_offer so ON so.entry_key = CASE WHEN e.product_id IS NULL THEN 'n' || e.id ELSE 'p' || e.product_id END "
+					+ "AND (so.valid_until IS NULL OR so.valid_until >= date('now', 'localtime')) "
 					+ "LEFT JOIN g_units u ON u.id = e.qu_id "
 					+ "LEFT JOIN shopping_note_group ng ON ng.entry_id = e.id "
 					+ "LEFT JOIN g_products p ON p.id = e.product_id "
@@ -998,6 +1036,8 @@ public final class ShoppingRepository {
 					e.shopName = c.getString(c.getColumnIndexOrThrow("shop"));
 					e.stockUnit = c.getString(c.getColumnIndexOrThrow("stock_unit"));
 					e.lastPrice = getDouble(c, "last_price");
+					e.offerPrice = getDouble(c, "offer_price");
+					e.offerShop = c.getString(c.getColumnIndexOrThrow("offer_shop"));
 					Double days = getDouble(c, "best_before_days");
 					e.bestBeforeDays = days == null ? null : (int) Math.round(days);
 					entries.add(e);
@@ -1005,6 +1045,22 @@ public final class ShoppingRepository {
 			}
 			return new ShoppingData(entries, readShopPositions(db), readGroupPositions(db));
 		}, callback);
+	}
+
+	/**
+	 * Merkt den Angebotspreis eines Produkts ({@code productId}) oder eines freien Eintrags ({@code noteId}), je Einheit des Eintrags
+	 * und mit Ende der Gültigkeit (yyyy-MM-dd, null = unbegrenzt). Er gilt nur, solange der Eintrag auf der Liste steht.
+	 */
+	public void setOffer(final Long productId, final Long noteId, final double price, final String validUntil, final String shop) {
+		write(() -> {
+			ContentValues v = new ContentValues();
+			v.put("entry_key", productId != null ? "p" + productId : "n" + noteId);
+			v.put("price", price);
+			v.put("valid_until", validUntil);
+			v.put("shop", shop);
+			v.put("created_at", System.currentTimeMillis());
+			return dbHelper.getWritableDatabase().insertWithOnConflict(ShoppingDb.T_OFFER, null, v, SQLiteDatabase.CONFLICT_REPLACE);
+		}, null);
 	}
 
 	/** Merkt die Produktgruppe eines freien Eintrags (null/leer entfernt sie). */
@@ -1325,6 +1381,7 @@ public final class ShoppingRepository {
 			item.stockUnitName = c.getString(c.getColumnIndexOrThrow("g_stock_unit"));
 			item.priceUnitName = c.getString(c.getColumnIndexOrThrow("g_price_unit"));
 			item.lastPrice     = getDouble(c, "g_last_price");
+			item.offerPrice    = getDouble(c, "g_offer_price");
 			item.stock         = getDouble(c, "g_stock");
 			Double days        = getDouble(c, "g_bb_days");
 			item.bestBeforeDays = days == null ? null : (int) Math.round(days);

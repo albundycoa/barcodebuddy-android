@@ -13,6 +13,14 @@ zurückgehen, sonst lässt sich ein Update nicht mehr einspielen. Gepflegt wird 
 `appVersion` in `gradle.properties`. Veröffentlicht wird mit `./publish-apk.sh`: privat auf den Update-Server im Heimnetz, mit `--github` als
 öffentlicher GitHub-Release.
 
+## [0.18.1] – Angebotspreise aus Marktguru
+
+- Teilst du eine Marktguru-Liste und fügst Einträge hinzu, wird der **Angebotspreis** mit übernommen. Die Einkaufsliste zeigt ihn als „1,99 € (Angebot)“ und rechnet
+  Eintrag und **Gesamtwert** damit; er gilt bis zum Ende des Angebots (danach gilt wieder der letzte Einkaufspreis) und nur, solange der Eintrag auf der Liste steht.
+- In **Grocy** steht am Eintrag der Einkaufsliste eine Notiz, z. B. „Angebot 1,99 € bei Lidl bis 31.10.2026“ (bei freien Einträgen im Namen). Scannst du das Produkt
+  oder hakst es ab und sendest den Einkauf, wird es mit dem Angebotspreis eingebucht (dann wird er in Grocy auch zum letzten Preis des Produkts).
+- Uhr-App und Zifferblatt: keine Änderung (nur die gemeinsame Versionsnummer).
+
 ## [0.18.0] – Zur Einkaufsliste teilen (z. B. aus Marktguru)
 
 - Die App erscheint beim **Teilen von Text** als Ziel „Zur Einkaufsliste“. Teilst du in der Marktguru-App deine Einkaufsliste, liest die App Menge, Name, Geschäft und

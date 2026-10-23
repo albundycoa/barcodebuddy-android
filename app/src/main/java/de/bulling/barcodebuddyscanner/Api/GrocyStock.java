@@ -268,19 +268,35 @@ public final class GrocyStock {
 
 	/** Wie {@link #addToShoppingList}, zählt die Menge aber zu einem vorhandenen Eintrag derselben Einheit dazu ("noch eins"). */
 	public static void addMoreToShoppingList(GrocyClient client, long productId, double amount, long quId) throws IOException {
-		putOnShoppingList(client, productId, amount, quId, true);
+		putOnShoppingList(client, productId, amount, quId, true, null);
+	}
+
+	/** Wie oben, dazu eine Notiz am Eintrag (z. B. das Angebot), die Grocy in der Einkaufsliste anzeigt. */
+	public static void addMoreToShoppingList(GrocyClient client, long productId, double amount, long quId, String note) throws IOException {
+		putOnShoppingList(client, productId, amount, quId, true, note);
 	}
 
 	private static void putOnShoppingList(GrocyClient client, long productId, double amount, long quId, boolean add) throws IOException {
+		putOnShoppingList(client, productId, amount, quId, add, null);
+	}
+
+	private static void putOnShoppingList(GrocyClient client, long productId, double amount, long quId, boolean add, String note) throws IOException {
 		JsonElement existing = client.get("objects/shopping_list?query%5B%5D=product_id%3D" + productId
 				+ "&query%5B%5D=shopping_list_id%3D1");
 		ListEntry merge = findMergeable(existing, quId);
 		if (merge != null) {
 			JsonObject body = new JsonObject();
 			body.addProperty("amount", add ? merge.amount + amount : amount);
+			if (note != null) {
+				body.addProperty("note", note);
+			}
 			client.put("objects/shopping_list/" + merge.id, body.toString());
 		} else {
-			client.post("objects/shopping_list", newListEntryBody(productId, amount, quId).toString());
+			JsonObject body = newListEntryBody(productId, amount, quId);
+			if (note != null) {
+				body.addProperty("note", note);
+			}
+			client.post("objects/shopping_list", body.toString());
 		}
 	}
 

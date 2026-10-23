@@ -400,7 +400,7 @@ public class PurchaseSender {
 					double remaining = Math.max(0, entry.stockAmount - entry.scanned);
 					if (remaining > 0) {
 						grocy.post("stock/products/" + entry.productId + "/add",
-								purchaseBody(remaining, entry.lastPrice, entry.bestBeforeDays, entry.shopId).toString());
+								purchaseBody(remaining, entry.pricePerStock(), entry.bestBeforeDays, entry.shopId).toString());
 					}
 					// Gekauft: der Eintrag verschwindet von der Einkaufsliste
 					grocy.delete("objects/shopping_list/" + entry.id);

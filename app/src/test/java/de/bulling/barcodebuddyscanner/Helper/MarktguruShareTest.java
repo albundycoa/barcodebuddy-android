@@ -35,6 +35,16 @@ public class MarktguruShareTest {
 	}
 
 	@Test
+	public void offerValues() {
+		Item item = MarktguruShare.parse(TEXT).get(2);
+		assertEquals(1.79, item.priceValue(), 0.0001);
+		assertEquals("2026-10-31", item.validUntil());
+		Item noDates = MarktguruShare.parse("Kopf - 1x Butter Link: https://x.de/1").get(0);
+		assertNull(noDates.priceValue());
+		assertNull(noDates.validUntil());
+	}
+
+	@Test
 	public void lineBreaksDoNotMatter() {
 		String oneLine = TEXT.replace("\n", " ");
 		assertEquals(3, MarktguruShare.parse(oneLine).size());
