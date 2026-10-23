@@ -107,6 +107,8 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
     /** Die Einkaufsliste, die gerade angezeigt wird (0 = Hauptliste); beim Start immer die Hauptliste */
     private long viewListId = 0;
     private final java.util.List<ShoppingRepository.Option> shoppingLists = new java.util.ArrayList<>();
+    /** Offene Einträge je Einkaufsliste für die Zahl am Chip */
+    private final java.util.Map<Long, Integer> listCounts = new java.util.HashMap<>();
     private TextView emptyView;
     private TextView btHint;
     private View setupHint;
@@ -445,11 +447,18 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
             adapter.submit(list);
             updateListState();
         });
-        repo.getOptions("lists", lists -> {
+        repo.getOptions("lists", lists -> repo.getAllShoppingEntries(all -> {
             shoppingLists.clear();
             shoppingLists.addAll(lists);
+            listCounts.clear();
+            for (ShoppingEntry e : all.entries) {
+                if (!e.isDone()) {
+                    Integer n = listCounts.get(e.listId);
+                    listCounts.put(e.listId, n == null ? 1 : n + 1);
+                }
+            }
             rebuildListChips();
-        });
+        }));
         repo.getShoppingList(currentListId(), data -> {
             shoppingData = data;
             entryAdapter.submit(data);
@@ -730,7 +739,8 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
                     .inflate(R.layout.item_list_chip, group, false);
             chip.setId(View.generateViewId());
             chip.setTag(option.id);
-            chip.setText(option.id == main ? option.name + " ★" : option.name);
+            Integer open = listCounts.get(option.id);
+            chip.setText(option.name + (option.id == main ? " ★" : "") + " (" + (open == null ? 0 : open) + ")");
             chip.setChecked(option.id == current);
             chip.setOnLongClickListener(v -> {
                 confirmMainList(option);
