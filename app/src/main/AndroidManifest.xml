@@ -76,6 +76,19 @@
             android:name=".ScannerService"
             android:exported="false"
             android:foregroundServiceType="connectedDevice" />
+        <!-- Teilen-Ziel: Texte (z. B. die Einkaufsliste der Marktguru-App) auf die Einkaufsliste übernehmen -->
+        <activity
+            android:name=".ShareImportActivity"
+            android:exported="true"
+            android:label="@string/share_import_label"
+            android:screenOrientation="portrait"
+            android:theme="@style/AppTheme.NoActionBar">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+        </activity>
         <activity
             android:name=".SettingsActivity"
             android:screenOrientation="portrait"

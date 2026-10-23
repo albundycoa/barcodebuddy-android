@@ -674,4 +674,20 @@ Die App zählt mit und vergleicht am Ende mit Grocy.</string>
     <string name="hint_setup_dismiss">Ausblenden</string>
     <string name="send_warn_no_bb">%1$d Stück sind in Grocy unbekannt und bleiben in der Liste: Barcode Buddy ist nicht verbunden.</string>
     <string name="send_err_no_bb">Barcode Buddy ist nicht verbunden. Die Artikel bleiben in der Liste.</string>
+    <string name="share_import_label">Zur Einkaufsliste</string>
+    <string name="share_import_title">Zur Einkaufsliste hinzufügen</string>
+    <string name="share_import_hint">%1$d Einträge erkannt. Nimm den Haken weg, was nicht auf die Liste soll. Ein Tipp auf die blaue Zeile wechselt zwischen dem vorgeschlagenen Grocy-Produkt und einem freien Eintrag oder lässt dich ein anderes Produkt suchen.</string>
+    <string name="share_import_group_hint">Produktgruppe für freie Einträge</string>
+    <string name="share_import_add">Zur Einkaufsliste hinzufügen</string>
+    <string name="share_import_add_count">%1$d zur Einkaufsliste hinzufügen</string>
+    <string name="share_import_empty">Im geteilten Text habe ich nichts gefunden, was auf die Einkaufsliste passt.</string>
+    <string name="share_import_free">Freier Eintrag</string>
+    <string name="share_import_product">Grocy-Produkt: %1$s</string>
+    <string name="share_import_pick">Anderes Produkt wählen …</string>
+    <string name="share_import_pick_title">Produkt wählen</string>
+    <string name="share_import_search_hint">Produkt suchen</string>
+    <string name="share_import_detail">%1$d× · %2$s</string>
+    <string name="share_import_done">%1$d Einträge zur Einkaufsliste hinzugefügt</string>
+    <string name="share_import_partly">%1$d von %2$d hinzugefügt. Nicht geklappt: %3$s</string>
+    <string name="share_import_none_selected">Kein Eintrag ausgewählt</string>
 </resources>

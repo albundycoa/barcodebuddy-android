@@ -13,6 +13,15 @@ zurückgehen, sonst lässt sich ein Update nicht mehr einspielen. Gepflegt wird 
 `appVersion` in `gradle.properties`. Veröffentlicht wird mit `./publish-apk.sh`: privat auf den Update-Server im Heimnetz, mit `--github` als
 öffentlicher GitHub-Release.
 
+## [0.18.0] – Zur Einkaufsliste teilen (z. B. aus Marktguru)
+
+- Die App erscheint beim **Teilen von Text** als Ziel „Zur Einkaufsliste“. Teilst du in der Marktguru-App deine Einkaufsliste, liest die App Menge, Name, Geschäft und
+  Gültigkeit der Angebote aus. Eine Maske zeigt alle Einträge mit Häkchen; zu jedem schlägt sie ein passendes Grocy-Produkt vor, sonst wird es ein **freier Eintrag**
+  (mit einer Produktgruppe für alle freien Einträge, damit sie richtig einsortiert werden). Ein Tipp auf die blaue Zeile wechselt die Zuordnung (Vorschlag, freier
+  Eintrag oder ein anderes Produkt suchen). Mit „Hinzufügen“ kommen alle angehakten auf die Einkaufsliste in Grocy, auf dem Handy wie auf der Uhr.
+- Anderer Text (z. B. eine Notiz mit einer Einkaufsliste) funktioniert auch: jede Zeile wird ein Eintrag.
+- Uhr-App und Zifferblatt: keine Änderung (nur die gemeinsame Versionsnummer).
+
 ## [0.17.1] – Bestand: Sortierung merken, Abmelden bei beiden Servern
 
 - **Bestand**: Die gewählte Sortierung (Name, Wert, Ablauf) bleibt jetzt gespeichert. Außerdem zeigte das Menü immer „nach Ablauf“ als gewählt an, obwohl die
