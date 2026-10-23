@@ -263,7 +263,8 @@ public class ShoppingEntryAdapter extends RecyclerView.Adapter<RecyclerView.View
 	}
 
 	private static String trim(double value) {
-		return value == Math.rint(value) ? String.valueOf((long) value) : String.valueOf(value).replace('.', ',');
+		// Mengen wie 1/6 Pack (0,1666…) auf drei Stellen runden
+		return de.bulling.barcodebuddyscanner.Helper.InventorySession.format(value);
 	}
 
 	static class HeaderHolder extends RecyclerView.ViewHolder {

@@ -143,7 +143,7 @@ public final class WearSync {
 	}
 
 	private static String amountText(ShoppingRepository.ShoppingEntry e) {
-		String amount = e.amount == Math.rint(e.amount) ? String.valueOf((long) e.amount) : String.valueOf(e.amount).replace('.', ',');
+		String amount = de.bulling.barcodebuddyscanner.Helper.InventorySession.format(e.amount);
 		return e.unit != null ? amount + " " + e.unit : amount;
 	}
 }

@@ -13,6 +13,11 @@ zurückgehen, sonst lässt sich ein Update nicht mehr einspielen. Gepflegt wird 
 `appVersion` in `gradle.properties`. Veröffentlicht wird mit `./publish-apk.sh`: privat auf den Update-Server im Heimnetz, mit `--github` als
 öffentlicher GitHub-Release.
 
+## [0.19.2] – Mengenanzeige gerundet
+
+- Mengen wie „⅙ Pack“ stehen jetzt auf drei Stellen gerundet („0,167 Pack“ statt „0,16666666666666666 Pack“), auf dem Handy wie auf der Uhr.
+- Uhr-App und Zifferblatt: keine weitere Änderung (nur die gemeinsame Versionsnummer).
+
 ## [0.19.1] – Mengen der Einkaufsliste wie in Grocy
 
 - Fehler behoben: Grocy speichert die Menge eines Eintrags der Einkaufsliste in der **Lagereinheit** des Produkts, die Einheit am Eintrag (z. B. Pack) ist nur die Anzeige.
