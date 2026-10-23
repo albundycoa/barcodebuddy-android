@@ -630,6 +630,18 @@ public final class ShoppingRepository {
 				db.delete(ShoppingDb.T_UNITS, null, null);
 				db.delete(ShoppingDb.T_GROUPS, null, null);
 				db.delete(ShoppingDb.T_LOCATIONS, null, null);
+				db.delete(ShoppingDb.T_LISTS, null, null);
+				long firstList = 0;
+				for (ContentValues v : data.lists) {
+					db.insertWithOnConflict(ShoppingDb.T_LISTS, null, v, SQLiteDatabase.CONFLICT_REPLACE);
+					long id = v.getAsLong("id");
+					if (firstList == 0 || id < firstList) {
+						firstList = id;
+					}
+				}
+				if (firstList > 0) {
+					SharedPrefHelper.setShoppingFirstList(appContext, firstList);
+				}
 				for (ContentValues v : data.locations) {
 					db.insertWithOnConflict(ShoppingDb.T_LOCATIONS, null, v, SQLiteDatabase.CONFLICT_REPLACE);
 				}
@@ -674,7 +686,7 @@ public final class ShoppingRepository {
 			db.beginTransaction();
 			try {
 				for (String table : new String[]{ShoppingDb.T_SHOPS, ShoppingDb.T_PRODUCTS, ShoppingDb.T_BARCODES,
-						ShoppingDb.T_LASTPRICE, ShoppingDb.T_STOCK, ShoppingDb.T_SHOPPING, ShoppingDb.T_UNITS, ShoppingDb.T_GROUPS, ShoppingDb.T_LOCATIONS}) {
+						ShoppingDb.T_LASTPRICE, ShoppingDb.T_STOCK, ShoppingDb.T_SHOPPING, ShoppingDb.T_UNITS, ShoppingDb.T_GROUPS, ShoppingDb.T_LOCATIONS, ShoppingDb.T_LISTS}) {
 					db.delete(table, null, null);
 				}
 				db.setTransactionSuccessful();
@@ -733,12 +745,14 @@ public final class ShoppingRepository {
 			case "locations": table = ShoppingDb.T_LOCATIONS; break;
 			case "shops":     table = ShoppingDb.T_SHOPS; break;
 			case "groups":    table = ShoppingDb.T_GROUPS; break;
+			case "lists":     table = ShoppingDb.T_LISTS; break;
 			default:          table = ShoppingDb.T_UNITS; break;
 		}
+		final String order = "lists".equals(kind) ? "id" : "name COLLATE NOCASE";
 		read(() -> {
 			List<Option> options = new ArrayList<>();
 			try (Cursor c = dbHelper.getReadableDatabase().query(table, new String[]{"id", "name"}, null, null,
-					null, null, "name COLLATE NOCASE")) {
+					null, null, order)) {
 				while (c.moveToNext()) {
 					options.add(new Option(c.getLong(0), c.getString(1)));
 				}
@@ -825,6 +839,8 @@ public final class ShoppingRepository {
 	public static final class ShoppingEntry {
 		public long    id;
 		public Long    productId;
+		/** Nummer der Einkaufsliste in Grocy */
+		public long    listId = 1;
 		public String  name;        // Produktname oder Notiz
 		public boolean isNote;      // Eintrag ohne Produkt
 		public double  amount;      // Menge in der Einheit des Eintrags
@@ -983,14 +999,41 @@ public final class ShoppingRepository {
 				+ ") AND created_at < ?", new Object[]{System.currentTimeMillis() - 10 * 60 * 1000L});
 	}
 
-	/** Die Einkaufsliste mit Produktdaten und der Menge, die schon gescannt wurde. */
+	/** Die Einkaufsliste (Hauptliste) mit Produktdaten und der Menge, die schon gescannt wurde. */
 	public void getShoppingList(Callback<ShoppingData> callback) {
-		read(() -> {
+		getShoppingList(SharedPrefHelper.getShoppingMainList(appContext), callback);
+	}
+
+	/** Die Einkaufsliste mit der Nummer listId. Gescannte Mengen zählen nur bei der Hauptliste. */
+	public void getShoppingList(final long listId, Callback<ShoppingData> callback) {
+		final long mainList = SharedPrefHelper.getShoppingMainList(appContext);
+		read(() -> queryShopping(listId, mainList), callback);
+	}
+
+	/** Die Einträge aller Einkaufslisten, zum Übertragen von Haken und Mengen an Grocy. */
+	public void getAllShoppingEntries(Callback<ShoppingData> callback) {
+		final long mainList = SharedPrefHelper.getShoppingMainList(appContext);
+		read(() -> queryShopping(0, mainList), callback);
+	}
+
+	/** Verschiebt einen Eintrag in der lokalen Kopie auf eine andere Liste, damit die Anzeige sofort stimmt. */
+	public void setShoppingEntryList(final long entryId, final long listId) {
+		write(() -> {
+			ContentValues v = new ContentValues();
+			v.put("list_id", listId);
+			return dbHelper.getWritableDatabase().update(ShoppingDb.T_SHOPPING, v, "id = ?", new String[]{String.valueOf(entryId)});
+		}, null);
+	}
+
+	/** listId 0 = alle Listen. */
+	private ShoppingData queryShopping(long listId, long mainList) {
+		{
 			SQLiteDatabase db = dbHelper.getReadableDatabase();
 			String sql = "SELECT e.id, e.product_id, e.note, e.amount, e.stock_amount, e.done, e.manual, e.manual_amount, e.qu_id, "
 					+ "u.name AS unit, p.name AS pname, COALESCE(p.group_name, ng.group_name) AS group_name, p.shop_id, p.stock_unit, p.best_before_days, "
-					+ "s.name AS shop, lp.price AS last_price, COALESCE(sc.scanned, 0) AS scanned, "
-					+ "so.price AS offer_price, so.shop AS offer_shop "
+					+ "s.name AS shop, lp.price AS last_price, "
+					+ "CASE WHEN COALESCE(e.list_id, 1) = " + mainList + " THEN COALESCE(sc.scanned, 0) ELSE 0 END AS scanned, "
+					+ "COALESCE(e.list_id, 1) AS list_id, so.price AS offer_price, so.shop AS offer_shop "
 					+ "FROM g_shopping e "
 					+ "LEFT JOIN shopping_offer so ON so.entry_key = CASE WHEN e.product_id IS NULL THEN 'n' || e.id ELSE 'p' || e.product_id END "
 					+ "AND (so.valid_until IS NULL OR so.valid_until >= date('now', 'localtime')) "
@@ -1002,12 +1045,14 @@ public final class ShoppingRepository {
 					+ "LEFT JOIN (SELECT b.product_id AS pid, SUM(i.quantity * b.stock_per_scan) AS scanned "
 					+ "FROM items i JOIN g_barcodes b ON b.barcode = i.barcode WHERE i.trip_id = 0 "
 					+ "GROUP BY b.product_id) sc ON sc.pid = e.product_id "
+					+ (listId > 0 ? "WHERE COALESCE(e.list_id, 1) = " + listId + " " : "")
 					+ "ORDER BY e.id";
 			List<ShoppingEntry> entries = new ArrayList<>();
 			try (Cursor c = db.rawQuery(sql, null)) {
 				while (c.moveToNext()) {
 					ShoppingEntry e = new ShoppingEntry();
 					e.id = c.getLong(c.getColumnIndexOrThrow("id"));
+					e.listId = c.getLong(c.getColumnIndexOrThrow("list_id"));
 					int productCol = c.getColumnIndexOrThrow("product_id");
 					e.productId = c.isNull(productCol) ? null : c.getLong(productCol);
 					String pname = c.getString(c.getColumnIndexOrThrow("pname"));
@@ -1044,7 +1089,7 @@ public final class ShoppingRepository {
 				}
 			}
 			return new ShoppingData(entries, readShopPositions(db), readGroupPositions(db));
-		}, callback);
+		}
 	}
 
 	/**

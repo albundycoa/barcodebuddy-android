@@ -66,7 +66,7 @@ final class AddToList {
 		}
 	}
 
-	static void show(final Activity activity, final ShoppingRepository repo, final List<ShoppingEntry> onList) {
+	static void show(final Activity activity, final ShoppingRepository repo, final List<ShoppingEntry> onList, final long listId) {
 		if (new SharedPrefHelper(activity).initGrocyClient() == null) {
 			Toast.makeText(activity, R.string.product_no_grocy, Toast.LENGTH_LONG).show();
 			return;
@@ -76,12 +76,12 @@ final class AddToList {
 			for (Option option : units) {
 				unitNames.put(option.id, option.name);
 			}
-			open(activity, repo, products, unitNames, onList);
+			open(activity, repo, products, unitNames, onList, listId);
 		}));
 	}
 
 	private static void open(final Activity activity, final ShoppingRepository repo, final List<ProductRow> products,
-							 final Map<Long, String> unitNames, final List<ShoppingEntry> onList) {
+							 final Map<Long, String> unitNames, final List<ShoppingEntry> onList, final long listId) {
 		final Map<Long, ProductRow> byId = new HashMap<>();
 		final List<ProductSearch.Item> items = new ArrayList<>();
 		for (ProductRow p : products) {
@@ -131,7 +131,7 @@ final class AddToList {
 					sub.setText(R.string.add_list_free_sub);
 					holder.itemView.setOnClickListener(v -> {
 						sheet.dismiss();
-						showFreeEntry(activity, repo, query[0].trim());
+						showFreeEntry(activity, repo, query[0].trim(), listId);
 					});
 					return;
 				}
@@ -158,7 +158,7 @@ final class AddToList {
 				sub.setVisibility(detail.length() == 0 ? View.GONE : View.VISIBLE);
 				holder.itemView.setOnClickListener(v -> {
 					sheet.dismiss();
-					chooseAmount(activity, repo, row.product, unitNames, existingRows(listed.get(row.product.id)));
+					chooseAmount(activity, repo, row.product, unitNames, existingRows(listed.get(row.product.id)), listId);
 				});
 			}
 
@@ -205,7 +205,7 @@ final class AddToList {
 
 	/** Lädt Einheiten des Produkts aus Grocy und zeigt dann die Mengenmaske. */
 	private static void chooseAmount(final Activity activity, final ShoppingRepository repo, final ProductRow product,
-									 final Map<Long, String> unitNames, final List<StockOverview.ListRow> existing) {
+									 final Map<Long, String> unitNames, final List<StockOverview.ListRow> existing, final long listId) {
 		final GrocyClient grocy = new SharedPrefHelper(activity).initGrocyClient();
 		if (grocy == null) {
 			return;
@@ -230,7 +230,7 @@ final class AddToList {
 							public void onSave(double amount, long quId, String unitName) {
 								final String done = activity.getString(R.string.stock_list_done, product.name,
 										(InventorySession.format(amount) + " " + unitName).trim());
-								ShoppingEdit.addProduct(activity, product.id, amount, quId, error -> report(activity, error, done));
+								ShoppingEdit.addProduct(activity, product.id, amount, quId, listId, error -> report(activity, error, done));
 							}
 
 							@Override
@@ -244,7 +244,7 @@ final class AddToList {
 	}
 
 	/** Dialog für einen freien Eintrag: Name, Menge und (zum Sortieren) die Produktgruppe. */
-	static void showFreeEntry(final Activity activity, final ShoppingRepository repo, String presetName) {
+	static void showFreeEntry(final Activity activity, final ShoppingRepository repo, String presetName, final long listId) {
 		final View view = activity.getLayoutInflater().inflate(R.layout.dialog_free_entry, null);
 		final TextInputLayout nameLayout = view.findViewById(R.id.free_name_layout);
 		final TextInputEditText name = view.findViewById(R.id.free_name);
@@ -286,7 +286,7 @@ final class AddToList {
 			final String groupName = chosen.equals(none) || chosen.isEmpty() ? null : chosen;
 			dialog.dismiss();
 			final String done = activity.getString(R.string.free_done, text);
-			ShoppingEdit.addNote(activity, text, count, groupName, error -> report(activity, error, done));
+			ShoppingEdit.addNote(activity, text, count, groupName, null, listId, error -> report(activity, error, done));
 		}));
 		dialog.show();
 		name.requestFocus();

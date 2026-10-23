@@ -202,7 +202,7 @@ public class StockOverviewActivity extends AppCompatActivity {
 			GROCY_IO.execute(() -> {
 			List<Entry> entries = null;
 			try {
-				entries = StockOverviewLoader.load(grocy, cached, names);
+				entries = StockOverviewLoader.load(grocy, cached, names, SharedPrefHelper.getShoppingMainList(this));
 			} catch (IOException ignored) {
 				// unten gemeldet
 			}
@@ -285,10 +285,11 @@ public class StockOverviewActivity extends AppCompatActivity {
 				(InventorySession.format(amount) + " " + unitName).trim());
 		GROCY_IO.execute(() -> {
 			try {
+				long listId = SharedPrefHelper.getShoppingMainList(this);
 				if (quId > 0) {
-					GrocyStock.addToShoppingList(grocy, productId, amount, quId);
+					GrocyStock.addToShoppingList(grocy, productId, amount, quId, listId);
 				} else {
-					GrocyStock.addToShoppingList(grocy, productId, amount);
+					GrocyStock.addProductToList(grocy, productId, amount, listId);
 				}
 				main.post(() -> {
 					Snackbar.make(findViewById(R.id.list), done, Snackbar.LENGTH_LONG).setAnchorView(nav).show();

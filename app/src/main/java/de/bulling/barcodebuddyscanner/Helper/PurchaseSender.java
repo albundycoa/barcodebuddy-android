@@ -97,6 +97,7 @@ public class PurchaseSender {
 	private final List<Job>           bbJobs     = new ArrayList<>();
 	private final List<ShoppingEntry> manualJobs = new ArrayList<>();
 	private final String              manualMode;
+	private final long                listId;
 	private int                       manualIndex;
 	/** Stück, die nur über Barcode Buddy gebucht werden könnten, aber Barcode Buddy ist nicht gekoppelt */
 	private int                       skippedNoBb;
@@ -124,10 +125,11 @@ public class PurchaseSender {
 	 * @param manualMode was mit von Hand abgehakten Einträgen der Einkaufsliste beim Senden geschieht: {@link #MANUAL_BOOK},
 	 *                   {@link #MANUAL_MARK} oder {@link #MANUAL_REMOVE}
 	 */
-	public PurchaseSender(BBApi api, GrocyClient grocy, String manualMode, ShoppingRepository repo) {
+	public PurchaseSender(BBApi api, GrocyClient grocy, String manualMode, ShoppingRepository repo, long listId) {
 		this.api        = api;
 		this.grocy      = grocy;
 		this.manualMode = manualMode;
+		this.listId     = listId;
 		this.repo       = repo;
 	}
 
@@ -319,6 +321,7 @@ public class PurchaseSender {
 		JsonObject body = new JsonObject();
 		body.addProperty("product_id", productId);
 		body.addProperty("product_amount", amount);
+		body.addProperty("list_id", listId);
 		try {
 			grocy.post("stock/shoppinglist/remove-product", body.toString());
 		} catch (IOException ignored) {

@@ -13,6 +13,15 @@ zurückgehen, sonst lässt sich ein Update nicht mehr einspielen. Gepflegt wird 
 `appVersion` in `gradle.properties`. Veröffentlicht wird mit `./publish-apk.sh`: privat auf den Update-Server im Heimnetz, mit `--github` als
 öffentlicher GitHub-Release.
 
+## [0.19.0] – Mehrere Einkaufslisten
+
+- Hat Grocy **mehrere Einkaufslisten** (z. B. „Einkaufszettel“ und „Für später“), zeigt die Einkaufsliste oben für jede einen Chip zum Umschalten. Die **Hauptliste** (zuerst die
+  erste Liste in Grocy, mit ★ markiert) erscheint beim Start. Lange auf einen Chip drücken macht eine andere Liste zur Hauptliste.
+- Jeder Eintrag hat einen Knopf zum **Verschieben** auf eine andere Liste. Steht dasselbe Produkt dort schon, werden die Mengen zusammengezählt.
+- Hinzufügen (Produktsuche, freie Einträge) und Löschen wirken auf die gerade angezeigte Liste. Gescannte Artikel, die Uhr, der Bestand („Auf der Liste“) und das
+  Abziehen beim Einkauf arbeiten mit der Hauptliste; gescannte Mengen haken nur Einträge der Hauptliste ab. Haken und Mengen anderer Listen werden ebenfalls an Grocy übertragen.
+- Uhr-App und Zifferblatt: keine Änderung (sie zeigen die Hauptliste).
+
 ## [0.18.1] – Angebotspreise aus Marktguru
 
 - Teilst du eine Marktguru-Liste und fügst Einträge hinzu, wird der **Angebotspreis** mit übernommen. Die Einkaufsliste zeigt ihn als „1,99 € (Angebot)“ und rechnet

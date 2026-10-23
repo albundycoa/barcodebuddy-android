@@ -66,6 +66,29 @@ public class SharedPrefHelper {
 		preferences.apply();
 	}
 
+	/**
+	 * Hauptliste der Grocy-Einkaufslisten: die vom Nutzer gewählte, sonst die erste (kleinste Nummer) aus der letzten Synchronisierung,
+	 * sonst 1. Scans, Uhr und Bestand arbeiten mit dieser Liste.
+	 */
+	public static long getShoppingMainList(Context context) {
+		SharedPreferences p = PreferenceManager.getDefaultSharedPreferences(context);
+		long chosen = p.getLong("shopping_main_list", 0);
+		if (chosen > 0) {
+			return chosen;
+		}
+		long first = p.getLong("shopping_first_list", 0);
+		return first > 0 ? first : 1;
+	}
+
+	public static void setShoppingMainList(Context context, long listId) {
+		PreferenceManager.getDefaultSharedPreferences(context).edit().putLong("shopping_main_list", listId).apply();
+	}
+
+	/** Wird bei der Synchronisierung gesetzt: die Liste mit der kleinsten Nummer. */
+	public static void setShoppingFirstList(Context context, long listId) {
+		PreferenceManager.getDefaultSharedPreferences(context).edit().putLong("shopping_first_list", listId).apply();
+	}
+
 	/** Zuletzt gewählte Sortierung der Bestandsseite ("NAME", "VALUE" oder "DUE"), Standard Name. */
 	public static String getStockSort(Context context) {
 		return PreferenceManager.getDefaultSharedPreferences(context).getString("stock_sort", "NAME");

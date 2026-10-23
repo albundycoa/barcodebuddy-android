@@ -7,7 +7,7 @@ import android.database.sqlite.SQLiteOpenHelper;
 class ShoppingDb extends SQLiteOpenHelper {
 
 	private static final String DB_NAME    = "shopping.db";
-	private static final int    DB_VERSION = 16;
+	private static final int    DB_VERSION = 17;
 
 	static final String T_ITEMS      = "items";
 	static final String T_TRIPS      = "trips";
@@ -19,6 +19,8 @@ class ShoppingDb extends SQLiteOpenHelper {
 	static final String T_STOCK      = "g_stock";
 	static final String T_SHOPPING   = "g_shopping";
 	static final String T_UNITS      = "g_units";
+	/** Einkaufslisten aus Grocy (Nummer, Name) */
+	static final String T_LISTS      = "g_lists";
 	static final String T_GROUPS      = "g_groups";
 	static final String T_LOCATIONS   = "g_locations";
 	static final String T_GROUP_ORDER = "group_order";
@@ -63,6 +65,7 @@ class ShoppingDb extends SQLiteOpenHelper {
 		createNoteGroupTable(db);
 		createScanDoneTable(db);
 		createOfferTable(db);
+		createListsTable(db);
 	}
 
 	@Override
@@ -97,6 +100,9 @@ class ShoppingDb extends SQLiteOpenHelper {
 		if (oldVersion >= 5 && oldVersion < 10) {
 			// Von Hand geänderte Menge eines Eintrags der Einkaufsliste, bis Grocy sie übernommen hat
 			db.execSQL("ALTER TABLE " + T_SHOPPING + " ADD COLUMN manual_amount REAL");
+		}
+		if (oldVersion < 17) {
+			createListsTable(db);
 		}
 		if (oldVersion < 16) {
 			createOfferTable(db);
@@ -146,6 +152,10 @@ class ShoppingDb extends SQLiteOpenHelper {
 				+ "valid_until TEXT, "
 				+ "shop TEXT, "
 				+ "created_at INTEGER NOT NULL)");
+	}
+
+	private static void createListsTable(SQLiteDatabase db) {
+		db.execSQL("CREATE TABLE IF NOT EXISTS " + T_LISTS + " (id INTEGER PRIMARY KEY, name TEXT NOT NULL)");
 	}
 
 	private static void createScanDoneTable(SQLiteDatabase db) {

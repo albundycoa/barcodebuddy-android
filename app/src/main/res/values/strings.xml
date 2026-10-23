@@ -677,7 +677,7 @@ Die App zählt mit und vergleicht am Ende mit Grocy.</string>
     <string name="send_err_no_bb">Barcode Buddy ist nicht verbunden. Die Artikel bleiben in der Liste.</string>
     <string name="share_import_label">Zur Einkaufsliste</string>
     <string name="share_import_title">Zur Einkaufsliste hinzufügen</string>
-    <string name="share_import_hint">%1$d Einträge erkannt. Nimm den Haken weg, was nicht auf die Liste soll. Ein Tipp auf die blaue Zeile wechselt zwischen dem vorgeschlagenen Grocy-Produkt und einem freien Eintrag oder lässt dich ein anderes Produkt suchen.</string>
+    <string name="share_import_hint">Erkannte Einträge: %1$d. Nimm den Haken weg, was nicht auf die Liste soll. Ein Tipp auf die blaue Zeile wechselt zwischen dem vorgeschlagenen Grocy-Produkt und einem freien Eintrag oder lässt dich ein anderes Produkt suchen.</string>
     <string name="share_import_group_hint">Produktgruppe für freie Einträge</string>
     <string name="share_import_add">Zur Einkaufsliste hinzufügen</string>
     <string name="share_import_add_count">%1$d zur Einkaufsliste hinzufügen</string>
@@ -691,4 +691,11 @@ Die App zählt mit und vergleicht am Ende mit Grocy.</string>
     <string name="share_import_done">%1$d Einträge zur Einkaufsliste hinzugefügt</string>
     <string name="share_import_partly">%1$d von %2$d hinzugefügt. Nicht geklappt: %3$s</string>
     <string name="share_import_none_selected">Kein Eintrag ausgewählt</string>
+    <string name="shopping_move_desc">Auf eine andere Einkaufsliste schieben</string>
+    <string name="shopping_move_title">Auf welche Liste?</string>
+    <string name="shopping_moved">„%1$s“ nach „%2$s“ verschoben</string>
+    <string name="shopping_list_main_title">Hauptliste</string>
+    <string name="shopping_list_main_message">„%1$s“ als Hauptliste festlegen? Scans, Uhr und Bestand arbeiten mit der Hauptliste, die App zeigt sie beim Start.</string>
+    <string name="shopping_list_main_yes">Festlegen</string>
+    <string name="shopping_list_main_done">„%1$s“ ist jetzt die Hauptliste</string>
 </resources>

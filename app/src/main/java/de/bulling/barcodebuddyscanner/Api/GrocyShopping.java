@@ -18,13 +18,20 @@ public final class GrocyShopping {
 	private GrocyShopping() {
 	}
 
-	/** Nachricht für einen freien Eintrag: Notiz und Menge, ohne Produkt, auf der Standardliste. */
-	static JsonObject noteBody(String note, double amount) {
+	/** Nachricht für einen freien Eintrag: Notiz und Menge, ohne Produkt, auf der Einkaufsliste mit der Nummer listId. */
+	static JsonObject noteBody(String note, double amount, long listId) {
 		JsonObject body = new JsonObject();
 		body.addProperty("note", note);
 		body.addProperty("amount", amount);
-		body.addProperty("shopping_list_id", 1);
+		body.addProperty("shopping_list_id", listId);
 		return body;
+	}
+
+	/** Schiebt einen Eintrag auf eine andere Einkaufsliste. */
+	public static void moveEntry(GrocyClient client, long entryId, long listId) throws IOException {
+		JsonObject body = new JsonObject();
+		body.addProperty("shopping_list_id", listId);
+		client.put("objects/shopping_list/" + entryId, body.toString());
 	}
 
 	/** Nummer des neu angelegten Eintrags aus Grocys Antwort ({"created_object_id": 12}); -1, wenn sie fehlt. */
@@ -37,8 +44,8 @@ public final class GrocyShopping {
 	}
 
 	/** Legt einen freien Eintrag an und liefert seine Nummer in Grocy. */
-	public static long addNote(GrocyClient client, String note, double amount) throws IOException {
-		long id = createdId(client.post("objects/shopping_list", noteBody(note, amount).toString()));
+	public static long addNote(GrocyClient client, String note, double amount, long listId) throws IOException {
+		long id = createdId(client.post("objects/shopping_list", noteBody(note, amount, listId).toString()));
 		if (id < 0) {
 			throw new IOException(Texts.get(R.string.err_grocy_no_id));
 		}

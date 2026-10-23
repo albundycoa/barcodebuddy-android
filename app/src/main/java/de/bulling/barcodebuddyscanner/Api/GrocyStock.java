@@ -167,11 +167,11 @@ public final class GrocyStock {
 		return result;
 	}
 
-	/** Setzt das Produkt mit der Menge (in Lagereinheiten) auf die Einkaufsliste. */
-	public static void addToShoppingList(GrocyClient client, long productId, double amount) throws IOException {
+	/** Setzt das Produkt mit der Menge (in Lagereinheiten) auf die Einkaufsliste mit der Nummer listId. */
+	public static void addProductToList(GrocyClient client, long productId, double amount, long listId) throws IOException {
 		JsonObject body = new JsonObject();
 		body.addProperty("product_id", productId);
-		body.addProperty("list_id", 1);
+		body.addProperty("list_id", listId);
 		body.addProperty("product_amount", amount);
 		client.post("stock/shoppinglist/add-product", body.toString());
 	}
@@ -207,20 +207,20 @@ public final class GrocyStock {
 		return null;
 	}
 
-	static JsonObject newListEntryBody(long productId, double amount, long quId) {
+	static JsonObject newListEntryBody(long productId, double amount, long quId, long listId) {
 		JsonObject body = new JsonObject();
 		body.addProperty("product_id", productId);
 		body.addProperty("amount", amount);
 		body.addProperty("qu_id", quId);
-		body.addProperty("shopping_list_id", 1);
+		body.addProperty("shopping_list_id", listId);
 		return body;
 	}
 
 	/**
-	 * Offene Einträge der Standardeinkaufsliste je Produktnummer (erledigte zählen nicht). Einheitennamen kommen aus
+	 * Offene Einträge der Einkaufsliste mit der Nummer listId je Produktnummer (erledigte zählen nicht). Einheitennamen kommen aus
 	 * {@code unitNames}, fehlende bleiben leer.
 	 */
-	static Map<Long, List<StockOverview.ListRow>> parseShoppingRows(JsonElement rows, Map<Long, String> unitNames) {
+	static Map<Long, List<StockOverview.ListRow>> parseShoppingRows(JsonElement rows, Map<Long, String> unitNames, long listId) {
 		Map<Long, List<StockOverview.ListRow>> result = new HashMap<>();
 		if (rows == null || !rows.isJsonArray()) {
 			return result;
@@ -230,8 +230,11 @@ public final class GrocyStock {
 				continue;
 			}
 			JsonObject o = e.getAsJsonObject();
-			long listId = o.has("shopping_list_id") ? (long) number(o, "shopping_list_id") : 1;
-			if (!o.has("id") || !o.has("product_id") || number(o, "done") != 0 || (listId != 1 && listId != 0)) {
+			long entryList = o.has("shopping_list_id") ? (long) number(o, "shopping_list_id") : 1;
+			if (entryList == 0) {
+				entryList = 1;
+			}
+			if (!o.has("id") || !o.has("product_id") || number(o, "done") != 0 || entryList != listId) {
 				continue;
 			}
 			long product = (long) number(o, "product_id");
@@ -247,9 +250,9 @@ public final class GrocyStock {
 	}
 
 	/** Lädt die offenen Einträge der Einkaufsliste live aus Grocy. */
-	public static Map<Long, List<StockOverview.ListRow>> loadShoppingRows(GrocyClient client, Map<Long, String> unitNames)
+	public static Map<Long, List<StockOverview.ListRow>> loadShoppingRows(GrocyClient client, Map<Long, String> unitNames, long listId)
 			throws IOException {
-		return parseShoppingRows(client.get("objects/shopping_list"), unitNames);
+		return parseShoppingRows(client.get("objects/shopping_list"), unitNames, listId);
 	}
 
 	/** Entfernt einen Eintrag von der Einkaufsliste. */
@@ -262,27 +265,48 @@ public final class GrocyStock {
 	 * Die Menge steht in der gewählten Einheit. Gibt es schon einen Eintrag mit derselben Einheit, wird seine Menge auf den
 	 * neuen Wert gesetzt (nicht addiert, die Maske zeigt ja die bisherige Menge), sonst entsteht ein neuer Eintrag.
 	 */
-	public static void addToShoppingList(GrocyClient client, long productId, double amount, long quId) throws IOException {
-		putOnShoppingList(client, productId, amount, quId, false);
+	public static void addToShoppingList(GrocyClient client, long productId, double amount, long quId, long listId) throws IOException {
+		putOnShoppingList(client, productId, amount, quId, false, null, listId);
 	}
 
 	/** Wie {@link #addToShoppingList}, zählt die Menge aber zu einem vorhandenen Eintrag derselben Einheit dazu ("noch eins"). */
-	public static void addMoreToShoppingList(GrocyClient client, long productId, double amount, long quId) throws IOException {
-		putOnShoppingList(client, productId, amount, quId, true, null);
+	public static void addMoreToShoppingList(GrocyClient client, long productId, double amount, long quId, long listId) throws IOException {
+		putOnShoppingList(client, productId, amount, quId, true, null, listId);
 	}
 
 	/** Wie oben, dazu eine Notiz am Eintrag (z. B. das Angebot), die Grocy in der Einkaufsliste anzeigt. */
-	public static void addMoreToShoppingList(GrocyClient client, long productId, double amount, long quId, String note) throws IOException {
-		putOnShoppingList(client, productId, amount, quId, true, note);
+	public static void addMoreToShoppingList(GrocyClient client, long productId, double amount, long quId, long listId, String note)
+			throws IOException {
+		putOnShoppingList(client, productId, amount, quId, true, note, listId);
 	}
 
-	private static void putOnShoppingList(GrocyClient client, long productId, double amount, long quId, boolean add) throws IOException {
-		putOnShoppingList(client, productId, amount, quId, add, null);
+	/**
+	 * Schiebt einen Eintrag auf die Liste targetId. Steht dasselbe Produkt mit derselben Einheit dort schon, wird die Menge
+	 * dazugezählt und der Eintrag entfernt, sonst wechselt er einfach die Liste.
+	 */
+	public static void moveToList(GrocyClient client, long entryId, long productId, double amount, long quId, long targetId)
+			throws IOException {
+		if (productId > 0) {
+			JsonElement existing = client.get("objects/shopping_list?query%5B%5D=product_id%3D" + productId
+					+ "&query%5B%5D=shopping_list_id%3D" + targetId);
+			ListEntry merge = findMergeable(existing, quId);
+			if (merge != null && merge.id != entryId) {
+				JsonObject body = new JsonObject();
+				body.addProperty("amount", merge.amount + amount);
+				client.put("objects/shopping_list/" + merge.id, body.toString());
+				client.delete("objects/shopping_list/" + entryId);
+				return;
+			}
+		}
+		JsonObject body = new JsonObject();
+		body.addProperty("shopping_list_id", targetId);
+		client.put("objects/shopping_list/" + entryId, body.toString());
 	}
 
-	private static void putOnShoppingList(GrocyClient client, long productId, double amount, long quId, boolean add, String note) throws IOException {
+	private static void putOnShoppingList(GrocyClient client, long productId, double amount, long quId, boolean add, String note,
+										  long listId) throws IOException {
 		JsonElement existing = client.get("objects/shopping_list?query%5B%5D=product_id%3D" + productId
-				+ "&query%5B%5D=shopping_list_id%3D1");
+				+ "&query%5B%5D=shopping_list_id%3D" + listId);
 		ListEntry merge = findMergeable(existing, quId);
 		if (merge != null) {
 			JsonObject body = new JsonObject();
@@ -292,7 +316,7 @@ public final class GrocyStock {
 			}
 			client.put("objects/shopping_list/" + merge.id, body.toString());
 		} else {
-			JsonObject body = newListEntryBody(productId, amount, quId);
+			JsonObject body = newListEntryBody(productId, amount, quId, listId);
 			if (note != null) {
 				body.addProperty("note", note);
 			}

@@ -104,6 +104,9 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
     private RecyclerView itemList;
     private SwipeRefreshLayout refresh;
     private TextView syncInfo;
+    /** Die Einkaufsliste, die gerade angezeigt wird (0 = Hauptliste); beim Start immer die Hauptliste */
+    private long viewListId = 0;
+    private final java.util.List<ShoppingRepository.Option> shoppingLists = new java.util.ArrayList<>();
     private TextView emptyView;
     private TextView btHint;
     private View setupHint;
@@ -384,13 +387,18 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
             @Override
             public void onAdd() {
                 if (shoppingData != null) {
-                    AddToList.show(MainActivity.this, repo, shoppingData.entries);
+                    AddToList.show(MainActivity.this, repo, shoppingData.entries, currentListId());
                 }
             }
 
             @Override
             public void onDelete(ShoppingEntry entry) {
                 confirmDeleteEntry(entry);
+            }
+
+            @Override
+            public void onMove(ShoppingEntry entry) {
+                chooseMoveTarget(entry);
             }
         });
         itemList.setLayoutManager(new LinearLayoutManager(this));
@@ -437,7 +445,12 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
             adapter.submit(list);
             updateListState();
         });
-        repo.getShoppingList(data -> {
+        repo.getOptions("lists", lists -> {
+            shoppingLists.clear();
+            shoppingLists.addAll(lists);
+            rebuildListChips();
+        });
+        repo.getShoppingList(currentListId(), data -> {
             shoppingData = data;
             entryAdapter.submit(data);
             updateTabs();
@@ -682,6 +695,121 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
 
     /** Eintrag von Hand abhaken oder wieder öffnen. */
     /** Eintrag von der Einkaufsliste entfernen, nach einer Rückfrage (wirkt in Grocy). */
+    /** Nummer der angezeigten Einkaufsliste: die gewählte, sonst die Hauptliste. */
+    private long currentListId() {
+        return viewListId > 0 ? viewListId : SharedPrefHelper.getShoppingMainList(this);
+    }
+
+    private String listName(long listId) {
+        for (ShoppingRepository.Option o : shoppingLists) {
+            if (o.id == listId) {
+                return o.name;
+            }
+        }
+        return String.valueOf(listId);
+    }
+
+    /** Wechsel zwischen den Einkaufslisten: ein Chip je Liste, nur sichtbar, wenn es mehrere gibt. */
+    private void rebuildListChips() {
+        View scroll = findViewById(R.id.list_chips_scroll);
+        com.google.android.material.chip.ChipGroup group = findViewById(R.id.list_chips);
+        boolean several = shoppingLists.size() > 1;
+        entryAdapter.setMoveEnabled(several);
+        boolean show = several && currentTab == TAB_SHOPPING && SharedPrefHelper.hasGrocy(this);
+        scroll.setVisibility(show ? View.VISIBLE : View.GONE);
+        if (!several) {
+            viewListId = 0;
+            return;
+        }
+        group.setOnCheckedStateChangeListener(null);
+        group.removeAllViews();
+        final long main = SharedPrefHelper.getShoppingMainList(this);
+        final long current = currentListId();
+        for (ShoppingRepository.Option option : shoppingLists) {
+            com.google.android.material.chip.Chip chip = (com.google.android.material.chip.Chip) getLayoutInflater()
+                    .inflate(R.layout.item_list_chip, group, false);
+            chip.setId(View.generateViewId());
+            chip.setTag(option.id);
+            chip.setText(option.id == main ? option.name + " ★" : option.name);
+            chip.setChecked(option.id == current);
+            chip.setOnLongClickListener(v -> {
+                confirmMainList(option);
+                return true;
+            });
+            group.addView(chip);
+        }
+        group.setOnCheckedStateChangeListener((g, checkedIds) -> {
+            if (checkedIds.isEmpty()) {
+                return;
+            }
+            View chip = g.findViewById(checkedIds.get(0));
+            if (chip != null && chip.getTag() instanceof Long) {
+                long id = (Long) chip.getTag();
+                if (id != currentListId()) {
+                    viewListId = id == SharedPrefHelper.getShoppingMainList(this) ? 0 : id;
+                    refreshList();
+                }
+            }
+        });
+    }
+
+    /** Lange drücken auf einen Chip: diese Liste zur Hauptliste machen. */
+    private void confirmMainList(final ShoppingRepository.Option option) {
+        if (option.id == SharedPrefHelper.getShoppingMainList(this)) {
+            return;
+        }
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.shopping_list_main_title)
+                .setMessage(getString(R.string.shopping_list_main_message, option.name))
+                .setPositiveButton(R.string.shopping_list_main_yes, (d, w) -> {
+                    SharedPrefHelper.setShoppingMainList(this, option.id);
+                    viewListId = 0;
+                    Toast.makeText(this, getString(R.string.shopping_list_main_done, option.name), Toast.LENGTH_SHORT).show();
+                    de.bulling.barcodebuddyscanner.Wear.WearSync.push(this);
+                    refreshList();
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
+    /** Auswahl der Liste, auf die ein Eintrag geschoben werden soll. */
+    private void chooseMoveTarget(final ShoppingEntry entry) {
+        final java.util.List<ShoppingRepository.Option> targets = new java.util.ArrayList<>();
+        for (ShoppingRepository.Option o : shoppingLists) {
+            if (o.id != entry.listId) {
+                targets.add(o);
+            }
+        }
+        if (targets.isEmpty()) {
+            return;
+        }
+        String[] names = new String[targets.size()];
+        for (int i = 0; i < names.length; i++) {
+            names[i] = targets.get(i).name;
+        }
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(getString(R.string.shopping_move_title))
+                .setItems(names, (d, which) -> {
+                    final ShoppingRepository.Option target = targets.get(which);
+                    de.bulling.barcodebuddyscanner.Helper.ShoppingEdit.move(this, entry.id, entry.productId, entry.amount,
+                            entry.quId, target.id, error -> {
+                                if (error != null) {
+                                    new MaterialAlertDialogBuilder(this)
+                                            .setTitle(R.string.product_create_failed_title)
+                                            .setMessage(getString(R.string.product_create_failed, error))
+                                            .setPositiveButton(android.R.string.ok, null)
+                                            .show();
+                                } else {
+                                    Toast.makeText(this, getString(R.string.shopping_moved, entry.name, target.name),
+                                            Toast.LENGTH_SHORT).show();
+                                    refreshList();
+                                }
+                            });
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
     private void confirmDeleteEntry(final ShoppingEntry entry) {
         new MaterialAlertDialogBuilder(this)
                 .setTitle(R.string.shopping_delete_title)
@@ -760,6 +888,8 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
 
     private void updateListState() {
         updateSyncInfo();
+        findViewById(R.id.list_chips_scroll).setVisibility(shoppingLists.size() > 1 && currentTab == TAB_SHOPPING
+                && SharedPrefHelper.hasGrocy(this) ? View.VISIBLE : View.GONE);
         boolean cameraTab = currentTab == TAB_CAMERA;
         refresh.setVisibility(cameraTab ? View.GONE : View.VISIBLE);
         cameraView.setVisibility(cameraTab ? View.VISIBLE : View.GONE);
@@ -1184,7 +1314,8 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
         SharedPrefHelper prefs = new SharedPrefHelper(this);
         // Bekannte Produkte direkt in Grocy buchen, wenn Grocy gekoppelt und die Einstellung aktiv ist
         GrocyClient grocy = SharedPrefHelper.isDirectBookingEnabled(this) ? prefs.initGrocyClient() : null;
-        activeSender = new PurchaseSender(prefs.initBBApi(), grocy, SharedPrefHelper.getManualDoneMode(this), repo);
+        activeSender = new PurchaseSender(prefs.initBBApi(), grocy, SharedPrefHelper.getManualDoneMode(this), repo,
+                SharedPrefHelper.getShoppingMainList(this));
         setSending(true);
         activeSender.attach(senderListener);
         activeSender.start();

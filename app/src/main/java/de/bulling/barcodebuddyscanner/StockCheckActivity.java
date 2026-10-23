@@ -230,7 +230,7 @@ public class StockCheckActivity extends AppCompatActivity {
 				.setTitle(info.name)
 				.setMessage(getString(R.string.stock_list_confirm, InventorySession.format(amount), unit(info)))
 				.setPositiveButton(R.string.stock_to_list, (d, w) -> run(card, getString(R.string.stock_listed),
-						() -> GrocyStock.addToShoppingList(grocy, info.id, amount)))
+						() -> GrocyStock.addProductToList(grocy, info.id, amount, SharedPrefHelper.getShoppingMainList(this))))
 				.setNegativeButton(android.R.string.cancel, null)
 				.show();
 	}

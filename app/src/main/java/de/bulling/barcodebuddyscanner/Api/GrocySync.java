@@ -38,7 +38,7 @@ public final class GrocySync {
 	private static final long FRESH_MS = 10 * 60 * 1000L;
 
 	/** Version der gespeicherten Datenfelder; bei einer Änderung wird einmal neu synchronisiert. */
-	private static final int CACHE_VERSION = 10;
+	private static final int CACHE_VERSION = 11;
 
 	public interface Callback {
 		/** ok = false: Verbindung oder Daten fehlerhaft, die bisherige Kopie bleibt erhalten */
@@ -223,7 +223,7 @@ public final class GrocySync {
 			return;
 		}
 		final ShoppingRepository repo = ShoppingRepository.get(appContext);
-		repo.getShoppingList(data -> {
+		repo.getAllShoppingEntries(data -> {
 			final java.util.List<ShoppingRepository.ShoppingEntry> todo = new java.util.ArrayList<>();
 			for (ShoppingRepository.ShoppingEntry e : data.entries) {
 				if (e.needsUpload()) {
@@ -298,8 +298,25 @@ public final class GrocySync {
 		JsonArray locations  = array(client.get("objects/locations"));
 		JsonArray stockRows  = array(client.get("objects/stock"));
 		JsonArray shoppingRows = array(client.get("objects/shopping_list"));
+		JsonArray shoppingLists;
+		try {
+			shoppingLists = array(client.get("objects/shopping_lists"));
+		} catch (IOException e) {
+			// ältere Grocy-Versionen: es gibt nur die eine Liste
+			shoppingLists = new JsonArray();
+		}
 
 		GrocyData data = new GrocyData();
+		for (JsonElement e : shoppingLists) {
+			JsonObject o = e.getAsJsonObject();
+			Long id = asLong(o, "id");
+			if (id != null) {
+				ContentValues lv = new ContentValues();
+				lv.put("id", id);
+				lv.put("name", asString(o, "name") == null ? "" : asString(o, "name"));
+				data.lists.add(lv);
+			}
+		}
 
 		Map<Long, String> unitNames = new HashMap<>();
 		for (JsonElement e : units) {

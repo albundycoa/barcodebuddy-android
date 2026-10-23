@@ -38,6 +38,9 @@ public class ShoppingEntryAdapter extends RecyclerView.Adapter<RecyclerView.View
 		void onAdd();
 
 		void onDelete(ShoppingEntry entry);
+
+		/** Eintrag auf eine andere Einkaufsliste schieben. */
+		void onMove(ShoppingEntry entry);
 	}
 
 	/** Menge eines Eintrags ändern: um einen Schritt oder per Eingabe. */
@@ -85,8 +88,18 @@ public class ShoppingEntryAdapter extends RecyclerView.Adapter<RecyclerView.View
 		this.amountActions = amountActions;
 	}
 
+	private boolean moveEnabled;
+
 	public void setListActions(ListActions listActions) {
 		this.listActions = listActions;
+	}
+
+	/** Zeigt an den Einträgen den Knopf zum Verschieben, wenn es mehrere Einkaufslisten gibt. */
+	public void setMoveEnabled(boolean enabled) {
+		if (moveEnabled != enabled) {
+			moveEnabled = enabled;
+			notifyDataSetChanged();
+		}
 	}
 
 	public int getDoneCount() {
@@ -243,6 +256,8 @@ public class ShoppingEntryAdapter extends RecyclerView.Adapter<RecyclerView.View
 		h.itemView.setClickable(false);
 		h.title.setOnClickListener(toggle);
 		h.check.setOnClickListener(toggle);
+		h.move.setVisibility(listActions != null && moveEnabled ? View.VISIBLE : View.GONE);
+		h.move.setOnClickListener(v -> listActions.onMove(e));
 		h.delete.setVisibility(listActions != null ? View.VISIBLE : View.GONE);
 		h.delete.setOnClickListener(v -> listActions.onDelete(e));
 	}
@@ -270,6 +285,7 @@ public class ShoppingEntryAdapter extends RecyclerView.Adapter<RecyclerView.View
 		final TextView         info;
 		final MaterialCheckBox check;
 		final View             delete;
+		final View             move;
 
 		EntryHolder(View view) {
 			super(view);
@@ -282,6 +298,7 @@ public class ShoppingEntryAdapter extends RecyclerView.Adapter<RecyclerView.View
 			info   = view.findViewById(R.id.entry_info);
 			check  = view.findViewById(R.id.entry_check);
 			delete = view.findViewById(R.id.entry_delete);
+			move   = view.findViewById(R.id.entry_move);
 		}
 	}
 }

@@ -11,7 +11,7 @@ public class GrocyShoppingTest {
 	@Test
 	public void noteBodyHasNoProduct() {
 		assertEquals("{\"note\":\"Blumen\",\"amount\":2.0,\"shopping_list_id\":1}",
-				GrocyShopping.noteBody("Blumen", 2).toString());
+				GrocyShopping.noteBody("Blumen", 2, 1).toString());
 	}
 
 	@Test

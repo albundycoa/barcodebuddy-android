@@ -45,12 +45,28 @@ public final class ShoppingEdit {
 	 * darauf, wird die Menge auf den neuen Wert gesetzt.
 	 */
 	public static void addProduct(Context context, final long productId, final double amount, final long quId, final Result result) {
+		addProduct(context, productId, amount, quId, SharedPrefHelper.getShoppingMainList(context), result);
+	}
+
+	/** Wie oben, auf der Einkaufsliste mit der Nummer listId. */
+	public static void addProduct(Context context, final long productId, final double amount, final long quId, final long listId,
+								  final Result result) {
 		run(context, result, (client, app) -> {
 			if (quId > 0) {
-				GrocyStock.addToShoppingList(client, productId, amount, quId);
+				GrocyStock.addToShoppingList(client, productId, amount, quId, listId);
 			} else {
-				GrocyStock.addToShoppingList(client, productId, amount);
+				GrocyStock.addProductToList(client, productId, amount, listId);
 			}
+			GrocySync.start(app, null);
+		});
+	}
+
+	/** Schiebt einen Eintrag auf eine andere Einkaufsliste (steht das Produkt dort schon, werden die Mengen zusammengezählt). */
+	public static void move(Context context, final long entryId, final Long productId, final double amount, final long quId,
+							final long targetListId, final Result result) {
+		run(context, result, (client, app) -> {
+			GrocyStock.moveToList(client, entryId, productId == null ? 0 : productId, amount, quId, targetListId);
+			ShoppingRepository.get(app).setShoppingEntryList(entryId, targetListId);
 			GrocySync.start(app, null);
 		});
 	}
@@ -71,10 +87,11 @@ public final class ShoppingEdit {
 		run(context, result, (client, app) -> {
 			de.bulling.barcodebuddyscanner.Helper.StockOverview.Product setup = GrocyShopping.loadProduct(client, productId);
 			long quId = setup == null ? 0 : setup.quPurchase;
+			long listId = SharedPrefHelper.getShoppingMainList(app);
 			if (quId > 0) {
-				GrocyStock.addMoreToShoppingList(client, productId, delta, quId, offer == null ? null : offer.note());
+				GrocyStock.addMoreToShoppingList(client, productId, delta, quId, listId, offer == null ? null : offer.note());
 			} else {
-				GrocyStock.addToShoppingList(client, productId, delta);
+				GrocyStock.addProductToList(client, productId, delta, listId);
 			}
 			if (offer != null) {
 				ShoppingRepository.get(app).setOffer(productId, null, offer.price, offer.validUntil, offer.shop);
@@ -116,9 +133,15 @@ public final class ShoppingEdit {
 	/** Wie oben, mit einem Angebot (Preis für die Berechnung der Liste, Text mit dem Angebot im Namen des Eintrags in Grocy). */
 	public static void addNote(Context context, final String text, final double amount, final String groupName, final Offer offer,
 							   final Result result) {
+		addNote(context, text, amount, groupName, offer, SharedPrefHelper.getShoppingMainList(context), result);
+	}
+
+	/** Wie oben, auf der Einkaufsliste mit der Nummer listId. */
+	public static void addNote(Context context, final String text, final double amount, final String groupName, final Offer offer,
+							   final long listId, final Result result) {
 		run(context, result, (client, app) -> {
 			String body = offer == null ? text.trim() : text.trim() + " (" + offer.note() + ")";
-			long id = GrocyShopping.addNote(client, body, amount);
+			long id = GrocyShopping.addNote(client, body, amount, listId);
 			// Die Gruppe zuerst merken: Der Abgleich danach holt den neuen Eintrag samt Gruppe in die Liste
 			ShoppingRepository.get(app).setNoteGroup(id, groupName);
 			if (offer != null) {

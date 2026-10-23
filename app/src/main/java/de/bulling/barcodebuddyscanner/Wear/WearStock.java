@@ -57,7 +57,7 @@ public final class WearStock {
 		ShoppingRepository.get(app).getProducts("", cached -> IO.execute(() -> {
 			String json;
 			try {
-				List<StockOverview.Entry> entries = StockOverviewLoader.load(grocy, cached);
+				List<StockOverview.Entry> entries = StockOverviewLoader.load(grocy, cached, SharedPrefHelper.getShoppingMainList(app));
 				json = WearStockJson.build(entries, System.currentTimeMillis(), app.getString(R.string.stock_opened, "%1$s"),
 						message, transaction, null);
 			} catch (IOException e) {
