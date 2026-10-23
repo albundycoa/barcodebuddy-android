@@ -66,6 +66,15 @@ public class SharedPrefHelper {
 		preferences.apply();
 	}
 
+	/** Zuletzt gewählte Sortierung der Bestandsseite ("NAME", "VALUE" oder "DUE"), Standard Name. */
+	public static String getStockSort(Context context) {
+		return PreferenceManager.getDefaultSharedPreferences(context).getString("stock_sort", "NAME");
+	}
+
+	public static void setStockSort(Context context, String sort) {
+		PreferenceManager.getDefaultSharedPreferences(context).edit().putString("stock_sort", sort).apply();
+	}
+
 	public static void setUnsafeSsl(final Context context, final boolean unsafe) {
 		PreferenceManager.getDefaultSharedPreferences(context).edit().putBoolean("unsafe", unsafe).apply();
 	}

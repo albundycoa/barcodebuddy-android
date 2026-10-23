@@ -1278,8 +1278,7 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
     public boolean onOptionsItemSelected(MenuItem item) {
         int itemId = item.getItemId();
         if (itemId == R.id.action_logout) {
-            SharedPrefHelper.clearSettings(MainActivity.this);
-            showSetupScreen();
+            confirmLogout();
             return true;
         } else if (itemId == R.id.action_settings) {
             Intent i = new Intent(MainActivity.this, SettingsActivity.class);
@@ -1358,6 +1357,20 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
             SharedPrefHelper.setSetupHintDismissed(this, true);
             updateSetupHint();
         });
+    }
+
+    /** Abmelden bei Barcode Buddy und Grocy, erst nach einer Rückfrage mit Hinweis auf die Folgen. */
+    private void confirmLogout() {
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.logout_title)
+                .setMessage(R.string.logout_message)
+                .setPositiveButton(R.string.log_out, (d, w) -> {
+                    SharedPrefHelper.clearSettings(MainActivity.this);
+                    SharedPrefHelper.clearGrocy(MainActivity.this);
+                    showSetupScreen();
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
     }
 
     private void showSetupScreen() {

@@ -13,6 +13,14 @@ zurückgehen, sonst lässt sich ein Update nicht mehr einspielen. Gepflegt wird 
 `appVersion` in `gradle.properties`. Veröffentlicht wird mit `./publish-apk.sh`: privat auf den Update-Server im Heimnetz, mit `--github` als
 öffentlicher GitHub-Release.
 
+## [0.17.1] – Bestand: Sortierung merken, Abmelden bei beiden Servern
+
+- **Bestand**: Die gewählte Sortierung (Name, Wert, Ablauf) bleibt jetzt gespeichert. Außerdem zeigte das Menü immer „nach Ablauf“ als gewählt an, obwohl die
+  Liste anders sortiert war; die Markierung stimmt jetzt.
+- **Abmelden** im Drei-Punkte-Menü meldet bei **Barcode Buddy und Grocy** ab (beide Adressen und Schlüssel werden vergessen) und fragt vorher mit einem
+  Hinweis nach, ob du wirklich abmelden oder abbrechen willst. Verlauf, Scanner und übrige Einstellungen bleiben erhalten.
+- Uhr-App und Zifferblatt: keine Änderung (nur die gemeinsame Versionsnummer).
+
 ## [0.17.0] – Von Hand abgehakte Produkte beim Senden entfernen
 
 - Neue dritte Auswahl in den Einstellungen unter „Von Hand abgehakte Produkte“: **Beim Senden ohne Buchung aus der Liste in Grocy entfernen**. Beim Senden werden die

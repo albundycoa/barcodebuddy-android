@@ -93,6 +93,11 @@ public class StockOverviewActivity extends AppCompatActivity {
 		}
 		setContentView(R.layout.activity_stock_overview);
 		repo = ShoppingRepository.get(this);
+		try {
+			sort = StockOverview.Sort.valueOf(SharedPrefHelper.getStockSort(this));
+		} catch (IllegalArgumentException e) {
+			sort = StockOverview.Sort.NAME;
+		}
 
 		Toolbar toolbar = findViewById(R.id.toolbar);
 		setSupportActionBar(toolbar);
@@ -150,9 +155,9 @@ public class StockOverviewActivity extends AppCompatActivity {
 
 	@Override
 	public boolean onPrepareOptionsMenu(Menu menu) {
-		menu.findItem(R.id.sort_name).setChecked(sort == StockOverview.Sort.NAME);
-		menu.findItem(R.id.sort_value).setChecked(sort == StockOverview.Sort.VALUE);
-		menu.findItem(R.id.sort_due).setChecked(sort == StockOverview.Sort.DUE);
+		// Bei einer Einfachauswahl macht jedes setChecked(), auch mit false, den Eintrag zur Auswahl: nur den gewählten setzen
+		menu.findItem(sort == StockOverview.Sort.VALUE ? R.id.sort_value
+				: sort == StockOverview.Sort.DUE ? R.id.sort_due : R.id.sort_name).setChecked(true);
 		return super.onPrepareOptionsMenu(menu);
 	}
 
@@ -168,6 +173,7 @@ public class StockOverviewActivity extends AppCompatActivity {
 				: id == R.id.sort_due ? StockOverview.Sort.DUE : null;
 		if (chosen != null) {
 			sort = chosen;
+			SharedPrefHelper.setStockSort(this, chosen.name());
 			applyFilter();
 			return true;
 		}

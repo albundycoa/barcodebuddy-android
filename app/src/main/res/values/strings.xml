@@ -26,6 +26,8 @@
     <string name="action_clear_history">Verlauf leeren</string>
     <string name="action_delete_trip">Einkauf löschen</string>
     <string name="log_out">Abmelden</string>
+    <string name="logout_title">Abmelden?</string>
+    <string name="logout_message">Du wirst bei Barcode Buddy und bei Grocy abgemeldet. Adressen und Schlüssel beider Server werden vergessen, danach koppelst du beide neu. Verlauf, Scanner und die übrigen Einstellungen bleiben erhalten.</string>
     <string name="title_activity_settings">Einstellungen</string>
 
     <!-- Einkaufsliste -->
