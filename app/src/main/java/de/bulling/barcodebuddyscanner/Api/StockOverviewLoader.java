@@ -47,7 +47,7 @@ public final class StockOverviewLoader {
 		}
 		Map<Long, java.util.List<StockOverview.ListRow>> onList;
 		try {
-			onList = GrocyStock.loadShoppingRows(grocy, unitNames, listId);
+			onList = GrocyStock.loadShoppingRows(grocy, unitNames, listId, products);
 		} catch (IOException e) {
 			// ohne Einkaufsliste zeigt die Übersicht einfach keine Markierung
 			onList = new HashMap<>();

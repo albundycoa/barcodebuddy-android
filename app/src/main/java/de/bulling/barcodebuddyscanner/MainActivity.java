@@ -791,7 +791,7 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
                 .setTitle(getString(R.string.shopping_move_title))
                 .setItems(names, (d, which) -> {
                     final ShoppingRepository.Option target = targets.get(which);
-                    de.bulling.barcodebuddyscanner.Helper.ShoppingEdit.move(this, entry.id, entry.productId, entry.amount,
+                    de.bulling.barcodebuddyscanner.Helper.ShoppingEdit.move(this, entry.id, entry.productId, entry.stockAmount,
                             entry.quId, target.id, error -> {
                                 if (error != null) {
                                     new MaterialAlertDialogBuilder(this)

@@ -13,6 +13,16 @@ zurückgehen, sonst lässt sich ein Update nicht mehr einspielen. Gepflegt wird 
 `appVersion` in `gradle.properties`. Veröffentlicht wird mit `./publish-apk.sh`: privat auf den Update-Server im Heimnetz, mit `--github` als
 öffentlicher GitHub-Release.
 
+## [0.19.1] – Mengen der Einkaufsliste wie in Grocy
+
+- Fehler behoben: Grocy speichert die Menge eines Eintrags der Einkaufsliste in der **Lagereinheit** des Produkts, die Einheit am Eintrag (z. B. Pack) ist nur die Anzeige.
+  Die App hat die Zahl bisher als Menge in dieser Einheit gelesen. Bei Weizenbrötchen (Lagereinheit Stück, 1 Pack = 8 Stück) zeigte sie darum „1 Pack“, Grocy aber
+  „0,125 Packs“. Jetzt rechnet die App wie Grocy um: Anzeige, Summe der Liste, „durch Scan erledigt“ und der Preis stimmen mit Grocy überein.
+- Auch beim Schreiben wird richtig umgerechnet: Fügst du ein Produkt in einer anderen Einheit (z. B. „1 Pack“) hinzu, ändert die Menge oder verschiebst sie, speichert die App
+  die Menge in der Lagereinheit, sodass Grocy dieselbe Menge anzeigt. Einträge, die mit älteren Versionen in einer anderen Einheit als der Lagereinheit angelegt wurden, können
+  in Grocy eine zu kleine Menge zeigen; sie lassen sich in der App über die Menge korrigieren.
+- Uhr-App und Zifferblatt: keine Änderung (nur die gemeinsame Versionsnummer).
+
 ## [0.19.0] – Mehrere Einkaufslisten
 
 - Hat Grocy **mehrere Einkaufslisten** (z. B. „Einkaufszettel“ und „Für später“), zeigt die Einkaufsliste oben für jede einen Chip zum Umschalten. Die **Hauptliste** (zuerst die

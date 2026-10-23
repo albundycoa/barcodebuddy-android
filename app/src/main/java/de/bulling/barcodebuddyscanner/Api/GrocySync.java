@@ -38,7 +38,7 @@ public final class GrocySync {
 	private static final long FRESH_MS = 10 * 60 * 1000L;
 
 	/** Version der gespeicherten Datenfelder; bei einer Änderung wird einmal neu synchronisiert. */
-	private static final int CACHE_VERSION = 11;
+	private static final int CACHE_VERSION = 12;
 
 	public interface Callback {
 		/** ok = false: Verbindung oder Daten fehlerhaft, die bisherige Kopie bleibt erhalten */
@@ -247,7 +247,8 @@ public final class GrocySync {
 							body.addProperty("done", done ? 1 : 0);
 						}
 						if (e.pendingAmount != null) {
-							body.addProperty("amount", e.pendingAmount);
+							// Grocy erwartet die Menge in der Lagereinheit
+							body.addProperty("amount", e.stockAmount);
 						}
 						client.put("objects/shopping_list/" + e.id, body.toString());
 						if (doneChanged) {
@@ -470,11 +471,13 @@ public final class GrocySync {
 			Long product = asLong(o, "product_id");
 			Double amount = asDouble(o, "amount");
 			Long quId = asLong(o, "qu_id");
-			double listAmount = amount != null ? amount : 1;
-			double stockAmount = listAmount;
+			// Grocy speichert die Menge eines Eintrags in der Lagereinheit des Produkts; qu_id ist nur die Einheit, in der Grocy
+			// sie anzeigt (1 Stück bei Anzeigeeinheit Pack = 0,125 Pack)
+			double stockAmount = amount != null ? amount : 1;
+			double listAmount = stockAmount;
 			long[] pu = product == null ? null : productUnits.get(product);
 			if (pu != null && quId != null) {
-				stockAmount = listAmount * factor(factors, product, quId, pu[0]);
+				listAmount = stockAmount * factor(factors, product, pu[0], quId);
 			}
 			ContentValues v = new ContentValues();
 			v.put("id", id);

@@ -207,6 +207,43 @@ public final class GrocyStock {
 		return null;
 	}
 
+	/** Umrechnungsfaktoren je Produkt aus "quantity_unit_conversions_resolved": "Produkt:von:nach" -> Faktor. */
+	static Map<String, Double> parseFactors(JsonElement rows) {
+		Map<String, Double> factors = new HashMap<>();
+		if (rows == null || !rows.isJsonArray()) {
+			return factors;
+		}
+		for (JsonElement e : rows.getAsJsonArray()) {
+			if (!e.isJsonObject()) {
+				continue;
+			}
+			JsonObject o = e.getAsJsonObject();
+			if (o.has("product_id") && o.has("from_qu_id") && o.has("to_qu_id") && o.has("factor")) {
+				factors.put((long) number(o, "product_id") + ":" + (long) number(o, "from_qu_id") + ":" + (long) number(o, "to_qu_id"),
+						number(o, "factor"));
+			}
+		}
+		return factors;
+	}
+
+	/** Menge in der Einheit "von" mal diesen Faktor ergibt die Menge in der Einheit "nach" (1, wenn gleich oder unbekannt). */
+	static double factor(Map<String, Double> factors, long productId, long from, long to) {
+		if (from == to || from <= 0 || to <= 0) {
+			return 1;
+		}
+		Double f = factors.get(productId + ":" + from + ":" + to);
+		return f != null && f > 0 ? f : 1;
+	}
+
+	/** Faktor von "von" nach "nach" für ein Produkt, live aus Grocy. */
+	static double conversionFactor(GrocyClient client, long productId, long from, long to) throws IOException {
+		if (from == to || from <= 0 || to <= 0) {
+			return 1;
+		}
+		return factor(parseFactors(client.get("objects/quantity_unit_conversions_resolved?query%5B%5D=product_id%3D" + productId)),
+				productId, from, to);
+	}
+
 	static JsonObject newListEntryBody(long productId, double amount, long quId, long listId) {
 		JsonObject body = new JsonObject();
 		body.addProperty("product_id", productId);
@@ -220,7 +257,8 @@ public final class GrocyStock {
 	 * Offene Einträge der Einkaufsliste mit der Nummer listId je Produktnummer (erledigte zählen nicht). Einheitennamen kommen aus
 	 * {@code unitNames}, fehlende bleiben leer.
 	 */
-	static Map<Long, List<StockOverview.ListRow>> parseShoppingRows(JsonElement rows, Map<Long, String> unitNames, long listId) {
+	static Map<Long, List<StockOverview.ListRow>> parseShoppingRows(JsonElement rows, Map<Long, String> unitNames, long listId,
+																	Map<Long, StockOverview.Product> products, Map<String, Double> factors) {
 		Map<Long, List<StockOverview.ListRow>> result = new HashMap<>();
 		if (rows == null || !rows.isJsonArray()) {
 			return result;
@@ -244,15 +282,22 @@ public final class GrocyStock {
 				list = new ArrayList<>();
 				result.put(product, list);
 			}
-			list.add(new StockOverview.ListRow(o.get("id").getAsLong(), number(o, "amount"), quId, unitNames.get(quId)));
+			// Die Menge in Grocy steht in der Lagereinheit; angezeigt wird sie in der Einheit des Eintrags
+			double amount = number(o, "amount");
+			StockOverview.Product setup = products == null ? null : products.get(product);
+			if (setup != null && setup.quStock > 0 && quId > 0) {
+				amount = amount * factor(factors, product, setup.quStock, quId);
+			}
+			list.add(new StockOverview.ListRow(o.get("id").getAsLong(), amount, quId, unitNames.get(quId)));
 		}
 		return result;
 	}
 
 	/** Lädt die offenen Einträge der Einkaufsliste live aus Grocy. */
-	public static Map<Long, List<StockOverview.ListRow>> loadShoppingRows(GrocyClient client, Map<Long, String> unitNames, long listId)
-			throws IOException {
-		return parseShoppingRows(client.get("objects/shopping_list"), unitNames, listId);
+	public static Map<Long, List<StockOverview.ListRow>> loadShoppingRows(GrocyClient client, Map<Long, String> unitNames, long listId,
+																		  Map<Long, StockOverview.Product> products) throws IOException {
+		return parseShoppingRows(client.get("objects/shopping_list"), unitNames, listId, products,
+				parseFactors(client.get("objects/quantity_unit_conversions_resolved")));
 	}
 
 	/** Entfernt einen Eintrag von der Einkaufsliste. */
@@ -305,18 +350,21 @@ public final class GrocyStock {
 
 	private static void putOnShoppingList(GrocyClient client, long productId, double amount, long quId, boolean add, String note,
 										  long listId) throws IOException {
+		// Grocy speichert die Menge in der Lagereinheit, die Anzeigeeinheit steht in qu_id
+		StockOverview.Product setup = loadProductSetups(client).get(productId);
+		double stockAmount = amount * (setup == null ? 1 : conversionFactor(client, productId, quId, setup.quStock));
 		JsonElement existing = client.get("objects/shopping_list?query%5B%5D=product_id%3D" + productId
 				+ "&query%5B%5D=shopping_list_id%3D" + listId);
 		ListEntry merge = findMergeable(existing, quId);
 		if (merge != null) {
 			JsonObject body = new JsonObject();
-			body.addProperty("amount", add ? merge.amount + amount : amount);
+			body.addProperty("amount", add ? merge.amount + stockAmount : stockAmount);
 			if (note != null) {
 				body.addProperty("note", note);
 			}
 			client.put("objects/shopping_list/" + merge.id, body.toString());
 		} else {
-			JsonObject body = newListEntryBody(productId, amount, quId, listId);
+			JsonObject body = newListEntryBody(productId, stockAmount, quId, listId);
 			if (note != null) {
 				body.addProperty("note", note);
 			}
