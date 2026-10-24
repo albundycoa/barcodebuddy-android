@@ -727,7 +727,11 @@ Die App zählt mit und vergleicht am Ende mit Grocy.</string>
     <string name="stock_entry_err_price">Bitte einen Preis eingeben</string>
     <string name="stock_undo_entry">Rückgängig</string>
     <string name="off_images_title">Produktbilder jetzt laden</string>
-    <string name="off_images_summary">Lädt die Bilder aller Produkte aus OpenFoodFacts, die noch keines haben. Sonst werden sie erst geladen, wenn ein Produkt angezeigt wird. Dabei wird nur der Barcode übertragen.</string>
+    <string name="off_images_summary">Lädt die Bilder aller Produkte aus OpenFoodFacts, die noch keines haben, und sendet sie an Grocy, wenn das Produkt dort noch kein Bild hat. Sonst werden sie erst geladen, wenn ein Produkt angezeigt wird. Dabei wird nur der Barcode an OpenFoodFacts übertragen.</string>
+    <string name="off_images_grocy_title">Bilder an Grocy senden</string>
+    <string name="off_images_grocy_summary">Neu geladene Produktbilder werden in Grocy beim Produkt hinterlegt, damit sie auch in der Weboberfläche erscheinen. Vorhandene Bilder in Grocy bleiben unverändert.</string>
+    <string name="off_images_grocy_sent">%1 Bilder an Grocy gesendet</string>
+    <string name="off_images_grocy_failed">Bilder konnten nicht an Grocy gesendet werden (%1)</string>
     <string name="off_images_running">%1$d von %2$d …</string>
     <string name="off_images_done">Fertig: %1$d Bilder neu geladen (%2$d Produkte)</string>
     <string name="off_images_nothing">Alle Produkte haben schon ein Bild oder keinen passenden Barcode.</string>
@@ -755,4 +759,18 @@ Die App zählt mit und vergleicht am Ende mit Grocy.</string>
     <string name="product_menu_stock">Bestand ansehen</string>
     <string name="product_menu_edit">Produkt bearbeiten</string>
     <string name="product_menu_desc">Weitere Aktionen</string>
+    <string name="selection_check">Abhaken</string>
+    <string name="selection_uncheck">Abhaken aufheben</string>
+    <string name="selection_move">Verschieben</string>
+    <string name="selection_delete">Entfernen</string>
+    <plurals name="selection_title">
+        <item quantity="one">%d ausgewählt</item>
+        <item quantity="other">%d ausgewählt</item>
+    </plurals>
+    <string name="selection_delete_title">Einträge entfernen?</string>
+    <string name="selection_delete_message">%1$d Einträge werden von der Einkaufsliste in Grocy entfernt.</string>
+    <string name="selection_deleted">%1$d Einträge entfernt</string>
+    <string name="selection_moved">%1$d Einträge nach „%2$s“ verschoben</string>
+    <string name="selection_checked">%1$d Einträge abgehakt</string>
+    <string name="selection_covered_skipped">Durch Scans abgedeckte Einträge bleiben unverändert.</string>
 </resources>

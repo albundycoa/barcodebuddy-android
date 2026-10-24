@@ -76,6 +76,25 @@ public final class ProductImages {
 		return bitmap;
 	}
 
+	/** Die Bytes des gespeicherten Bilds (JPEG) oder null. */
+	public static byte[] bytes(Context context, String barcode) {
+		File file = image(context, barcode);
+		if (!file.exists() || file.length() == 0 || file.length() > 2_000_000) {
+			return null;
+		}
+		try (java.io.FileInputStream in = new java.io.FileInputStream(file);
+			 java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream()) {
+			byte[] buffer = new byte[8192];
+			int read;
+			while ((read = in.read(buffer)) > 0) {
+				out.write(buffer, 0, read);
+			}
+			return out.toByteArray();
+		} catch (IOException e) {
+			return null;
+		}
+	}
+
 	/** Gibt es schon ein Bild, oder wurde in der letzten Woche vergeblich danach gesucht? */
 	private static boolean settled(Context context, String barcode) {
 		if (image(context, barcode).exists()) {
@@ -143,6 +162,7 @@ public final class ProductImages {
 						try (FileOutputStream out = new FileOutputStream(image(context, barcode))) {
 							out.write(data);
 						}
+						scheduleGrocySync(context);
 					} else {
 						//noinspection ResultOfMethodCallIgnored
 						missing(context, barcode).createNewFile();
@@ -160,6 +180,23 @@ public final class ProductImages {
 			if (done != null) {
 				MAIN.post(done);
 			}
+		});
+	}
+
+	private static final Runnable[] GROCY_SYNC_PENDING = new Runnable[1];
+
+	/** Sendet neue Bilder gesammelt an Grocy, kurz nachdem das letzte geladen wurde (nicht für jedes einzeln). */
+	private static void scheduleGrocySync(final Context context) {
+		final Context app = context.getApplicationContext();
+		if (!new SharedPrefHelper(app).isPicturesToGrocyEnabled() || !SharedPrefHelper.hasGrocy(app)) {
+			return;
+		}
+		MAIN.post(() -> {
+			if (GROCY_SYNC_PENDING[0] != null) {
+				MAIN.removeCallbacks(GROCY_SYNC_PENDING[0]);
+			}
+			GROCY_SYNC_PENDING[0] = () -> de.bulling.barcodebuddyscanner.Api.GrocyPictures.syncAll(app, null);
+			MAIN.postDelayed(GROCY_SYNC_PENDING[0], 15_000);
 		});
 	}
 

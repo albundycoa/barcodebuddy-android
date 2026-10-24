@@ -13,6 +13,16 @@ zurückgehen, sonst lässt sich ein Update nicht mehr einspielen. Gepflegt wird 
 `appVersion` in `gradle.properties`. Veröffentlicht wird mit `./publish-apk.sh`: privat auf den Update-Server im Heimnetz, mit `--github` als
 öffentlicher GitHub-Release.
 
+## [0.25.0] – Mehrfachauswahl, Produkt bearbeiten im Bestand, Bilder in Grocy
+
+- **Mehrfachauswahl in den Einkaufslisten**: Ein Eintrag lässt sich lang drücken, danach wählt ein Tipp weitere Einträge an und ab. Oben stehen **Abhaken** (sind alle schon abgehakt, wird das
+  Häkchen wieder entfernt), **Verschieben** (auf eine andere Einkaufsliste, nur bei mehreren Listen) und **Entfernen** (mit Rückfrage).
+- Die **Bestandsübersicht** hat bei jedem Produkt ein Drei-Punkte-Menü mit „Bestand ansehen“ und „Produkt bearbeiten“.
+- **Produktbilder in Grocy**: Neu geladene OpenFoodFacts-Bilder werden bei dem Produkt in Grocy hinterlegt, wenn es dort noch keines hat (Einstellung „Bilder an Grocy senden“, an). So zeigen auch
+  die Grocy-Weboberfläche und andere Apps das Bild. „Produktbilder jetzt laden“ holt fehlende Bilder und sendet auch bereits gespeicherte nach. Bilder, die in Grocy schon vorhanden sind, bleiben unverändert.
+- Einkaufsliste: Das Produktbild sitzt jetzt neben dem Namen, sodass der Preis nicht mehr zusammengequetscht wird.
+- Uhr-App und Zifferblatt: keine Änderung (nur die gemeinsame Versionsnummer).
+
 ## [0.24.0] – Produkt bearbeiten und Barcodes verwalten
 
 - In der Produktliste hat jedes Produkt ein **Drei-Punkte-Menü** mit „Bestand ansehen“ (Bestandseinträge des Produkts) und „Produkt bearbeiten“.

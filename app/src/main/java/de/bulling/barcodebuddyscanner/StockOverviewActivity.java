@@ -510,6 +510,21 @@ public class StockOverviewActivity extends AppCompatActivity {
 					.putExtra(StockEntriesActivity.EXTRA_PRODUCT_ID, entry.product.id)
 					.putExtra(StockEntriesActivity.EXTRA_PRODUCT_NAME, entry.product.name)
 					.putExtra(StockEntriesActivity.EXTRA_UNIT, entry.product.unit)));
+			holder.menu.setOnClickListener(v -> {
+				android.widget.PopupMenu popup = new android.widget.PopupMenu(StockOverviewActivity.this, v);
+				popup.getMenu().add(0, 1, 0, R.string.product_menu_stock);
+				popup.getMenu().add(0, 2, 1, R.string.product_menu_edit);
+				popup.setOnMenuItemClickListener(item -> {
+					if (item.getItemId() == 1) {
+						holder.card.performClick();
+					} else {
+						startActivity(new Intent(StockOverviewActivity.this, ProductEditActivity.class)
+								.putExtra(ProductEditActivity.EXTRA_PRODUCT_ID, entry.product.id));
+					}
+					return true;
+				});
+				popup.show();
+			});
 			holder.value.setText(Money.format(entry.value));
 			String amount = amountText(entry, entry.amount);
 			if (entry.opened > 0) {
@@ -554,6 +569,7 @@ public class StockOverviewActivity extends AppCompatActivity {
 			final MaterialButton open;
 			final MaterialButton list;
 			final TextView       listed;
+			final View           menu;
 
 			ViewHolder(View view) {
 				super(view);
@@ -569,6 +585,7 @@ public class StockOverviewActivity extends AppCompatActivity {
 				open    = view.findViewById(R.id.btn_open);
 				list    = view.findViewById(R.id.btn_list);
 				listed  = view.findViewById(R.id.stock_listed);
+				menu    = view.findViewById(R.id.stock_menu);
 			}
 		}
 	}

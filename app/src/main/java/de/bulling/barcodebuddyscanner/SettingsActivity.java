@@ -76,6 +76,20 @@ public class SettingsActivity extends AppCompatActivity {
 
 		private boolean loadingImages;
 
+		/** Schickt gespeicherte Bilder an Grocy (nur für Produkte, die dort noch keines haben) und meldet das Ergebnis. */
+		private void sendPicturesToGrocy(final Context context) {
+			if (!SharedPrefHelper.hasGrocy(context)) {
+				Toast.makeText(context, R.string.off_images_nothing, Toast.LENGTH_LONG).show();
+				return;
+			}
+			de.bulling.barcodebuddyscanner.Api.GrocyPictures.syncAll(context, (uploaded, error) -> {
+				String text = error != null ? context.getString(R.string.off_images_grocy_failed, error)
+						: uploaded > 0 ? context.getString(R.string.off_images_grocy_sent, uploaded)
+						: context.getString(R.string.off_images_nothing);
+				Toast.makeText(context, text, Toast.LENGTH_LONG).show();
+			});
+		}
+
 		/** Lädt die Bilder aller Produkte, die noch keines haben (einzeln und mit Pause, der Fortschritt steht an der Einstellung). */
 		private void loadAllImages(final Preference preference) {
 			final Context context = requireContext().getApplicationContext();
@@ -94,7 +108,7 @@ public class SettingsActivity extends AppCompatActivity {
 					}
 				}
 				if (todo.isEmpty()) {
-					Toast.makeText(context, R.string.off_images_nothing, Toast.LENGTH_LONG).show();
+					sendPicturesToGrocy(context);
 					return;
 				}
 				loadingImages = true;
@@ -110,6 +124,7 @@ public class SettingsActivity extends AppCompatActivity {
 						if (done[0] >= total) {
 							loadingImages = false;
 							preference.setSummary(getString(R.string.off_images_done, loaded[0], map.size()));
+							sendPicturesToGrocy(context);
 						} else {
 							preference.setSummary(getString(R.string.off_images_running, done[0], total));
 						}

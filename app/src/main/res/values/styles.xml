@@ -30,11 +30,25 @@
         <item name="colorSurfaceBright">@color/md_surface_bright</item>
         <item name="android:windowLightStatusBar">@bool/light_bars</item>
         <item name="android:windowLightNavigationBar">@bool/light_bars</item>
+        <!-- Die Auswahl-Leiste (Mehrfachauswahl) liegt über der Titelleiste, statt die Seite nach unten zu schieben -->
+        <item name="windowActionModeOverlay">true</item>
+        <item name="actionModeStyle">@style/AppActionMode</item>
+        <item name="actionModeTheme">@style/ThemeOverlay.AppActionMode</item>
     </style>
 
     <style name="AppTheme.NoActionBar">
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
+    </style>
+
+    <style name="AppActionMode" parent="Widget.AppCompat.ActionMode">
+        <item name="background">?attr/colorSurfaceContainerHigh</item>
+        <item name="backgroundSplit">?attr/colorSurfaceContainerHigh</item>
+    </style>
+
+    <style name="ThemeOverlay.AppActionMode" parent="">
+        <item name="colorControlNormal">?attr/colorOnSurface</item>
+        <item name="android:textColorPrimary">?attr/colorOnSurface</item>
     </style>
 
 </resources>

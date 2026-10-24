@@ -153,6 +153,11 @@ public class SharedPrefHelper {
 		return this.globalPreferences.getBoolean("off_lookup", true);
 	}
 
+	/** Neu geladene Produktbilder auch in Grocy beim Produkt hinterlegen. */
+	public boolean isPicturesToGrocyEnabled() {
+		return this.globalPreferences.getBoolean("off_images_grocy", true);
+	}
+
 	public boolean isVibrationEnabled() {
 		return this.globalPreferences.getBoolean("use_vibration", true);
 	}

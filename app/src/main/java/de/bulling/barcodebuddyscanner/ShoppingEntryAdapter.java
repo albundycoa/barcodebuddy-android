@@ -50,6 +50,12 @@ public class ShoppingEntryAdapter extends RecyclerView.Adapter<RecyclerView.View
 		void onEdit(ShoppingEntry entry);
 	}
 
+	/** Mehrfachauswahl: Langdruck startet sie, danach wählt ein Tipp Einträge an und ab. */
+	public interface SelectionListener {
+		/** Die Auswahl hat sich geändert; bei 0 ist der Auswahlmodus zu Ende. */
+		void onSelectionChanged(int count);
+	}
+
 	private static final int TYPE_HEADER = 0;
 	private static final int TYPE_ENTRY  = 1;
 	private static final int TYPE_ADD    = 2;
@@ -88,7 +94,48 @@ public class ShoppingEntryAdapter extends RecyclerView.Adapter<RecyclerView.View
 		this.amountActions = amountActions;
 	}
 
+	private       SelectionListener selectionListener;
+	private final java.util.LinkedHashSet<Long> selected = new java.util.LinkedHashSet<>();
+	private       boolean       selecting;
 	private boolean moveEnabled;
+
+	public void setSelectionListener(SelectionListener listener) {
+		this.selectionListener = listener;
+	}
+
+	public boolean isSelecting() {
+		return selecting;
+	}
+
+	/** Die ausgewählten Einträge in der Reihenfolge der Liste. */
+	public List<ShoppingEntry> getSelectedEntries() {
+		List<ShoppingEntry> list = new ArrayList<>();
+		for (Row row : rows) {
+			if (row.entry != null && selected.contains(row.entry.id)) {
+				list.add(row.entry);
+			}
+		}
+		return list;
+	}
+
+	public void clearSelection() {
+		if (selecting || !selected.isEmpty()) {
+			selecting = false;
+			selected.clear();
+			notifyDataSetChanged();
+		}
+	}
+
+	private void toggleSelected(ShoppingEntry e) {
+		if (!selected.remove(e.id)) {
+			selected.add(e.id);
+		}
+		selecting = !selected.isEmpty();
+		notifyDataSetChanged();
+		if (selectionListener != null) {
+			selectionListener.onSelectionChanged(selected.size());
+		}
+	}
 	private java.util.Map<Long, String> barcodes = new java.util.HashMap<>();
 
 	/** Barcode je Produkt für die Produktbilder. */
@@ -163,6 +210,18 @@ public class ShoppingEntryAdapter extends RecyclerView.Adapter<RecyclerView.View
 				rows.add(new Row(null, e));
 			}
 		}
+		if (!selected.isEmpty()) {
+			java.util.Set<Long> present = new java.util.HashSet<>();
+			for (ShoppingEntry e : data.entries) {
+				present.add(e.id);
+			}
+			if (selected.retainAll(present)) {
+				selecting = !selected.isEmpty();
+				if (selectionListener != null) {
+					selectionListener.onSelectionChanged(selected.size());
+				}
+			}
+		}
 		notifyDataSetChanged();
 	}
 
@@ -220,7 +279,7 @@ public class ShoppingEntryAdapter extends RecyclerView.Adapter<RecyclerView.View
 				: h.amount.getPaintFlags() & ~Paint.STRIKE_THRU_TEXT_FLAG);
 
 		// Menge ändern geht nur bei offenen Einträgen mit Produkt
-		boolean editable = !done && amountActions != null;
+		boolean editable = !done && amountActions != null && !selecting;
 		int editVisibility = editable ? View.VISIBLE : View.GONE;
 		h.minus.setVisibility(editVisibility);
 		h.plus.setVisibility(editVisibility);
@@ -256,19 +315,35 @@ public class ShoppingEntryAdapter extends RecyclerView.Adapter<RecyclerView.View
 		h.info.setText(info);
 		h.info.setVisibility(info.isEmpty() ? View.GONE : View.VISIBLE);
 
+		boolean isSelected = selected.contains(e.id);
 		h.check.setOnCheckedChangeListener(null);
-		h.check.setChecked(done);
+		h.check.setChecked(selecting ? isSelected : done);
+		((com.google.android.material.card.MaterialCardView) h.itemView).setCheckable(selecting);
+		((com.google.android.material.card.MaterialCardView) h.itemView).setChecked(selecting && isSelected);
 		h.itemView.setAlpha(done ? 0.55f : 1f);
-		View.OnClickListener toggle = v -> actions.onToggle(e);
+		View.OnClickListener toggle = selecting ? v -> toggleSelected(e) : v -> actions.onToggle(e);
+		View.OnLongClickListener longPress = v -> {
+			if (!selecting) {
+				toggleSelected(e);
+			}
+			return true;
+		};
 		// Abhaken nur über das Kästchen oder den Namen; die Fläche darunter gehört den Mengen-Knöpfen
-		h.itemView.setOnClickListener(null);
-		h.itemView.setClickable(false);
+		h.itemView.setOnClickListener(selecting ? toggle : null);
+		h.itemView.setClickable(selecting);
+		h.itemView.setOnLongClickListener(longPress);
+		h.title.setOnLongClickListener(longPress);
+		h.check.setOnLongClickListener(longPress);
+		h.image.setOnLongClickListener(longPress);
+		h.info.setOnLongClickListener(longPress);
+		h.price.setOnLongClickListener(longPress);
+		h.total.setOnLongClickListener(longPress);
 		h.title.setOnClickListener(toggle);
 		h.check.setOnClickListener(toggle);
 		de.bulling.barcodebuddyscanner.Helper.ProductImages.bind(h.image, e.productId == null ? null : barcodes.get(e.productId));
-		h.move.setVisibility(listActions != null && moveEnabled ? View.VISIBLE : View.GONE);
+		h.move.setVisibility(listActions != null && moveEnabled && !selecting ? View.VISIBLE : View.GONE);
 		h.move.setOnClickListener(v -> listActions.onMove(e));
-		h.delete.setVisibility(listActions != null ? View.VISIBLE : View.GONE);
+		h.delete.setVisibility(listActions != null && !selecting ? View.VISIBLE : View.GONE);
 		h.delete.setOnClickListener(v -> listActions.onDelete(e));
 	}
 

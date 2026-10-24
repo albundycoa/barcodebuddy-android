@@ -40,6 +40,42 @@ public final class ShoppingEdit {
 		});
 	}
 
+	/** Nimmt mehrere Einträge von der Einkaufsliste (die Auswahl in der App). */
+	public static void deleteMany(Context context, final java.util.List<Long> entryIds, final Result result) {
+		run(context, result, (client, app) -> {
+			for (long id : entryIds) {
+				GrocyShopping.deleteEntry(client, id);
+				ShoppingRepository.get(app).removeShoppingEntry(id);
+			}
+		});
+	}
+
+	/** Ein Eintrag, der verschoben werden soll. */
+	public static final class MoveItem {
+		public final long   entryId;
+		public final long   productId;
+		public final double amount;
+		public final long   quId;
+
+		public MoveItem(long entryId, Long productId, double amount, long quId) {
+			this.entryId   = entryId;
+			this.productId = productId == null ? 0 : productId;
+			this.amount    = amount;
+			this.quId      = quId;
+		}
+	}
+
+	/** Schiebt mehrere Einträge auf eine andere Einkaufsliste; der Abgleich mit Grocy läuft einmal am Ende. */
+	public static void moveMany(Context context, final java.util.List<MoveItem> items, final long targetListId, final Result result) {
+		run(context, result, (client, app) -> {
+			for (MoveItem item : items) {
+				GrocyStock.moveToList(client, item.entryId, item.productId, item.amount, item.quId, targetListId);
+				ShoppingRepository.get(app).setShoppingEntryList(item.entryId, targetListId);
+			}
+			GrocySync.start(app, null);
+		});
+	}
+
 	/**
 	 * Setzt ein Produkt mit Menge in der Einheit quId (0 = Grocys Standard) auf die Liste. Steht es mit dieser Einheit schon
 	 * darauf, wird die Menge auf den neuen Wert gesetzt.

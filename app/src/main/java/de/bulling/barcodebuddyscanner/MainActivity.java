@@ -23,6 +23,7 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.view.ActionMode;
 import androidx.appcompat.widget.Toolbar;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -403,6 +404,7 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
                 chooseMoveTarget(entry);
             }
         });
+        entryAdapter.setSelectionListener(this::onEntrySelectionChanged);
         itemList.setLayoutManager(new LinearLayoutManager(this));
         itemList.setAdapter(adapter);
 
@@ -551,6 +553,9 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
 
     private void showTab(int tab) {
         currentTab = tab;
+        if (selectionMode != null && tab != TAB_SHOPPING) {
+            selectionMode.finish();
+        }
         if (tab != TAB_CAMERA) {
             itemList.setAdapter(tab == TAB_SHOPPING ? entryAdapter : adapter);
         }
@@ -757,6 +762,9 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
             if (chip != null && chip.getTag() instanceof Long) {
                 long id = (Long) chip.getTag();
                 if (id != currentListId()) {
+                    if (selectionMode != null) {
+                        selectionMode.finish();
+                    }
                     viewListId = id == SharedPrefHelper.getShoppingMainList(this) ? 0 : id;
                     refreshList();
                 }
@@ -837,6 +845,176 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
                                 Toast.makeText(this, getString(R.string.shopping_deleted, entry.name), Toast.LENGTH_SHORT).show();
                             }
                         }))
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
+    // ---------------------------------------------------------------- Mehrfachauswahl
+
+    private ActionMode selectionMode;
+
+    private void onEntrySelectionChanged(int count) {
+        if (count == 0) {
+            if (selectionMode != null) {
+                selectionMode.finish();
+            }
+            return;
+        }
+        if (selectionMode == null) {
+            selectionMode = startSupportActionMode(new ActionMode.Callback() {
+                @Override
+                public boolean onCreateActionMode(ActionMode mode, Menu menu) {
+                    getMenuInflater().inflate(R.menu.entry_selection, menu);
+                    return true;
+                }
+
+                @Override
+                public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
+                    menu.findItem(R.id.action_move).setVisible(shoppingLists.size() > 1);
+                    boolean allDone = true;
+                    for (ShoppingEntry e : entryAdapter.getSelectedEntries()) {
+                        if (!e.isDone()) {
+                            allDone = false;
+                        }
+                    }
+                    menu.findItem(R.id.action_check).setTitle(allDone ? R.string.selection_uncheck : R.string.selection_check);
+                    return true;
+                }
+
+                @Override
+                public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
+                    java.util.List<ShoppingEntry> chosen = entryAdapter.getSelectedEntries();
+                    int id = item.getItemId();
+                    if (id == R.id.action_check) {
+                        checkSelected(chosen);
+                    } else if (id == R.id.action_move) {
+                        chooseMoveTargets(chosen);
+                    } else if (id == R.id.action_delete) {
+                        confirmDeleteEntries(chosen);
+                    } else {
+                        return false;
+                    }
+                    return true;
+                }
+
+                @Override
+                public void onDestroyActionMode(ActionMode mode) {
+                    selectionMode = null;
+                    entryAdapter.clearSelection();
+                }
+            });
+        }
+        if (selectionMode != null) {
+            selectionMode.setTitle(getResources().getQuantityString(R.plurals.selection_title, count, count));
+            selectionMode.invalidate();
+        }
+    }
+
+    /** Hakt die ausgewählten Einträge ab; sind alle schon abgehakt, wird das Häkchen wieder entfernt. */
+    private void checkSelected(java.util.List<ShoppingEntry> chosen) {
+        if (sending) {
+            return;
+        }
+        boolean allDone = true;
+        for (ShoppingEntry e : chosen) {
+            if (!e.isDone()) {
+                allDone = false;
+            }
+        }
+        boolean skipped = false;
+        int changed = 0;
+        for (ShoppingEntry e : chosen) {
+            if (e.isCoveredByScans()) {
+                skipped = true;
+            } else if (e.isDone() == allDone) {
+                repo.setShoppingDone(e.id, !allDone);
+                changed++;
+            }
+        }
+        if (skipped) {
+            Toast.makeText(this, R.string.selection_covered_skipped, Toast.LENGTH_SHORT).show();
+        } else if (!allDone && changed > 0) {
+            Toast.makeText(this, getString(R.string.selection_checked, changed), Toast.LENGTH_SHORT).show();
+        }
+        if (selectionMode != null) {
+            selectionMode.finish();
+        }
+    }
+
+    private void showError(String error) {
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.product_create_failed_title)
+                .setMessage(getString(R.string.product_create_failed, error))
+                .setPositiveButton(android.R.string.ok, null)
+                .show();
+    }
+
+    private void confirmDeleteEntries(final java.util.List<ShoppingEntry> chosen) {
+        if (chosen.size() == 1) {
+            confirmDeleteEntry(chosen.get(0));
+            return;
+        }
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.selection_delete_title)
+                .setMessage(getString(R.string.selection_delete_message, chosen.size()))
+                .setPositiveButton(R.string.shopping_delete_button, (d, w) -> {
+                    java.util.List<Long> ids = new java.util.ArrayList<>();
+                    for (ShoppingEntry e : chosen) {
+                        ids.add(e.id);
+                    }
+                    de.bulling.barcodebuddyscanner.Helper.ShoppingEdit.deleteMany(this, ids, error -> {
+                        if (error != null) {
+                            showError(error);
+                        } else {
+                            Toast.makeText(this, getString(R.string.selection_deleted, ids.size()), Toast.LENGTH_SHORT).show();
+                        }
+                        if (selectionMode != null) {
+                            selectionMode.finish();
+                        }
+                    });
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
+    private void chooseMoveTargets(final java.util.List<ShoppingEntry> chosen) {
+        if (chosen.isEmpty()) {
+            return;
+        }
+        final long fromList = chosen.get(0).listId;
+        final java.util.List<ShoppingRepository.Option> targets = new java.util.ArrayList<>();
+        for (ShoppingRepository.Option o : shoppingLists) {
+            if (o.id != fromList) {
+                targets.add(o);
+            }
+        }
+        if (targets.isEmpty()) {
+            return;
+        }
+        String[] names = new String[targets.size()];
+        for (int i = 0; i < names.length; i++) {
+            names[i] = targets.get(i).name;
+        }
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(getString(R.string.shopping_move_title))
+                .setItems(names, (d, which) -> {
+                    final ShoppingRepository.Option target = targets.get(which);
+                    java.util.List<de.bulling.barcodebuddyscanner.Helper.ShoppingEdit.MoveItem> items = new java.util.ArrayList<>();
+                    for (ShoppingEntry e : chosen) {
+                        items.add(new de.bulling.barcodebuddyscanner.Helper.ShoppingEdit.MoveItem(e.id, e.productId, e.stockAmount, e.quId));
+                    }
+                    de.bulling.barcodebuddyscanner.Helper.ShoppingEdit.moveMany(this, items, target.id, error -> {
+                        if (error != null) {
+                            showError(error);
+                        } else {
+                            Toast.makeText(this, getString(R.string.selection_moved, items.size(), target.name), Toast.LENGTH_SHORT).show();
+                            refreshList();
+                        }
+                        if (selectionMode != null) {
+                            selectionMode.finish();
+                        }
+                    });
+                })
                 .setNegativeButton(android.R.string.cancel, null)
                 .show();
     }

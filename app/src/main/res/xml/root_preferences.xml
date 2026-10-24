@@ -154,6 +154,12 @@
             app:key="off_lookup"
             app:title="@string/off_lookup_title" />
 
+        <SwitchPreferenceCompat
+            android:defaultValue="true"
+            android:summary="@string/off_images_grocy_summary"
+            app:key="off_images_grocy"
+            app:title="@string/off_images_grocy_title" />
+
         <Preference
             android:summary="@string/off_images_summary"
             app:key="off_images_all"

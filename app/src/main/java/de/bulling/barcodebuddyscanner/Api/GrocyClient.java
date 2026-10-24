@@ -71,7 +71,16 @@ public class GrocyClient {
 		return request("DELETE", path, null);
 	}
 
+	/** Lädt eine Datei hoch, z. B. "files/productpictures/<Name in Base64>" mit dem Bild als Inhalt. */
+	public void putFile(String path, byte[] data, String contentType) throws IOException {
+		request("PUT", path, data, contentType);
+	}
+
 	private JsonElement request(String method, String path, String jsonBody) throws IOException {
+		return request(method, path, jsonBody == null ? null : jsonBody.getBytes(StandardCharsets.UTF_8), "application/json");
+	}
+
+	private JsonElement request(String method, String path, byte[] payload, String contentType) throws IOException {
 		HttpURLConnection connection = null;
 		try {
 			connection = (HttpURLConnection) new URL(baseUrl + path).openConnection();
@@ -84,11 +93,11 @@ public class GrocyClient {
 				UnsafeSslHelper.applyUnsafeSsl((HttpsURLConnection) connection);
 			}
 
-			if (jsonBody != null) {
+			if (payload != null) {
 				connection.setDoOutput(true);
-				connection.setRequestProperty("Content-Type", "application/json");
+				connection.setRequestProperty("Content-Type", contentType);
 				try (java.io.OutputStream os = connection.getOutputStream()) {
-					os.write(jsonBody.getBytes(StandardCharsets.UTF_8));
+					os.write(payload);
 				}
 			}
 
