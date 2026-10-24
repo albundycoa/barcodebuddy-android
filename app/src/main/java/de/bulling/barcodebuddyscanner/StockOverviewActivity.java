@@ -497,6 +497,11 @@ public class StockOverviewActivity extends AppCompatActivity {
 				holder.card.setStrokeWidth((int) (1.5f * getResources().getDisplayMetrics().density));
 			}
 			holder.name.setText(entry.product.name);
+			// Antippen der Karte zeigt die einzelnen Bestandseinträge des Produkts (ändern, entfernen)
+			holder.card.setOnClickListener(v -> startActivity(new Intent(StockOverviewActivity.this, StockEntriesActivity.class)
+					.putExtra(StockEntriesActivity.EXTRA_PRODUCT_ID, entry.product.id)
+					.putExtra(StockEntriesActivity.EXTRA_PRODUCT_NAME, entry.product.name)
+					.putExtra(StockEntriesActivity.EXTRA_UNIT, entry.product.unit)));
 			holder.value.setText(Money.format(entry.value));
 			String amount = amountText(entry, entry.amount);
 			if (entry.opened > 0) {

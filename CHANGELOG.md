@@ -13,6 +13,13 @@ zurückgehen, sonst lässt sich ein Update nicht mehr einspielen. Gepflegt wird 
 `appVersion` in `gradle.properties`. Veröffentlicht wird mit `./publish-apk.sh`: privat auf den Update-Server im Heimnetz, mit `--github` als
 öffentlicher GitHub-Release.
 
+## [0.21.0] – Bestandseinträge ansehen, ändern und entfernen
+
+- Ein Tipp auf ein Produkt in der **Bestandsübersicht** zeigt seine einzelnen Bestandseinträge wie in Grocy: Menge, Ablaufdatum, Kaufdatum, Preis, Lagerort, Geschäft und
+  ob angebrochen. Jeder Eintrag lässt sich **bearbeiten** (Menge, Haltbar bis oder unbegrenzt, Gekauft am, Preis je Stück, Lagerort, Geschäft, angebrochen) oder **entfernen**.
+  Grocy kennt zum Entfernen nur das Verbrauchen genau dieses Eintrags, die App bucht das so und bietet „Rückgängig“ an.
+- Uhr-App und Zifferblatt: keine Änderung (nur die gemeinsame Versionsnummer).
+
 ## [0.20.0] – Bestand: Zustände wie in Grocy, Namen auf der Uhr
 
 - **Bestand**: Oben stehen Pillen mit der Anzahl je Zustand wie in Grocy: **Abgelaufen** (rot), **Überfällig** (grau), **Bald fällig** (gelb, innerhalb von 5 Tagen) und

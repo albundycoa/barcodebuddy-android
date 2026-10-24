@@ -157,6 +157,11 @@
             android:theme="@style/AppTheme.NoActionBar"
             android:windowSoftInputMode="adjustResize" />
         <activity
+            android:name=".StockEntriesActivity"
+            android:screenOrientation="portrait"
+            android:theme="@style/AppTheme.NoActionBar"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
             android:name=".StockCheckActivity"
             android:screenOrientation="portrait"
             android:label="@string/stock_title"
