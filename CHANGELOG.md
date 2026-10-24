@@ -13,6 +13,11 @@ zurückgehen, sonst lässt sich ein Update nicht mehr einspielen. Gepflegt wird 
 `appVersion` in `gradle.properties`. Veröffentlicht wird mit `./publish-apk.sh`: privat auf den Update-Server im Heimnetz, mit `--github` als
 öffentlicher GitHub-Release.
 
+## [0.25.1] – Neuer Name: GrocyGo
+
+- Die App heißt jetzt **GrocyGo** (vorher „Barcode Buddy Scanner“). Geändert ist nur der sichtbare Name; die App-Kennung bleibt gleich, deshalb laufen Updates und die Kopplung mit der Uhr unverändert weiter.
+- Uhr-App und Zifferblatt: keine Änderung (nur die gemeinsame Versionsnummer).
+
 ## [0.25.0] – Mehrfachauswahl, Produkt bearbeiten im Bestand, Bilder in Grocy
 
 - **Mehrfachauswahl in den Einkaufslisten**: Ein Eintrag lässt sich lang drücken, danach wählt ein Tipp weitere Einträge an und ab. Oben stehen **Abhaken** (sind alle schon abgehakt, wird das
