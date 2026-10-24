@@ -5,15 +5,28 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
     <path
+        android:fillColor="#CECBF6"
+        android:pathData="M48.7 41H59.3A1.2 1.2 0 0 1 60.5 42.2V45H47.5V42.2A1.2 1.2 0 0 1 48.7 41Z" />
+    <path
         android:fillColor="#FFFFFF"
-        android:pathData="M33.0,24.6L75.0,24.6L75.0,83.4L70.8,79.2L66.6,83.4L62.4,79.2L58.2,83.4L54.0,79.2L49.8,83.4L45.6,79.2L41.4,83.4L37.2,79.2L33.0,83.4Z" />
+        android:fillType="evenOdd"
+        android:pathData="M48.5 45H59.5A3.5 3.5 0 0 1 63 48.5V63.5A3.5 3.5 0 0 1 59.5 67H48.5A3.5 3.5 0 0 1 45 63.5V48.5A3.5 3.5 0 0 1 48.5 45ZM48.6 49H50.4V63H48.6Z M51.4 49H52.3V63H51.4Z M53.2 49H55.6V63H53.2Z M56.8 49H57.8V63H56.8Z M58.6 49H59.6V63H58.6Z" />
+    <group android:translateX="-1.0">
     <path
-        android:fillColor="#80CBC4"
-        android:pathData="M38.6,31.6H69.4V34.4H38.6ZM38.6,38.6H62.4V41.4H38.6ZM38.6,45.6H66.6V48.4H38.6Z" />
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2.2"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M41.4 29.55A3.4 3.4 0 1 0 42 31.5H38.8M46.4 30.2V34.9M46.4 32.6C46.4 31 47.4 30.4 48.8 30.4M53.1 32.75a2.15 2.15 0 1 0 4.3 0a2.15 2.15 0 1 0 -4.3 0M65.27 31.23A2.15 2.15 0 1 0 65.27 34.27M70.1 30.4L72.6 34.8M74.9 30.4L71.0 38.6" />
+    </group>
+    <group android:translateX="0.0">
     <path
-        android:fillColor="#004D40"
-        android:pathData="M38.6,54.0H40.7V69.4H38.6ZM42.8,54.0H44.2V69.4H42.8ZM46.3,54.0H49.8V69.4H46.3ZM51.9,54.0H53.3V69.4H51.9ZM55.4,54.0H57.5V69.4H55.4ZM59.6,54.0H61.0V69.4H59.6ZM63.1,54.0H65.9V69.4H63.1ZM67.3,54.0H69.4V69.4H67.3Z" />
-    <path
-        android:fillColor="#FFB300"
-        android:pathData="M38.6,72.2H69.4V75.7H38.6Z" />
+        android:fillColor="#00000000"
+        android:strokeColor="#FAC775"
+        android:strokeWidth="2.4"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M53.22 74.43A4.3 4.3 0 1 0 54 76.9H50.2M57.8 78.3a2.8 2.8 0 1 0 5.6 0a2.8 2.8 0 1 0 -5.6 0" />
+    </group>
 </vector>

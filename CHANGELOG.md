@@ -13,6 +13,11 @@ zurückgehen, sonst lässt sich ein Update nicht mehr einspielen. Gepflegt wird 
 `appVersion` in `gradle.properties`. Veröffentlicht wird mit `./publish-apk.sh`: privat auf den Update-Server im Heimnetz, mit `--github` als
 öffentlicher GitHub-Release.
 
+## [0.26.0] – Neues App-Symbol
+
+- Neues Symbol für **GrocyGo**: Vorratsdose mit Barcode, darüber „Grocy“, darunter „Go“. Es gilt auf dem Handy (auch als einfarbiges Symbol für Android 13+) und in der Uhr-App.
+- Uhr-App: neues Symbol (Handy-Update genügt nicht, die Uhr-App muss einmal neu installiert werden); das Zifferblatt ist unverändert.
+
 ## [0.25.1] – Neuer Name: GrocyGo
 
 - Die App heißt jetzt **GrocyGo** (vorher „Barcode Buddy Scanner“). Geändert ist nur der sichtbare Name; die App-Kennung bleibt gleich, deshalb laufen Updates und die Kopplung mit der Uhr unverändert weiter.
