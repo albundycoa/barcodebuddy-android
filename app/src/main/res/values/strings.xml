@@ -732,4 +732,8 @@ Die App zählt mit und vergleicht am Ende mit Grocy.</string>
     <string name="off_images_done">Fertig: %1$d Bilder neu geladen (%2$d Produkte)</string>
     <string name="off_images_nothing">Alle Produkte haben schon ein Bild oder keinen passenden Barcode.</string>
     <string name="off_images_off">Das Nachschlagen bei OpenFoodFacts ist ausgeschaltet.</string>
+    <string name="theme_mode_title">Design</string>
+    <string name="theme_light">Hell</string>
+    <string name="theme_dark">Dunkel</string>
+    <string name="theme_system">Systemeinstellung</string>
 </resources>

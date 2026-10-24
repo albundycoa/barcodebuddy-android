@@ -35,6 +35,14 @@
     </PreferenceCategory>
     <PreferenceCategory app:title="@string/menu_order_header">
 
+        <ListPreference
+            android:defaultValue="system"
+            android:entries="@array/theme_mode"
+            android:entryValues="@array/theme_mode_val"
+            android:summary="%s"
+            app:key="theme_mode"
+            app:title="@string/theme_mode_title" />
+
         <Preference
             app:key="menu_order"
             app:summary="@string/menu_order_pref_summary"

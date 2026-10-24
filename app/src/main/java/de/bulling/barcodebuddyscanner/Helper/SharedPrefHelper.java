@@ -89,6 +89,20 @@ public class SharedPrefHelper {
 		PreferenceManager.getDefaultSharedPreferences(context).edit().putLong("shopping_first_list", listId).apply();
 	}
 
+	/** Hell, Dunkel oder die Systemeinstellung ("light", "dark", "system", Standard). */
+	public static String getThemeMode(Context context) {
+		return PreferenceManager.getDefaultSharedPreferences(context).getString("theme_mode", "system");
+	}
+
+	/** Setzt das gewählte Design für die ganze App (AppCompat baut offene Seiten selbst neu auf). */
+	public static void applyTheme(Context context) {
+		String mode = getThemeMode(context);
+		androidx.appcompat.app.AppCompatDelegate.setDefaultNightMode("light".equals(mode)
+				? androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_NO
+				: "dark".equals(mode) ? androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_YES
+				: androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM);
+	}
+
 	/** Zuletzt gewählte Sortierung der Bestandsseite ("NAME", "VALUE" oder "DUE"), Standard Name. */
 	public static String getStockSort(Context context) {
 		return PreferenceManager.getDefaultSharedPreferences(context).getString("stock_sort", "NAME");

@@ -136,6 +136,16 @@ public class SettingsActivity extends AppCompatActivity {
 				updateUrl.setSummaryProvider(p ->
 						de.bulling.barcodebuddyscanner.Update.UpdateChecker.updateUrl(requireContext()));
 			}
+			final androidx.preference.ListPreference theme = findPreference("theme_mode");
+			if (theme != null) {
+				theme.setOnPreferenceChangeListener((p, value) -> {
+					// Speichern passiert danach; das Design sofort umschalten
+					requireContext().getSharedPreferences(requireContext().getPackageName() + "_preferences", Context.MODE_PRIVATE)
+							.edit().putString("theme_mode", String.valueOf(value)).commit();
+					SharedPrefHelper.applyTheme(requireContext());
+					return true;
+				});
+			}
 			final Preference images = findPreference("off_images_all");
 			if (images != null) {
 				images.setOnPreferenceClickListener(p -> {

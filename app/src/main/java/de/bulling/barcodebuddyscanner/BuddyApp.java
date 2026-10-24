@@ -10,5 +10,7 @@ public class BuddyApp extends Application {
 	public void onCreate() {
 		super.onCreate();
 		Texts.init(this);
+		// Das gewählte Design (hell, dunkel, System) gilt schon beim Start
+		de.bulling.barcodebuddyscanner.Helper.SharedPrefHelper.applyTheme(this);
 	}
 }
