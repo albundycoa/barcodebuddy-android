@@ -184,6 +184,26 @@ public class ProductsActivity extends AppCompatActivity implements ShoppingRepos
 		public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
 			ShoppingRepository.ProductRow p = products.get(position);
 			holder.name.setText(p.name);
+			// Drei-Punkte-Menü: Bestand ansehen oder das Produkt bearbeiten (nicht beim Auswählen eines Produkts)
+			holder.menu.setVisibility(pickMode ? View.GONE : View.VISIBLE);
+			holder.menu.setOnClickListener(v -> {
+				android.widget.PopupMenu popup = new android.widget.PopupMenu(ProductsActivity.this, v);
+				popup.getMenu().add(0, 1, 0, R.string.product_menu_stock);
+				popup.getMenu().add(0, 2, 1, R.string.product_menu_edit);
+				popup.setOnMenuItemClickListener(item -> {
+					if (item.getItemId() == 1) {
+						startActivity(new android.content.Intent(ProductsActivity.this, StockEntriesActivity.class)
+								.putExtra(StockEntriesActivity.EXTRA_PRODUCT_ID, p.id)
+								.putExtra(StockEntriesActivity.EXTRA_PRODUCT_NAME, p.name)
+								.putExtra(StockEntriesActivity.EXTRA_UNIT, p.stockUnit));
+					} else {
+						startActivity(new android.content.Intent(ProductsActivity.this, ProductEditActivity.class)
+								.putExtra(ProductEditActivity.EXTRA_PRODUCT_ID, p.id));
+					}
+					return true;
+				});
+				popup.show();
+			});
 			de.bulling.barcodebuddyscanner.Helper.ProductImages.bind(holder.image, barcodes.get(p.id));
 
 			StringBuilder line1 = new StringBuilder();
@@ -238,6 +258,7 @@ public class ProductsActivity extends AppCompatActivity implements ShoppingRepos
 
 		class ViewHolder extends RecyclerView.ViewHolder {
 			final android.widget.ImageView image;
+			final View menu;
 			final TextView name;
 			final TextView group;
 			final TextView detail;
@@ -245,6 +266,7 @@ public class ProductsActivity extends AppCompatActivity implements ShoppingRepos
 			ViewHolder(View view) {
 				super(view);
 				image  = view.findViewById(R.id.product_image);
+				menu   = view.findViewById(R.id.product_menu);
 				name   = view.findViewById(R.id.product_name);
 				group  = view.findViewById(R.id.product_group);
 				detail = view.findViewById(R.id.product_detail);

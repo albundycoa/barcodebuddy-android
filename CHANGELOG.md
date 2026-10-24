@@ -13,6 +13,13 @@ zurückgehen, sonst lässt sich ein Update nicht mehr einspielen. Gepflegt wird 
 `appVersion` in `gradle.properties`. Veröffentlicht wird mit `./publish-apk.sh`: privat auf den Update-Server im Heimnetz, mit `--github` als
 öffentlicher GitHub-Release.
 
+## [0.24.0] – Produkt bearbeiten und Barcodes verwalten
+
+- In der Produktliste hat jedes Produkt ein **Drei-Punkte-Menü** mit „Bestand ansehen“ (Bestandseinträge des Produkts) und „Produkt bearbeiten“.
+- **Produkt bearbeiten**: Name, Produktgruppe, Standardort, Standardgeschäft, Standard-Einkaufsmengeneinheit, Mindestbestand und Standard-Haltbarkeit werden direkt in Grocy gespeichert.
+- **Barcodes wie in Grocy**: je Barcode Geschäft, Mengeneinheit und Menge. Barcodes lassen sich hinzufügen, ändern und löschen (mit Rückfrage).
+- Uhr-App und Zifferblatt: keine Änderung (nur die gemeinsame Versionsnummer).
+
 ## [0.23.0] – Design: Hell, Dunkel oder Systemeinstellung
 
 - Neu in den Einstellungen unter „Darstellung“: **Design** mit den Auswahlen **Hell**, **Dunkel** und **Systemeinstellung** (Standard). Die Auswahl gilt sofort in der ganzen App und

@@ -736,4 +736,23 @@ Die App zählt mit und vergleicht am Ende mit Grocy.</string>
     <string name="theme_light">Hell</string>
     <string name="theme_dark">Dunkel</string>
     <string name="theme_system">Systemeinstellung</string>
+    <string name="product_edit_title">Produkt bearbeiten</string>
+    <string name="product_edit_min_stock">Mindestbestand (in Lagereinheit)</string>
+    <string name="product_edit_days">Standard-Haltbarkeit in Tagen</string>
+    <string name="product_edit_days_hint">-1 = unbegrenzt haltbar, 0 = keine Vorgabe</string>
+    <string name="product_edit_stock_unit">Lagereinheit: %1$s (lässt sich in Grocy nicht mehr ändern, sobald Bestand gebucht wurde)</string>
+    <string name="product_edit_save">Produkt speichern</string>
+    <string name="product_edit_barcodes">Barcodes</string>
+    <string name="product_edit_barcodes_hint">Noch kein Barcode. Mit Geschäft, Mengeneinheit und Menge, wie in Grocy.</string>
+    <string name="product_edit_add_barcode">Barcode hinzufügen</string>
+    <string name="product_edit_barcode_hint">Barcode</string>
+    <string name="product_edit_unit_hint">Mengeneinheit</string>
+    <string name="product_edit_barcode_title">Barcode ändern</string>
+    <string name="product_edit_barcode_delete_title">Barcode löschen?</string>
+    <string name="product_edit_barcode_delete_message">Der Barcode %1$s wird von diesem Produkt entfernt.</string>
+    <string name="product_edit_barcode_deleted">Barcode gelöscht</string>
+    <string name="product_edit_err_rejected">Grocy hat die Eingabe abgelehnt, zum Beispiel weil der Barcode schon bei einem anderen Produkt vorkommt.</string>
+    <string name="product_menu_stock">Bestand ansehen</string>
+    <string name="product_menu_edit">Produkt bearbeiten</string>
+    <string name="product_menu_desc">Weitere Aktionen</string>
 </resources>

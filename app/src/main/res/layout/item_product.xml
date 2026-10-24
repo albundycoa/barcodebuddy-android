@@ -56,5 +56,13 @@
             android:textAppearance="?attr/textAppearanceBodySmall"
             android:textColor="?attr/colorOnSurfaceVariant" />
     </LinearLayout>
+
+        <ImageButton
+            android:id="@+id/product_menu"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/product_menu_desc"
+            android:src="@drawable/ic_more_vert" />
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>
