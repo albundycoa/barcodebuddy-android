@@ -33,6 +33,47 @@ public final class GrocyStock {
 		public String nextDue;
 	}
 
+	/** Die Zustände der Produkte laut Grocy ("stock/volatile"): Nummern der Produkte je Zustand. */
+	public static final class Volatile {
+		public final java.util.Set<Long> expired  = new java.util.HashSet<>();
+		public final java.util.Set<Long> overdue  = new java.util.HashSet<>();
+		public final java.util.Set<Long> dueSoon  = new java.util.HashSet<>();
+		public final java.util.Set<Long> belowMin = new java.util.HashSet<>();
+	}
+
+	/** Wie Grocy: "bald fällig" heißt innerhalb der nächsten 5 Tage. */
+	public static final int DUE_SOON_DAYS = 5;
+
+	/** Liest die Zustände der Produkte aus Grocy. */
+	public static Volatile loadVolatile(GrocyClient client, int dueSoonDays) throws IOException {
+		return parseVolatile(client.get("stock/volatile?due_soon_days=" + dueSoonDays));
+	}
+
+	static Volatile parseVolatile(JsonElement response) {
+		Volatile v = new Volatile();
+		if (response == null || !response.isJsonObject()) {
+			return v;
+		}
+		JsonObject o = response.getAsJsonObject();
+		collect(o, "expired_products", "product_id", v.expired);
+		collect(o, "overdue_products", "product_id", v.overdue);
+		collect(o, "due_products", "product_id", v.dueSoon);
+		collect(o, "missing_products", "id", v.belowMin);
+		return v;
+	}
+
+	private static void collect(JsonObject o, String list, String idKey, java.util.Set<Long> target) {
+		JsonElement e = o.get(list);
+		if (e == null || !e.isJsonArray()) {
+			return;
+		}
+		for (JsonElement row : e.getAsJsonArray()) {
+			if (row.isJsonObject() && row.getAsJsonObject().has(idKey)) {
+				target.add((long) number(row.getAsJsonObject(), idKey));
+			}
+		}
+	}
+
 	/** Eine Charge im Bestand mit ihrem Mindesthaltbarkeitsdatum. */
 	public static final class Batch {
 		public long   productId;

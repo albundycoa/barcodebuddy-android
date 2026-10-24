@@ -698,4 +698,8 @@ Die App zählt mit und vergleicht am Ende mit Grocy.</string>
     <string name="shopping_list_main_message">„%1$s“ als Hauptliste festlegen? Scans, Uhr und Bestand arbeiten mit der Hauptliste, die App zeigt sie beim Start.</string>
     <string name="shopping_list_main_yes">Festlegen</string>
     <string name="shopping_list_main_done">„%1$s“ ist jetzt die Hauptliste</string>
+    <string name="stock_pill_expired">Abgelaufen · %1$d</string>
+    <string name="stock_pill_overdue">Überfällig · %1$d</string>
+    <string name="stock_pill_due">Bald fällig · %1$d</string>
+    <string name="stock_pill_min">Unter Mindestbestand · %1$d</string>
 </resources>

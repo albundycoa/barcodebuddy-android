@@ -83,6 +83,11 @@ public final class StockOverview {
 		public double opened;
 		public double value;
 		public String nextDue;
+		/** Zustand wie in Grocy: abgelaufen (rot), überfällig (grau), bald fällig (gelb), unter Mindestbestand (blau) */
+		public boolean expired;
+		public boolean overdue;
+		public boolean dueSoon;
+		public boolean belowMin;
 		/** Einträge dieses Produkts auf der Einkaufsliste (offene, in der Standardliste), leer = nicht auf der Liste */
 		public final List<ListRow> list = new ArrayList<>();
 
@@ -113,7 +118,7 @@ public final class StockOverview {
 			return text.toString();
 		}
 
-		Entry(Product product) {
+		public Entry(Product product) {
 			this.product = product;
 		}
 
@@ -133,6 +138,43 @@ public final class StockOverview {
 	}
 
 	public enum Sort { NAME, VALUE, DUE }
+
+	/** Zustände, nach denen sich der Bestand filtern lässt (Reihenfolge wie die Farben in Grocy). */
+	public enum State { EXPIRED, OVERDUE, DUE_SOON, BELOW_MIN }
+
+	/** Hat das Produkt diesen Zustand? */
+	public static boolean has(Entry entry, State state) {
+		switch (state) {
+			case EXPIRED:   return entry.expired;
+			case OVERDUE:   return entry.overdue;
+			case DUE_SOON:  return entry.dueSoon;
+			default:        return entry.belowMin;
+		}
+	}
+
+	/** Der Zustand, der die Zeile färbt: abgelaufen vor überfällig vor bald fällig vor unter Mindestbestand; null = keiner. */
+	public static State mainState(Entry entry) {
+		for (State s : State.values()) {
+			if (has(entry, s)) {
+				return s;
+			}
+		}
+		return null;
+	}
+
+	/** Nur die Produkte mit diesem Zustand; null zeigt alle. */
+	public static List<Entry> withState(List<Entry> entries, State state) {
+		if (state == null) {
+			return new ArrayList<>(entries);
+		}
+		List<Entry> result = new ArrayList<>();
+		for (Entry entry : entries) {
+			if (has(entry, state)) {
+				result.add(entry);
+			}
+		}
+		return result;
+	}
 
 	/**
 	 * Fasst die Chargen je Produkt zusammen. Produkte ohne Eintrag in {@code products} bekommen einen Platzhalternamen,

@@ -116,7 +116,9 @@ public final class WearSync {
 		for (ShoppingItem item : list.items) {
 			JsonObject o = new JsonObject();
 			o.addProperty("id", item.id);
-			o.addProperty("n", item.displayName() != null ? item.displayName() : item.barcode);
+			// Wie in der App: Name aus Grocy, sonst der Vorschlag aus Open Food Facts, sonst der Barcode
+			o.addProperty("n", item.displayName() != null ? item.displayName()
+					: item.suggestion != null ? item.suggestion : item.barcode);
 			o.addProperty("q", item.quantity);
 			Double line = ReceiptPdf.lineTotal(item);
 			if (line != null) {

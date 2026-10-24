@@ -13,6 +13,14 @@ zurückgehen, sonst lässt sich ein Update nicht mehr einspielen. Gepflegt wird 
 `appVersion` in `gradle.properties`. Veröffentlicht wird mit `./publish-apk.sh`: privat auf den Update-Server im Heimnetz, mit `--github` als
 öffentlicher GitHub-Release.
 
+## [0.20.0] – Bestand: Zustände wie in Grocy, Namen auf der Uhr
+
+- **Bestand**: Oben stehen Pillen mit der Anzahl je Zustand wie in Grocy: **Abgelaufen** (rot), **Überfällig** (grau), **Bald fällig** (gelb, innerhalb von 5 Tagen) und
+  **Unter Mindestbestand** (blau). Ein Tipp auf eine Pille zeigt nur diese Produkte, noch einmal tippen hebt es auf. Pillen ohne Produkte sind ausgeblendet.
+  „Unter Mindestbestand“ zeigt auch Produkte, von denen nichts mehr da ist. Die Produkte sind dezent in der Farbe ihres Zustands hinterlegt (Rand und Hintergrund).
+- **Uhr**: Ein Artikel, den Grocy nicht kennt, zeigt jetzt den Namen aus Open Food Facts wie in der App (vorher nur den Barcode).
+- Uhr-App: Nur dieser Name kommt vom Handy, die Uhr-App selbst hat keine Änderung (gemeinsame Versionsnummer).
+
 ## [0.19.3] – Anzahl offener Einträge je Einkaufsliste
 
 - Die Chips der Einkaufslisten zeigen jetzt die Zahl der offenen Einträge, z. B. „Einkaufszettel ★ (14)“ und „Für Später (1)“, damit man sieht, was auf den anderen Listen steht.

@@ -34,4 +34,16 @@
     <color name="scanner_off_text">#FFDAD6</color>
     <color name="inventory_more_bg">#5C3D00</color>
     <color name="inventory_more_text">#FFDDB3</color>
+    <color name="stock_expired_pill">#6B2C33</color>
+    <color name="stock_expired_on">#F8D0D4</color>
+    <color name="stock_expired_row">#3A2427</color>
+    <color name="stock_overdue_pill">#44484B</color>
+    <color name="stock_overdue_on">#DDE0E3</color>
+    <color name="stock_overdue_row">#2E3133</color>
+    <color name="stock_due_pill">#6B5614</color>
+    <color name="stock_due_on">#FFE9A8</color>
+    <color name="stock_due_row">#37321A</color>
+    <color name="stock_min_pill">#1B4F59</color>
+    <color name="stock_min_on">#B5E8F2</color>
+    <color name="stock_min_row">#1F373D</color>
 </resources>

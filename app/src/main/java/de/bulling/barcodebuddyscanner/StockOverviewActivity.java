@@ -66,6 +66,10 @@ public class StockOverviewActivity extends AppCompatActivity {
 
 	private final Handler main = new Handler(Looper.getMainLooper());
 	private final List<Entry> all   = new ArrayList<>();
+	/** Produkte unter Mindestbestand, von denen nichts mehr da ist (nur mit diesem Filter sichtbar) */
+	private final List<Entry> missingOnly = new ArrayList<>();
+	private StockOverview.State stateFilter;
+	private StockOverviewLoader.Result counts;
 	private final List<Entry> shown = new ArrayList<>();
 	/** Einheitennamen aus Grocy (Nummer -> Name), für Maske und Anzeige */
 	private final Map<Long, String> unitNames = new HashMap<>();
@@ -200,13 +204,14 @@ public class StockOverviewActivity extends AppCompatActivity {
 			unitNames.clear();
 			unitNames.putAll(names);
 			GROCY_IO.execute(() -> {
-			List<Entry> entries = null;
+			StockOverviewLoader.Result loaded = null;
 			try {
-				entries = StockOverviewLoader.load(grocy, cached, names, SharedPrefHelper.getShoppingMainList(this));
+				loaded = StockOverviewLoader.loadFull(grocy, cached, names, SharedPrefHelper.getShoppingMainList(this));
 			} catch (IOException ignored) {
 				// unten gemeldet
 			}
-			final List<Entry> result = entries;
+			final StockOverviewLoader.Result full = loaded;
+			final List<Entry> result = loaded == null ? null : loaded.entries;
 			main.post(() -> {
 				loading = false;
 				refresh.setRefreshing(false);
@@ -219,15 +224,59 @@ public class StockOverviewActivity extends AppCompatActivity {
 				}
 				all.clear();
 				all.addAll(result);
+				missingOnly.clear();
+				missingOnly.addAll(full.missingOnly);
+				counts = full;
+				updatePills();
 				applyFilter();
 			});
 			});
 		}));
 	}
 
+	/** Pillen mit der Anzahl je Zustand; nur Zustände mit mindestens einem Produkt sind sichtbar. Antippen filtert, nochmal antippen hebt auf. */
+	private void updatePills() {
+		com.google.android.material.chip.Chip[] chips = {findViewById(R.id.pill_expired), findViewById(R.id.pill_overdue),
+				findViewById(R.id.pill_due), findViewById(R.id.pill_min)};
+		int[] count = {counts.expired, counts.overdue, counts.dueSoon, counts.belowMin};
+		int[] label = {R.string.stock_pill_expired, R.string.stock_pill_overdue, R.string.stock_pill_due, R.string.stock_pill_min};
+		int[] bg = {R.color.stock_expired_pill, R.color.stock_overdue_pill, R.color.stock_due_pill, R.color.stock_min_pill};
+		int[] on = {R.color.stock_expired_on, R.color.stock_overdue_on, R.color.stock_due_on, R.color.stock_min_on};
+		StockOverview.State[] states = StockOverview.State.values();
+		boolean any = false;
+		for (int i = 0; i < chips.length; i++) {
+			final com.google.android.material.chip.Chip chip = chips[i];
+			final StockOverview.State state = states[i];
+			chip.setText(getString(label[i], count[i]));
+			chip.setChipBackgroundColor(android.content.res.ColorStateList.valueOf(getColor(bg[i])));
+			chip.setTextColor(getColor(on[i]));
+			chip.setCheckedIconTint(android.content.res.ColorStateList.valueOf(getColor(on[i])));
+			chip.setChipStrokeColor(android.content.res.ColorStateList.valueOf(getColor(on[i])));
+			chip.setChipStrokeWidth(stateFilter == state ? 3f : 0f);
+			chip.setChecked(stateFilter == state);
+			chip.setVisibility(count[i] > 0 ? View.VISIBLE : View.GONE);
+			chip.setOnClickListener(v -> {
+				stateFilter = stateFilter == state ? null : state;
+				updatePills();
+				applyFilter();
+			});
+			any |= count[i] > 0;
+		}
+		// Ein Filter, dessen Zustand es nicht mehr gibt, gilt nicht weiter
+		if (stateFilter != null && count[stateFilter.ordinal()] == 0) {
+			stateFilter = null;
+		}
+		findViewById(R.id.pills_scroll).setVisibility(any ? View.VISIBLE : View.GONE);
+	}
+
 	private void applyFilter() {
 		shown.clear();
-		shown.addAll(StockOverview.filter(all, query));
+		List<Entry> base = new ArrayList<>(all);
+		if (stateFilter == StockOverview.State.BELOW_MIN) {
+			// Auch Produkte, von denen nichts mehr da ist: wie in Grocy
+			base.addAll(missingOnly);
+		}
+		shown.addAll(StockOverview.withState(StockOverview.filter(base, query), stateFilter));
 		StockOverview.sort(shown, sort);
 		adapter.notifyDataSetChanged();
 		header.setText(getString(R.string.stock_header,
@@ -433,6 +482,20 @@ public class StockOverviewActivity extends AppCompatActivity {
 		@Override
 		public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
 			final Entry entry = shown.get(position);
+			// Dezente Farbe je nach Zustand, wie in Grocy; ohne Zustand die normale Kartenfarbe
+			StockOverview.State state = StockOverview.mainState(entry);
+			int[] rows = {R.color.stock_expired_row, R.color.stock_overdue_row, R.color.stock_due_row, R.color.stock_min_row};
+			int[] edges = {R.color.stock_expired_on, R.color.stock_overdue_on, R.color.stock_due_on, R.color.stock_min_on};
+			if (state == null) {
+				holder.card.setCardBackgroundColor(holder.cardDefault);
+				holder.card.setStrokeWidth(0);
+			} else {
+				holder.card.setCardBackgroundColor(getColor(rows[state.ordinal()]));
+				// Dünner Rand in der Farbe des Zustands, damit auch das Grau von „überfällig“ auffällt
+				holder.card.setStrokeColor(android.content.res.ColorStateList.valueOf(
+						androidx.core.graphics.ColorUtils.setAlphaComponent(getColor(edges[state.ordinal()]), 110)));
+				holder.card.setStrokeWidth((int) (1.5f * getResources().getDisplayMetrics().density));
+			}
 			holder.name.setText(entry.product.name);
 			holder.value.setText(Money.format(entry.value));
 			String amount = amountText(entry, entry.amount);
@@ -466,6 +529,8 @@ public class StockOverviewActivity extends AppCompatActivity {
 		}
 
 		class ViewHolder extends RecyclerView.ViewHolder {
+			final com.google.android.material.card.MaterialCardView card;
+			final android.content.res.ColorStateList cardDefault;
 			final TextView       name;
 			final TextView       value;
 			final TextView       amount;
@@ -478,6 +543,8 @@ public class StockOverviewActivity extends AppCompatActivity {
 
 			ViewHolder(View view) {
 				super(view);
+				card    = (com.google.android.material.card.MaterialCardView) view;
+				cardDefault = card.getCardBackgroundColor();
 				name    = view.findViewById(R.id.stock_name);
 				value   = view.findViewById(R.id.stock_value);
 				amount  = view.findViewById(R.id.stock_amount);

@@ -34,4 +34,17 @@
     <color name="scanner_off_text">#5F1313</color>
     <color name="inventory_more_bg">#FFE0B2</color>
     <color name="inventory_more_text">#4A2800</color>
+    <!-- Bestand: Zustände wie in Grocy (abgelaufen rot, überfällig grau, bald fällig gelb, unter Mindestbestand blau) -->
+    <color name="stock_expired_pill">#F5C6CB</color>
+    <color name="stock_expired_on">#721C24</color>
+    <color name="stock_expired_row">#FCEBEC</color>
+    <color name="stock_overdue_pill">#D6D8DB</color>
+    <color name="stock_overdue_on">#383D41</color>
+    <color name="stock_overdue_row">#EEEFF0</color>
+    <color name="stock_due_pill">#FFEEBA</color>
+    <color name="stock_due_on">#664D03</color>
+    <color name="stock_due_row">#FFF8E1</color>
+    <color name="stock_min_pill">#BEE5EB</color>
+    <color name="stock_min_on">#0C5460</color>
+    <color name="stock_min_row">#E3F4F7</color>
 </resources>
