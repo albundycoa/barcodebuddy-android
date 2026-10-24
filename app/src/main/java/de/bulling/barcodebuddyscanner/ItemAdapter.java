@@ -173,6 +173,7 @@ public class ItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 					Money.format(item.depositTotal())));
 		}
 		holder.subtitle.setText(subtitle);
+		de.bulling.barcodebuddyscanner.Helper.ProductImages.bind(holder.image, item.barcode);
 		holder.subtitle.setVisibility(subtitle.length() > 0 ? View.VISIBLE : View.GONE);
 
 		// Geschäft des Barcodes: Tippen ändert es (falsch zugeordnet, z. B. Aldi statt Lidl)
@@ -249,6 +250,7 @@ public class ItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 	}
 
 	static class ItemHolder extends RecyclerView.ViewHolder {
+		final android.widget.ImageView image;
 		final TextView title;
 		final TextView subtitle;
 		final TextView shop;
@@ -262,6 +264,7 @@ public class ItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
 		ItemHolder(View view) {
 			super(view);
+			image    = view.findViewById(R.id.item_image);
 			title    = view.findViewById(R.id.item_title);
 			subtitle = view.findViewById(R.id.item_subtitle);
 			shop     = view.findViewById(R.id.item_shop);

@@ -726,4 +726,10 @@ Die App zählt mit und vergleicht am Ende mit Grocy.</string>
     <string name="stock_entry_unit">Stück</string>
     <string name="stock_entry_err_price">Bitte einen Preis eingeben</string>
     <string name="stock_undo_entry">Rückgängig</string>
+    <string name="off_images_title">Produktbilder jetzt laden</string>
+    <string name="off_images_summary">Lädt die Bilder aller Produkte aus OpenFoodFacts, die noch keines haben. Sonst werden sie erst geladen, wenn ein Produkt angezeigt wird. Dabei wird nur der Barcode übertragen.</string>
+    <string name="off_images_running">%1$d von %2$d …</string>
+    <string name="off_images_done">Fertig: %1$d Bilder neu geladen (%2$d Produkte)</string>
+    <string name="off_images_nothing">Alle Produkte haben schon ein Bild oder keinen passenden Barcode.</string>
+    <string name="off_images_off">Das Nachschlagen bei OpenFoodFacts ist ausgeschaltet.</string>
 </resources>

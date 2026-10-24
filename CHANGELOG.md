@@ -13,6 +13,14 @@ zurückgehen, sonst lässt sich ein Update nicht mehr einspielen. Gepflegt wird 
 `appVersion` in `gradle.properties`. Veröffentlicht wird mit `./publish-apk.sh`: privat auf den Update-Server im Heimnetz, mit `--github` als
 öffentlicher GitHub-Release.
 
+## [0.22.0] – Produktbilder aus OpenFoodFacts
+
+- Produkte zeigen ihr **Bild aus OpenFoodFacts** (kleines Vorderseitenbild, wenige KB): in der Bestandsübersicht, der Produktliste, der Einkaufsliste und bei den gescannten
+  Artikeln. Ein Bild wird geladen, wenn ein Produkt angezeigt wird, und danach auf dem Gerät gespeichert. Hat OpenFoodFacts keines, wird es nach einer Woche noch einmal versucht.
+- Neu in den Einstellungen: **Produktbilder jetzt laden** holt die Bilder aller Produkte nach, die noch keines haben (mit Fortschrittsanzeige, höchstens etwa 85 Abfragen je Minute).
+  Dabei wird nur der Barcode übertragen. Die Bilder folgen dem Schalter „Namen bei OpenFoodFacts suchen“: ist er aus, werden keine geladen.
+- Uhr-App und Zifferblatt: keine Änderung (nur die gemeinsame Versionsnummer).
+
 ## [0.21.0] – Bestandseinträge ansehen, ändern und entfernen
 
 - Ein Tipp auf ein Produkt in der **Bestandsübersicht** zeigt seine einzelnen Bestandseinträge wie in Grocy: Menge, Ablaufdatum, Kaufdatum, Preis, Lagerort, Geschäft und

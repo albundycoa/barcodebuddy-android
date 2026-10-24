@@ -89,6 +89,15 @@ public class ShoppingEntryAdapter extends RecyclerView.Adapter<RecyclerView.View
 	}
 
 	private boolean moveEnabled;
+	private java.util.Map<Long, String> barcodes = new java.util.HashMap<>();
+
+	/** Barcode je Produkt für die Produktbilder. */
+	public void setBarcodes(java.util.Map<Long, String> barcodes) {
+		if (!this.barcodes.equals(barcodes)) {
+			this.barcodes = barcodes;
+			notifyDataSetChanged();
+		}
+	}
 
 	public void setListActions(ListActions listActions) {
 		this.listActions = listActions;
@@ -256,6 +265,7 @@ public class ShoppingEntryAdapter extends RecyclerView.Adapter<RecyclerView.View
 		h.itemView.setClickable(false);
 		h.title.setOnClickListener(toggle);
 		h.check.setOnClickListener(toggle);
+		de.bulling.barcodebuddyscanner.Helper.ProductImages.bind(h.image, e.productId == null ? null : barcodes.get(e.productId));
 		h.move.setVisibility(listActions != null && moveEnabled ? View.VISIBLE : View.GONE);
 		h.move.setOnClickListener(v -> listActions.onMove(e));
 		h.delete.setVisibility(listActions != null ? View.VISIBLE : View.GONE);
@@ -287,6 +297,7 @@ public class ShoppingEntryAdapter extends RecyclerView.Adapter<RecyclerView.View
 		final MaterialCheckBox check;
 		final View             delete;
 		final View             move;
+		final android.widget.ImageView image;
 
 		EntryHolder(View view) {
 			super(view);
@@ -300,6 +311,7 @@ public class ShoppingEntryAdapter extends RecyclerView.Adapter<RecyclerView.View
 			check  = view.findViewById(R.id.entry_check);
 			delete = view.findViewById(R.id.entry_delete);
 			move   = view.findViewById(R.id.entry_move);
+			image  = view.findViewById(R.id.entry_image);
 		}
 	}
 }

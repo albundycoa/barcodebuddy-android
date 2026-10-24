@@ -54,4 +54,16 @@ public class OpenFoodFactsTest {
 		assertFalse(OpenFoodFacts.isProductBarcode("12345abc90123"));
 		assertFalse(OpenFoodFacts.isProductBarcode(null));
 	}
+
+	@Test
+	public void readsTheSmallFrontImageAddress() {
+		assertEquals("https://images.openfoodfacts.org/images/products/807/680/208/5981/front_en.44.200.jpg",
+				OpenFoodFacts.parseImageUrl("{\"status\":1,\"product\":{\"image_front_small_url\":"
+						+ "\"https://images.openfoodfacts.org/images/products/807/680/208/5981/front_en.44.200.jpg\"}}"));
+		// ohne kleines Bild das Vorschaubild, ohne beides nichts; nur https-Adressen
+		assertEquals("https://x/t.jpg", OpenFoodFacts.parseImageUrl("{\"product\":{\"image_front_thumb_url\":\"https://x/t.jpg\"}}"));
+		org.junit.Assert.assertNull(OpenFoodFacts.parseImageUrl("{\"product\":{}}"));
+		org.junit.Assert.assertNull(OpenFoodFacts.parseImageUrl("{\"product\":{\"image_front_small_url\":\"http://x/a.jpg\"}}"));
+		org.junit.Assert.assertNull(OpenFoodFacts.parseImageUrl("kaputt"));
+	}
 }

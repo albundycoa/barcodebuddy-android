@@ -46,6 +46,7 @@ public class ProductsActivity extends AppCompatActivity implements ShoppingRepos
 
 	private ShoppingRepository                       repo;
 	private final List<ShoppingRepository.ProductRow> products = new ArrayList<>();
+	private java.util.Map<Long, String> barcodes = new java.util.HashMap<>();
 	private ProductAdapter                           adapter;
 	private TextView                                 header;
 	private TextView                                 emptyView;
@@ -113,6 +114,12 @@ public class ProductsActivity extends AppCompatActivity implements ShoppingRepos
 	}
 
 	private void load() {
+		repo.getProductBarcodes(map -> {
+			barcodes = map;
+			if (adapter != null) {
+				adapter.notifyDataSetChanged();
+			}
+		});
 		repo.getProducts(search.getText().toString(), rows -> {
 			products.clear();
 			products.addAll(rows);
@@ -177,6 +184,7 @@ public class ProductsActivity extends AppCompatActivity implements ShoppingRepos
 		public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
 			ShoppingRepository.ProductRow p = products.get(position);
 			holder.name.setText(p.name);
+			de.bulling.barcodebuddyscanner.Helper.ProductImages.bind(holder.image, barcodes.get(p.id));
 
 			StringBuilder line1 = new StringBuilder();
 			if (p.group != null) {
@@ -229,12 +237,14 @@ public class ProductsActivity extends AppCompatActivity implements ShoppingRepos
 		}
 
 		class ViewHolder extends RecyclerView.ViewHolder {
+			final android.widget.ImageView image;
 			final TextView name;
 			final TextView group;
 			final TextView detail;
 
 			ViewHolder(View view) {
 				super(view);
+				image  = view.findViewById(R.id.product_image);
 				name   = view.findViewById(R.id.product_name);
 				group  = view.findViewById(R.id.product_group);
 				detail = view.findViewById(R.id.product_detail);

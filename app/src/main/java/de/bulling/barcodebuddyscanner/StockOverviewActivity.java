@@ -69,6 +69,7 @@ public class StockOverviewActivity extends AppCompatActivity {
 	/** Produkte unter Mindestbestand, von denen nichts mehr da ist (nur mit diesem Filter sichtbar) */
 	private final List<Entry> missingOnly = new ArrayList<>();
 	private StockOverview.State stateFilter;
+	private Map<Long, String> barcodes = new HashMap<>();
 	private StockOverviewLoader.Result counts;
 	private final List<Entry> shown = new ArrayList<>();
 	/** Einheitennamen aus Grocy (Nummer -> Name), für Maske und Anzeige */
@@ -137,6 +138,10 @@ public class StockOverviewActivity extends AppCompatActivity {
 				query = text;
 				applyFilter();
 			}
+		});
+		repo.getProductBarcodes(map -> {
+			barcodes = map;
+			adapter.notifyDataSetChanged();
 		});
 		load();
 	}
@@ -496,6 +501,9 @@ public class StockOverviewActivity extends AppCompatActivity {
 						androidx.core.graphics.ColorUtils.setAlphaComponent(getColor(edges[state.ordinal()]), 110)));
 				holder.card.setStrokeWidth((int) (1.5f * getResources().getDisplayMetrics().density));
 			}
+			if (holder.image != null) {
+				de.bulling.barcodebuddyscanner.Helper.ProductImages.bind(holder.image, barcodes.get(entry.product.id));
+			}
 			holder.name.setText(entry.product.name);
 			// Antippen der Karte zeigt die einzelnen Bestandseinträge des Produkts (ändern, entfernen)
 			holder.card.setOnClickListener(v -> startActivity(new Intent(StockOverviewActivity.this, StockEntriesActivity.class)
@@ -536,6 +544,7 @@ public class StockOverviewActivity extends AppCompatActivity {
 		class ViewHolder extends RecyclerView.ViewHolder {
 			final com.google.android.material.card.MaterialCardView card;
 			final android.content.res.ColorStateList cardDefault;
+			final android.widget.ImageView image;
 			final TextView       name;
 			final TextView       value;
 			final TextView       amount;
@@ -550,6 +559,7 @@ public class StockOverviewActivity extends AppCompatActivity {
 				super(view);
 				card    = (com.google.android.material.card.MaterialCardView) view;
 				cardDefault = card.getCardBackgroundColor();
+				image   = view.findViewById(R.id.stock_image);
 				name    = view.findViewById(R.id.stock_name);
 				value   = view.findViewById(R.id.stock_value);
 				amount  = view.findViewById(R.id.stock_amount);

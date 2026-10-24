@@ -1108,6 +1108,23 @@ public final class ShoppingRepository {
 		}, null);
 	}
 
+	/** Ein Barcode je Produkt (der längste, meist der EAN-13) für das Produktbild. */
+	public void getProductBarcodes(Callback<Map<Long, String>> callback) {
+		read(() -> {
+			Map<Long, String> result = new HashMap<>();
+			try (Cursor c = dbHelper.getReadableDatabase().rawQuery(
+					"SELECT product_id, barcode FROM g_barcodes ORDER BY length(barcode)", null)) {
+				while (c.moveToNext()) {
+					String barcode = c.getString(1);
+					if (de.bulling.barcodebuddyscanner.Api.OpenFoodFacts.isProductBarcode(barcode)) {
+						result.put(c.getLong(0), barcode);
+					}
+				}
+			}
+			return result;
+		}, callback);
+	}
+
 	/** Merkt die Produktgruppe eines freien Eintrags (null/leer entfernt sie). */
 	public void setNoteGroup(final long entryId, final String groupName) {
 		write(() -> {

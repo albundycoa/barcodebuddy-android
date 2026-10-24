@@ -459,6 +459,7 @@ public class MainActivity extends AppCompatActivity implements ShoppingRepositor
             }
             rebuildListChips();
         }));
+        repo.getProductBarcodes(map -> entryAdapter.setBarcodes(map));
         repo.getShoppingList(currentListId(), data -> {
             shoppingData = data;
             entryAdapter.submit(data);

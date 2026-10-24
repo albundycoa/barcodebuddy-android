@@ -74,6 +74,50 @@ public class SettingsActivity extends AppCompatActivity {
 					}
 				});
 
+		private boolean loadingImages;
+
+		/** Lädt die Bilder aller Produkte, die noch keines haben (einzeln und mit Pause, der Fortschritt steht an der Einstellung). */
+		private void loadAllImages(final Preference preference) {
+			final Context context = requireContext().getApplicationContext();
+			if (!new SharedPrefHelper(context).isOffLookupEnabled()) {
+				Toast.makeText(context, R.string.off_images_off, Toast.LENGTH_LONG).show();
+				return;
+			}
+			if (loadingImages) {
+				return;
+			}
+			de.bulling.barcodebuddyscanner.Data.ShoppingRepository.get(context).getProductBarcodes(map -> {
+				final List<String> todo = new ArrayList<>();
+				for (String barcode : map.values()) {
+					if (de.bulling.barcodebuddyscanner.Helper.ProductImages.needsImage(context, barcode)) {
+						todo.add(barcode);
+					}
+				}
+				if (todo.isEmpty()) {
+					Toast.makeText(context, R.string.off_images_nothing, Toast.LENGTH_LONG).show();
+					return;
+				}
+				loadingImages = true;
+				final int total = todo.size();
+				final int[] done = {0};
+				final int[] loaded = {0};
+				for (final String barcode : todo) {
+					de.bulling.barcodebuddyscanner.Helper.ProductImages.fetch(context, barcode, () -> {
+						done[0]++;
+						if (de.bulling.barcodebuddyscanner.Helper.ProductImages.cached(context, barcode) != null) {
+							loaded[0]++;
+						}
+						if (done[0] >= total) {
+							loadingImages = false;
+							preference.setSummary(getString(R.string.off_images_done, loaded[0], map.size()));
+						} else {
+							preference.setSummary(getString(R.string.off_images_running, done[0], total));
+						}
+					});
+				}
+			});
+		}
+
 		@Override
 		public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
 			setPreferencesFromResource(R.xml.root_preferences, rootKey);
@@ -91,6 +135,13 @@ public class SettingsActivity extends AppCompatActivity {
 				});
 				updateUrl.setSummaryProvider(p ->
 						de.bulling.barcodebuddyscanner.Update.UpdateChecker.updateUrl(requireContext()));
+			}
+			final Preference images = findPreference("off_images_all");
+			if (images != null) {
+				images.setOnPreferenceClickListener(p -> {
+					loadAllImages(images);
+					return true;
+				});
 			}
 			Preference version = findPreference("app_version");
 			if (version != null) {
